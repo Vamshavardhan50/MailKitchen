@@ -107,13 +107,13 @@ export const HomePage: React.FC<HomePageProps> = ({ lang, onOpenReservation }) =
           {/* RIGHT: Rotating Circle Image with Hover Scale & Slight Rotation */}
           <div className="flex-1 flex items-center justify-center md:justify-end">
             <div
-              className="group rounded-full border-[20px] md:border-[24px] border-white overflow-hidden shadow-2xl bg-white animate-rotate-load animate-float transition-all duration-700 ease-out hover:scale-105 hover:rotate-6 cursor-pointer"
-              style={{ width: 'clamp(280px,38vw,540px)', height: 'clamp(280px,38vw,540px)' }}
+              className="group rounded-full overflow-hidden shadow-2xl animate-rotate-load transition-all duration-700 ease-out hover:scale-105 hover:rotate-6 cursor-pointer"
+              style={{ width: 'clamp(280px,38vw,520px)', height: 'clamp(280px,38vw,520px)' }}
             >
               <img
                 src="/assets/circle-Bq5xyFQD.png"
                 alt="Top down healthy Indian bowl"
-                className="w-full h-full object-cover scale-105 transition-transform duration-700 ease-out group-hover:scale-110 group-hover:rotate-6"
+                className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105 group-hover:rotate-6"
               />
             </div>
           </div>
@@ -336,10 +336,11 @@ export const HomePage: React.FC<HomePageProps> = ({ lang, onOpenReservation }) =
                         </span>
                       )}
                     </div>
-                    <div className="flex flex-wrap justify-end gap-3 text-[13px] font-semibold text-[#555]">
+                    <div className="flex items-center gap-3.5 text-[14px]">
                       {drink.sizes.map((s) => (
-                        <span key={s.label}>
-                          {s.label} <strong className="text-[#d85c27] font-black">{s.price}</strong>
+                        <span key={s.label} className="flex items-baseline gap-1">
+                          <span className="font-bold text-[#1a1a1a] text-[13px]">{s.label}</span>
+                          <strong className="text-[#d85c27] font-black text-[18px]">{s.price}</strong>
                         </span>
                       ))}
                     </div>
@@ -394,10 +395,11 @@ export const HomePage: React.FC<HomePageProps> = ({ lang, onOpenReservation }) =
                         </span>
                       )}
                     </div>
-                    <div className="flex flex-wrap justify-end gap-3 text-[14px] font-semibold text-[#555]">
+                    <div className="flex items-center gap-3.5 text-[14px]">
                       {drink.sizes.map((s) => (
-                        <span key={s.label}>
-                          {s.label} <strong className="text-[#d85c27] font-black">{s.price}</strong>
+                        <span key={s.label} className="flex items-baseline gap-1">
+                          <span className="font-bold text-[#1a1a1a] text-[13px]">{s.label}</span>
+                          <strong className="text-[#d85c27] font-black text-[18px]">{s.price}</strong>
                         </span>
                       ))}
                     </div>

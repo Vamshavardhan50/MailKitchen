@@ -79,11 +79,8 @@ export const Hero: React.FC<HeroProps> = ({ lang, onOpenReservation }) => {
               md:w-[480px] md:h-[480px]
               lg:w-[540px] lg:h-[540px]
               rounded-full
-              border-[20px] md:border-[24px]
-              border-white
               overflow-hidden
               shadow-2xl
-              bg-white
               animate-rotate-load
               transition-all
               duration-700
@@ -96,7 +93,7 @@ export const Hero: React.FC<HeroProps> = ({ lang, onOpenReservation }) => {
             <img
               src="/assets/circle-Bq5xyFQD.png"
               alt="MAATI Fresh Indian food spread"
-              className="w-full h-full object-cover scale-105 transition-transform duration-700 ease-out group-hover:scale-110 group-hover:rotate-6"
+              className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105 group-hover:rotate-6"
             />
           </div>
         </div>
