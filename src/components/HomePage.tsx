@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Leaf, Flame, Clock } from 'lucide-react';
+import { SEO } from './SEO';
 import {
   LUNCH_ITEMS,
   BREAKFAST_ITEMS,
@@ -28,6 +29,16 @@ export const HomePage: React.FC<HomePageProps> = ({ lang, onOpenReservation }) =
 
   return (
     <div className="bg-[#f5f0e8] text-[#1a1a1a]">
+      <SEO
+        title={isDe ? 'MAATI Kitchen | Fast Casual • Indische Küche | Berlin' : 'MAATI Kitchen | Fast Casual • Indian Soul | Berlin'}
+        description={
+          isDe
+            ? 'Frische, lebendige indische Zutaten in anpassbaren Bowls, Salaten und getoasteten Punjab Naan Pockets in der Zimmerstraße 56, 10117 Berlin.'
+            : 'Fresh, vibrant Indian ingredients in customizable Bowls, Salads, and Naan Pockets in Zimmerstraße 56, 10117 Berlin. Authentic spices, Modern style.'
+        }
+        canonicalUrl="https://maatikitchen.com"
+        lang={lang}
+      />
 
       {/* ═══════════════════════════════════════════════
           1. HERO SECTION

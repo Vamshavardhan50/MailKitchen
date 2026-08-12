@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { Mail, Phone, MapPin, Building, ShieldCheck } from 'lucide-react';
+import { SEO } from './SEO';
 
 interface ImpressumProps {
   lang?: 'de' | 'en';
@@ -12,6 +13,12 @@ export const Impressum: React.FC<ImpressumProps> = ({ lang = 'de' }) => {
 
   return (
     <div className="bg-[#f5f0e8] min-h-screen text-[#1a1a1a]" style={{ paddingTop: '100px', paddingBottom: '80px' }}>
+      <SEO
+        title="Impressum | MAATI Kitchen Berlin"
+        description="Rechtliche Angaben und Impressum der Unicorn Table UG (MAATI Kitchen) nach § 5 TMG."
+        canonicalUrl="https://maatikitchen.com/impressum"
+        lang={lang}
+      />
       <div className="max-w-[1000px] mx-auto px-6 md:px-10">
 
         {/* ── Page Header ── */}

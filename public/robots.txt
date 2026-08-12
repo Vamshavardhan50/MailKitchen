@@ -1,0 +1,6 @@
+# Allow all web crawlers
+User-agent: *
+Allow: /
+
+# Sitemap URL
+Sitemap: https://maatikitchen.com/sitemap.xml

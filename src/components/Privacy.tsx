@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { SEO } from './SEO';
 
 interface PrivacyProps {
   lang?: 'de' | 'en';
@@ -11,6 +12,12 @@ export const Privacy: React.FC<PrivacyProps> = ({ lang = 'en' }) => {
 
   return (
     <div className="bg-[#f5f0e8] min-h-screen text-[#1a1a1a]" style={{ paddingTop: '100px', paddingBottom: '80px' }}>
+      <SEO
+        title="Privacy Policy | MAATI Kitchen Berlin"
+        description="Privacy policy and GDPR data protection provisions for MAATI Kitchen (Unicorn Table UG)."
+        canonicalUrl="https://maatikitchen.com/privacy"
+        lang={lang}
+      />
       <div className="max-w-[1000px] mx-auto px-6 md:px-10">
 
         {/* ── Page Header ── */}

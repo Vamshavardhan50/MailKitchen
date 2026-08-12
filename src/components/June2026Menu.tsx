@@ -1,17 +1,8 @@
 import React from 'react';
 import { Info } from 'lucide-react';
 import { MenuCard } from './MenuCard';
-import {
-  BREAKFAST_ITEMS,
-  NAAN_POCKET_ITEM,
-  HAUSSPEZIALITAETEN_ITEMS,
-  AUF_BESTELLUNG_ITEMS,
-  NACHTISCH_ITEMS,
-  COLD_DRINKS,
-  HOT_DRINKS,
-  ALKOHOLISCHE_GETRAENKE,
-  COCKTAILS
-} from '../data/june2026MenuData';
+import { SEO } from './SEO';
+import { useSanityMenu } from '../lib/sanityService';
 
 interface June2026MenuProps {
   lang?: 'de' | 'en';
@@ -20,9 +11,22 @@ interface June2026MenuProps {
 
 export const June2026Menu: React.FC<June2026MenuProps> = ({ lang = 'en' }) => {
   const isDe = lang === 'de';
+  const menu = useSanityMenu();
 
   return (
     <div className="bg-[#f5f0e8] text-[#1a1a1a] min-h-screen" style={{ paddingTop: '80px', paddingBottom: '90px' }}>
+      {/* ── SEO Meta Tags ── */}
+      <SEO
+        title={isDe ? 'Speisekarte | MAATI Kitchen Berlin' : 'Menu | MAATI Kitchen Berlin'}
+        description={
+          isDe
+            ? 'Entdecken Sie unsere indischen Signature Bowls, getoasteten Punjab Naan Pockets, hausgemachte Lassis und Masala Chai in Berlin.'
+            : 'Explore our signature Indian bowls, toasted Punjab Naan Pockets, homemade lassis, and masala chai in Berlin.'
+        }
+        canonicalUrl="https://maatikitchen.com/menu"
+        ogType="restaurant.menu"
+        lang={lang}
+      />
 
       <div className="max-w-[1320px] mx-auto px-8 md:px-14 lg:px-20 space-y-16 animate-fadeIn">
 
@@ -49,7 +53,7 @@ export const June2026Menu: React.FC<June2026MenuProps> = ({ lang = 'en' }) => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {BREAKFAST_ITEMS.map((item) => (
+            {menu.breakfast.map((item) => (
               <MenuCard key={item.id} item={item} lang={lang} />
             ))}
           </div>
@@ -65,7 +69,7 @@ export const June2026Menu: React.FC<June2026MenuProps> = ({ lang = 'en' }) => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <MenuCard item={NAAN_POCKET_ITEM} lang={lang} />
+            <MenuCard item={menu.naanPocket} lang={lang} />
           </div>
         </section>
 
@@ -79,7 +83,7 @@ export const June2026Menu: React.FC<June2026MenuProps> = ({ lang = 'en' }) => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {HAUSSPEZIALITAETEN_ITEMS.map((item) => (
+            {menu.lunchBowls.map((item) => (
               <MenuCard key={item.id} item={item} lang={lang} />
             ))}
           </div>
@@ -95,7 +99,7 @@ export const June2026Menu: React.FC<June2026MenuProps> = ({ lang = 'en' }) => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {AUF_BESTELLUNG_ITEMS.map((item) => (
+            {menu.madeToOrder.map((item) => (
               <MenuCard key={item.id} item={item} lang={lang} />
             ))}
           </div>
@@ -111,7 +115,7 @@ export const June2026Menu: React.FC<June2026MenuProps> = ({ lang = 'en' }) => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {NACHTISCH_ITEMS.map((item) => (
+            {menu.desserts.map((item) => (
               <MenuCard key={item.id} item={item} lang={lang} />
             ))}
           </div>
@@ -127,7 +131,7 @@ export const June2026Menu: React.FC<June2026MenuProps> = ({ lang = 'en' }) => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {COLD_DRINKS.map((drink) => (
+            {menu.coldDrinks.map((drink) => (
               <MenuCard key={drink.id} item={drink} lang={lang} />
             ))}
           </div>
@@ -143,7 +147,7 @@ export const June2026Menu: React.FC<June2026MenuProps> = ({ lang = 'en' }) => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {HOT_DRINKS.map((drink) => (
+            {menu.hotDrinks.map((drink) => (
               <MenuCard key={drink.id} item={drink} lang={lang} />
             ))}
           </div>
@@ -159,7 +163,7 @@ export const June2026Menu: React.FC<June2026MenuProps> = ({ lang = 'en' }) => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {ALKOHOLISCHE_GETRAENKE.map((item) => (
+            {menu.alcoholic.map((item) => (
               <MenuCard key={item.id} item={item} lang={lang} />
             ))}
           </div>
@@ -175,7 +179,7 @@ export const June2026Menu: React.FC<June2026MenuProps> = ({ lang = 'en' }) => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {COCKTAILS.map((item) => (
+            {menu.cocktails.map((item) => (
               <MenuCard key={item.id} item={item} lang={lang} />
             ))}
           </div>
