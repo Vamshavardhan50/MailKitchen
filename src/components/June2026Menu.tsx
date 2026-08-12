@@ -132,7 +132,7 @@ export const June2026Menu: React.FC<June2026MenuProps> = ({ lang = 'en' }) => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {menu.coldDrinks.map((drink) => (
-              <MenuCard key={drink.id} item={drink} lang={lang} layout="vertical" />
+              <MenuCard key={drink.id} item={drink} lang={lang} />
             ))}
           </div>
         </section>
@@ -146,9 +146,9 @@ export const June2026Menu: React.FC<June2026MenuProps> = ({ lang = 'en' }) => {
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {menu.hotDrinks.map((drink) => (
-              <MenuCard key={drink.id} item={drink} lang={lang} layout="horizontal" />
+              <MenuCard key={drink.id} item={drink} lang={lang} />
             ))}
           </div>
         </section>

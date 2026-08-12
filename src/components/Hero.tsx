@@ -18,25 +18,25 @@ export const Hero: React.FC<HeroProps> = ({ lang, onOpenReservation }) => {
         <div className="flex-1 flex flex-col justify-center">
           {/* Badge */}
           <div className="inline-flex items-center mb-6">
-            <span className="border border-[#d85c27] text-[#d85c27] text-[11px] font-bold tracking-[0.15em] px-4 py-1.5 rounded-full">
+            <span className="bg-[#d85c27] text-white text-[11px] font-black tracking-[0.18em] px-4 py-1.5 rounded-full uppercase shadow-sm transition-transform duration-300 hover:scale-105">
               {text.hero_badge}
             </span>
           </div>
 
           {/* Headline */}
-          <h1 className="text-[48px] md:text-[58px] lg:text-[68px] font-black leading-[1.05] mb-6 text-[#1a1a1a]">
+          <h1 className="font-black leading-[1.05] mb-6 text-[#1a1a1a]" style={{ fontSize: 'clamp(40px,5vw,68px)' }}>
             {text.hero_title_1}
             <br />
             <span className="text-[#d85c27] italic">{text.hero_title_2}</span>
           </h1>
 
           {/* Subtitle */}
-          <p className="text-[17px] text-[#555] leading-relaxed mb-10 max-w-[480px]">
+          <p className="text-[17px] text-[#555] leading-relaxed mb-10 max-w-[500px]">
             {text.hero_desc}
           </p>
 
           {/* CTAs */}
-          <div className="flex flex-wrap gap-4 mb-12">
+          <div className="flex items-center gap-4 mb-12">
             <a
               href="/menu"
               className="inline-flex items-center gap-3 bg-[#d85c27] text-white font-bold text-[15px] px-7 py-3.5 rounded-full hover:bg-[#c2501f] transition-colors"
@@ -71,30 +71,25 @@ export const Hero: React.FC<HeroProps> = ({ lang, onOpenReservation }) => {
 
         {/* RIGHT: Single Large Circle with food spread & rotation on load + interactive hover */}
         <div className="flex-1 flex items-center justify-center md:justify-end">
-          <div
-            className="
-              group
-              w-[340px] h-[340px]
-              sm:w-[420px] sm:h-[420px]
-              md:w-[480px] md:h-[480px]
-              lg:w-[540px] lg:h-[540px]
-              rounded-full
-              overflow-hidden
-              shadow-2xl
-              animate-rotate-load
-              transition-all
-              duration-700
-              ease-out
-              hover:scale-105
-              hover:rotate-6
-              cursor-pointer
-            "
-          >
-            <img
-              src="/assets/circle-Bq5xyFQD.png"
-              alt="MAATI Fresh Indian food spread"
-              className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105 group-hover:rotate-6"
-            />
+          <div className="transition-transform duration-500 ease-out hover:scale-108 cursor-pointer">
+            <div
+              className="
+                w-[340px] h-[340px]
+                sm:w-[420px] sm:h-[420px]
+                md:w-[480px] md:h-[480px]
+                lg:w-[540px] lg:h-[540px]
+                rounded-full
+                overflow-hidden
+                shadow-2xl
+                animate-spin-dish
+              "
+            >
+              <img
+                src="/assets/circle-Bq5xyFQD.png"
+                alt="MAATI Fresh Indian food spread"
+                className="w-full h-full object-cover pointer-events-none"
+              />
+            </div>
           </div>
         </div>
 

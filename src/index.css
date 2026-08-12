@@ -66,18 +66,31 @@ body.modal-open {
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
 /* ── KEYFRAME ANIMATIONS ── */
-@keyframes rotateFirstLoad {
+@keyframes spinDishOnLoad {
   0% {
-    transform: rotate(-360deg) scale(0.6);
+    transform: rotate(-720deg) scale(0.3);
     opacity: 0;
   }
-  70% {
-    transform: rotate(15deg) scale(1.04);
+  60% {
+    transform: rotate(25deg) scale(1.06);
+    opacity: 1;
+  }
+  80% {
+    transform: rotate(-8deg) scale(0.98);
     opacity: 1;
   }
   100% {
     transform: rotate(0deg) scale(1);
     opacity: 1;
+  }
+}
+
+@keyframes continuousSlowSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
   }
 }
 
@@ -110,8 +123,16 @@ body.modal-open {
   }
 }
 
+.animate-spin-dish {
+  animation: spinDishOnLoad 1.8s cubic-bezier(0.2, 0.85, 0.25, 1) forwards;
+}
+
+.animate-spin-slow {
+  animation: continuousSlowSpin 50s linear infinite;
+}
+
 .animate-rotate-load {
-  animation: rotateFirstLoad 1.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: spinDishOnLoad 1.8s cubic-bezier(0.2, 0.85, 0.25, 1) forwards;
 }
 
 .animate-float {

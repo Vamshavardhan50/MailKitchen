@@ -1,67 +1,82 @@
 import React from 'react';
 import { CheckCircle2 } from 'lucide-react';
+import { SEO } from './SEO';
 
 interface EventsSectionProps {
-  lang: 'de' | 'en';
-  onOpenReservation: () => void;
+  lang?: 'de' | 'en';
+  onOpenReservation?: () => void;
 }
 
-export const EventsSection: React.FC<EventsSectionProps> = ({ lang, onOpenReservation }) => {
+export const EventsSection: React.FC<EventsSectionProps> = ({ lang = 'en', onOpenReservation }) => {
   const isDe = lang === 'de';
 
   return (
-    <section id="events" className="bg-[#f5f0e8] pt-[120px] md:pt-[140px] pb-20 px-6 md:px-10">
-      <div className="max-w-[1280px] mx-auto">
-        <div className="bg-[#1e382f] rounded-[32px] overflow-hidden text-white grid grid-cols-1 lg:grid-cols-2 p-8 md:p-14 gap-10 items-center shadow-xl border border-white/10">
+    <section id="events" className="bg-[#f5f0e8] min-h-screen pt-[130px] md:pt-[150px] pb-28 px-8 sm:px-12 md:px-16 lg:px-24">
+      <SEO
+        title={isDe ? 'Events & Feiern | MAATI Kitchen Berlin' : 'Events & Private Dining | MAATI Kitchen Berlin'}
+        description={
+          isDe
+            ? 'Veranstalten Sie Ihr privates Event, Catering oder Firmenfeier bei MAATI Kitchen in Berlin. Individuelle Menüs und einzigartiges Ambiente.'
+            : 'Host your private event, birthday, corporate gathering, or catering with MAATI Kitchen in Berlin. Customizable menus and cozy modern space.'
+        }
+        canonicalUrl="https://maatikitchen.com/events"
+        lang={lang}
+      />
 
-          {/* Left Text */}
-          <div className="space-y-6">
-            <h2 className="text-[38px] md:text-[50px] font-black leading-tight">
+      <div className="max-w-[1360px] mx-auto">
+        <div className="bg-[#1e382f] rounded-[36px] overflow-hidden text-white grid grid-cols-1 lg:grid-cols-2 p-10 md:p-16 lg:p-20 gap-12 lg:gap-16 items-center shadow-2xl border border-white/10">
+
+          {/* ── Left Text ── */}
+          <div className="flex flex-col justify-center">
+            <h1 className="text-[40px] md:text-[54px] font-black leading-[1.08] mb-6 text-white tracking-tight">
               {isDe ? 'Veranstalten Sie Ihr Event bei uns' : 'Host Your Own Event'}
-            </h2>
-            <p className="text-white/80 text-[15px] leading-relaxed max-w-[480px]">
+            </h1>
+            <p className="text-white/80 text-[15px] md:text-[16px] leading-relaxed max-w-[500px] mb-8">
               {isDe
-                ? 'Suchen Sie nach einer einzigartigen Location? MAATI bietet Private Dining und Catering-Services für Geburtstage, Firmenfeiern und besondere Anlässe.'
+                ? 'Suchen Sie nach einer einzigartigen Location? MAATI bietet Private Dining und Catering-Services für Geburtstage, Firmenfeiern und besondere Anlässe. Wir bringen die Gewürze zu Ihrem besonderen Tag.'
                 : 'Looking for a unique venue? MAATI offers private dining and catering services for birthdays, corporate gatherings, and celebrations. Let us bring the spice to your special day.'}
             </p>
 
-            <div className="space-y-3 pt-2">
-              <div className="flex items-center gap-3">
-                <CheckCircle2 className="w-5 h-5 text-[#d85c27]" />
-                <span className="font-semibold text-[14px]">
+            {/* Checklist */}
+            <div className="space-y-4 mb-10">
+              <div className="flex items-center gap-3.5">
+                <CheckCircle2 className="w-5 h-5 text-[#d85c27] shrink-0" />
+                <span className="font-semibold text-[15px] text-white">
                   {isDe ? 'Individuelle Menüs' : 'Customizable Menus'}
                 </span>
               </div>
-              <div className="flex items-center gap-3">
-                <CheckCircle2 className="w-5 h-5 text-[#d85c27]" />
-                <span className="font-semibold text-[14px]">
+              <div className="flex items-center gap-3.5">
+                <CheckCircle2 className="w-5 h-5 text-[#d85c27] shrink-0" />
+                <span className="font-semibold text-[15px] text-white">
                   {isDe ? 'Private & Halbprivate Bereiche' : 'Private or Semi-Private Spaces'}
                 </span>
               </div>
-              <div className="flex items-center gap-3">
-                <CheckCircle2 className="w-5 h-5 text-[#d85c27]" />
-                <span className="font-semibold text-[14px]">
+              <div className="flex items-center gap-3.5">
+                <CheckCircle2 className="w-5 h-5 text-[#d85c27] shrink-0" />
+                <span className="font-semibold text-[15px] text-white">
                   {isDe ? 'Kompletter Catering-Service' : 'Full Catering Service Available'}
                 </span>
               </div>
             </div>
 
-            <div className="pt-4">
+            {/* CTA Button */}
+            <div>
               <button
                 onClick={onOpenReservation}
-                className="bg-[#d85c27] text-white font-bold px-7 py-3.5 rounded-full text-[15px] hover:bg-[#c2501f] transition-all transform hover:scale-105 shadow-md"
+                className="inline-flex items-center justify-center bg-[#d85c27] text-white font-bold px-8 py-4 rounded-full text-[15px] hover:bg-[#c2501f] transition-all duration-300 transform hover:scale-105 shadow-lg"
               >
                 {isDe ? 'Event Anfragen' : 'Inquire for Private Events'}
               </button>
             </div>
           </div>
 
-          {/* Right Image Container */}
-          <div className="rounded-[24px] overflow-hidden h-[360px] md:h-[420px]">
+          {/* ── Right Image Container ── */}
+          <div className="rounded-[28px] overflow-hidden h-[380px] md:h-[480px] lg:h-[520px] shadow-lg bg-[#142821] w-full">
             <img
               src="/assets/show2-CM6MShfY.jpeg"
               alt="MAATI Event Space"
-              className="w-full h-full object-cover"
+              loading="lazy"
+              className="w-full h-full object-cover hover:scale-105 transition-transform duration-700 ease-out"
             />
           </div>
 
