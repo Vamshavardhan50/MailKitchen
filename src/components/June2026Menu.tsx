@@ -1,8 +1,8 @@
 import React from 'react';
-import { Info } from 'lucide-react';
 import { MenuCard } from './MenuCard';
-import { SEO } from './SEO';
 import { useSanityMenu } from '../lib/sanityService';
+import { SEO } from './SEO';
+import { Info, Sparkles } from 'lucide-react';
 
 interface June2026MenuProps {
   lang?: 'de' | 'en';
@@ -11,179 +11,61 @@ interface June2026MenuProps {
 
 export const June2026Menu: React.FC<June2026MenuProps> = ({ lang = 'en' }) => {
   const isDe = lang === 'de';
-  const menu = useSanityMenu();
+  const { categories } = useSanityMenu();
 
   return (
-    <div className="bg-[#f5f0e8] text-[#1a1a1a] min-h-screen" style={{ paddingTop: '80px', paddingBottom: '90px' }}>
-      {/* ── SEO Meta Tags ── */}
+    <div className="bg-[#f5f0e8] min-h-screen pt-28 pb-20 px-6 sm:px-12 md:px-20 lg:px-28">
       <SEO
-        title={isDe ? 'Speisekarte | MAATI Kitchen Berlin' : 'Menu | MAATI Kitchen Berlin'}
+        title={isDe ? 'Speisekarte | MAATI Kitchen Berlin Mitte' : 'Menu | MAATI Kitchen Berlin Mitte'}
         description={
           isDe
-            ? 'Entdecken Sie unsere indischen Signature Bowls, getoasteten Punjab Naan Pockets, hausgemachte Lassis und Masala Chai in Berlin.'
-            : 'Explore our signature Indian bowls, toasted Punjab Naan Pockets, homemade lassis, and masala chai in Berlin.'
+            ? 'Entdecken Sie die Speisekarte von MAATI Kitchen in Berlin Mitte. Frische Bowls, Naan-Taschen, hausgemachte Lassis, Kaffeespezialitäten und mehr.'
+            : 'Explore the MAATI Kitchen menu in Berlin Mitte. Fresh Indian soul bowls, crispy naan pockets, homemade lassis, specialty coffee, and craft drinks.'
         }
         canonicalUrl="https://maatikitchen.com/menu"
-        ogType="restaurant.menu"
         lang={lang}
       />
 
-      <div className="max-w-[1320px] mx-auto px-8 md:px-14 lg:px-20 space-y-16 animate-fadeIn">
-
-        {/* ── Main Heading ── */}
-        <div className="pt-4">
-          <span className="text-[#d85c27] font-black text-[12px] uppercase tracking-[0.2em]">
-            {isDe ? 'Frisch & Authentisch' : 'Fresh & Authentic'}
-          </span>
-          <h1 className="text-[42px] md:text-[56px] font-black text-[#1e382f] leading-tight mt-1">
-            {isDe ? 'Vollständige Speisekarte' : 'Full Menu'}
+      <div className="max-w-[1360px] mx-auto space-y-16">
+        
+        {/* ── HEADER ── */}
+        <div className="text-left pb-4 border-b border-[#ebdcd0]">
+          <h1 className="text-[36px] md:text-[48px] font-black text-[#1e382f] leading-tight flex items-center gap-3">
+            <Sparkles className="w-8 h-8 text-[#d85c27]" />
+            <span>{isDe ? 'Speisekarte' : 'Full Menu'}</span>
           </h1>
         </div>
 
-        {/* ── 1. HOUSE FAVORITES (BREAKFAST) ── */}
-        <section id="breakfast" className="space-y-6">
-          <div>
-            <span className="text-[#d85c27] font-black text-[12px] uppercase tracking-[0.2em]">Morning Bites</span>
-            <h2 className="text-[30px] md:text-[38px] font-black text-[#1e382f] leading-tight">
-              {isDe ? 'Hausgerichte (Frühstück)' : 'House Favorites (Breakfast)'}
-            </h2>
-            <p className="text-[#666] text-[14px] mt-1">
-              {isDe ? 'Ausgewählte Kombinationen für den perfekten Start in den Tag.' : 'Curated combinations for the perfect bite.'}
-            </p>
-          </div>
+        {/* ── DYNAMIC CATEGORIES RENDERED FROM SANITY ── */}
+        {categories.map((cat) => {
+          if (!cat.items || cat.items.length === 0) return null;
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {menu.breakfast.map((item) => (
-              <MenuCard key={item.id} item={item} lang={lang} />
-            ))}
-          </div>
-        </section>
+          const catName = (isDe ? cat.nameDe || cat.name : cat.name) || cat.name;
+          const catDesc = isDe ? cat.descriptionDe || cat.description : cat.description;
+          const catSlug = typeof cat.slug === 'object' && cat.slug?.current ? cat.slug.current : (typeof cat.slug === 'string' ? cat.slug : cat._id);
 
-        {/* ── 2. PUNJAB NAAN POCKETS ── */}
-        <section id="naan-pockets" className="space-y-6">
-          <div>
-            <span className="text-[#d85c27] font-black text-[12px] uppercase tracking-[0.2em]">Stuffed Naan</span>
-            <h2 className="text-[30px] md:text-[38px] font-black text-[#1e382f] leading-tight">
-              Punjab Naan Pockets
-            </h2>
-          </div>
+          return (
+            <section key={cat._id} id={catSlug} className="space-y-6 scroll-mt-28">
+              <div>
+                <span className="text-[#d85c27] font-black text-[12px] uppercase tracking-[0.2em]">
+                  MAATI SELECTION
+                </span>
+                <h2 className="text-[30px] md:text-[38px] font-black text-[#1e382f] leading-tight">
+                  {catName}
+                </h2>
+                {catDesc && (
+                  <p className="text-[#666] text-[14px] mt-1">{catDesc}</p>
+                )}
+              </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <MenuCard item={menu.naanPocket} lang={lang} />
-          </div>
-        </section>
-
-        {/* ── 3. HAUSSPEZIALITÄTEN / HOUSE FAVORITES (LUNCH) ── */}
-        <section id="hausspezialitaeten" className="space-y-6">
-          <div>
-            <span className="text-[#d85c27] font-black text-[12px] uppercase tracking-[0.2em]">Signature Bowls</span>
-            <h2 className="text-[30px] md:text-[38px] font-black text-[#1e382f] leading-tight">
-              {isDe ? 'Hausgerichte (Mittagessen)' : 'House Favorites (Lunch)'}
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {menu.lunchBowls.map((item) => (
-              <MenuCard key={item.id} item={item} lang={lang} />
-            ))}
-          </div>
-        </section>
-
-        {/* ── 4. AUF BESTELLUNG GEFERTIGT ── */}
-        <section id="auf-bestellung" className="space-y-6">
-          <div>
-            <span className="text-[#d85c27] font-black text-[12px] uppercase tracking-[0.2em]">Fresh Made To Order</span>
-            <h2 className="text-[30px] md:text-[38px] font-black text-[#1e382f] leading-tight">
-              {isDe ? 'Auf Bestellung gefertigt' : 'Made to Order'}
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {menu.madeToOrder.map((item) => (
-              <MenuCard key={item.id} item={item} lang={lang} />
-            ))}
-          </div>
-        </section>
-
-        {/* ── 5. NACHTISCH ── */}
-        <section id="nachtisch" className="space-y-6">
-          <div>
-            <span className="text-[#d85c27] font-black text-[12px] uppercase tracking-[0.2em]">Sweet Treats</span>
-            <h2 className="text-[30px] md:text-[38px] font-black text-[#1e382f] leading-tight">
-              {isDe ? 'Nachtisch' : 'Desserts'}
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {menu.desserts.map((item) => (
-              <MenuCard key={item.id} item={item} lang={lang} />
-            ))}
-          </div>
-        </section>
-
-        {/* ── 6. MAATI COLD SPECIALS ── */}
-        <section id="cold-drinks" className="space-y-6">
-          <div>
-            <span className="text-[#d85c27] font-black text-[12px] uppercase tracking-[0.2em]">Refreshing</span>
-            <h2 className="text-[30px] md:text-[38px] font-black text-[#1e382f] leading-tight">
-              {isDe ? 'Maati Kalte Spezialitäten' : 'Maati Cold Specials'}
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {menu.coldDrinks.map((drink) => (
-              <MenuCard key={drink.id} item={drink} lang={lang} />
-            ))}
-          </div>
-        </section>
-
-        {/* ── 7. MAATI HOT SPECIALS ── */}
-        <section id="hot-drinks" className="space-y-6">
-          <div>
-            <span className="text-[#d85c27] font-black text-[12px] uppercase tracking-[0.2em]">Warm & Cozy</span>
-            <h2 className="text-[30px] md:text-[38px] font-black text-[#1e382f] leading-tight">
-              {isDe ? 'Maati Heiße Spezialitäten' : 'Maati Hot Specials'}
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {menu.hotDrinks.map((drink) => (
-              <MenuCard key={drink.id} item={drink} lang={lang} />
-            ))}
-          </div>
-        </section>
-
-        {/* ── 8. ALKOHOLISCHE GETRÄNKE ── */}
-        <section id="alcoholic-beverages" className="space-y-6">
-          <div>
-            <span className="text-[#d85c27] font-black text-[12px] uppercase tracking-[0.2em]">Craft Beers</span>
-            <h2 className="text-[30px] md:text-[38px] font-black text-[#1e382f] leading-tight">
-              {isDe ? 'Alkoholische Getränke' : 'Alcoholic Beverages'}
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {menu.alcoholic.map((item) => (
-              <MenuCard key={item.id} item={item} lang={lang} />
-            ))}
-          </div>
-        </section>
-
-        {/* ── 9. COCKTAILS ── */}
-        <section id="cocktails" className="space-y-6">
-          <div>
-            <span className="text-[#d85c27] font-black text-[12px] uppercase tracking-[0.2em]">Mixology</span>
-            <h2 className="text-[30px] md:text-[38px] font-black text-[#1e382f] leading-tight">
-              Cocktails
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {menu.cocktails.map((item) => (
-              <MenuCard key={item.id} item={item} lang={lang} />
-            ))}
-          </div>
-        </section>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {cat.items.map((item) => (
+                  <MenuCard key={item._id || item.id} item={item} lang={lang} />
+                ))}
+              </div>
+            </section>
+          );
+        })}
 
         {/* ── ALLERGENS BANNER ── */}
         <div className="bg-[#ebdcd0]/80 border border-[#ebdcd0] rounded-[24px] p-6 text-center text-[14px] text-[#1e382f] font-bold flex items-center justify-center gap-3 shadow-sm hover:shadow-md transition-all duration-300">

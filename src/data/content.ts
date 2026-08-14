@@ -30,54 +30,54 @@ export interface DrinkItem {
 
 export const LUNCH_ITEMS: LunchItem[] = [
   {
-    id: 'delhi',
-    title: "Delhi ‘Butter Chicken’ Bowl",
-    desc: 'Roasted chicken, bulgur, kachumber salad, grilled paprika peppers, crushed papad, pickled onions, in tomato cream sauce.',
-    price: '€10.9',
-    badge: 'NON-VEGETARIAN',
-    img: '/assets/Delhi-BteN_mdh.png'
-  },
-  {
-    id: 'bengal',
-    title: "Bengal ‘Mustard Chicken’ Bowl",
-    desc: 'Grilled chicken, steamed white rice, cabbage and green slaw, grilled beetroot and carrots, spiced green mango, in coconut mustard sauce.',
-    price: '€10.9',
-    badge: 'NON-VEGETARIAN',
-    img: '/assets/Bengal-birKfnj1.png'
-  },
-  {
     id: 'chettinad',
-    title: "Chettinad ‘Spicy Chicken’ Bowl",
-    desc: 'Grilled spicy chicken, red rice, green salad, yogurt, chopped tomatoes, corn, chopped onion & green chilies, in hot chettinad curry sauce.',
-    price: '€11.9',
+    title: "Chettinad 'Spicy Chicken' Bowl",
+    desc: 'Grilled chicken, red rice, mixed salad, cucumber salad, grilled bell pepper and corn, served with a spicy Chettinad curry sauce.',
+    price: '€12.5',
     badge: 'NON-VEGETARIAN',
     isSpicy: true,
     img: '/assets/Chettinad-D21PABvG.png'
   },
   {
-    id: 'goa',
-    title: "Goa ‘Tamarind Prawn’ Bowl",
-    desc: "Butter-tossed prawns, red rice, kohlrabi salad, mixed greens, cherry tomatoes, roasted coconut flakes, spiced green mango in coconut tamarind sauce.",
-    price: '€12.9',
+    id: 'delhi',
+    title: "Delhi 'Butter Chicken' Bowl",
+    desc: 'Grilled chicken, bulgur, cucumber salad, grilled bell pepper and pickled onions, served with a creamy tomato curry sauce.',
+    price: '€11.5',
     badge: 'NON-VEGETARIAN',
-    img: '/assets/Goa-DLdcEMCP.png'
+    img: '/assets/Delhi-BteN_mdh.png'
   },
   {
-    id: 'kashmir',
-    title: "Kashmir ‘Fennel Paneer’ Bowl",
-    desc: "Grilled marinated paneer or tofu, pearl barley, green salad with roasted vegetables and sprouts, fried onions, in fennel ginger yogurt sauce (yakhni).",
-    price: '€9.9',
-    badge: 'VEGETARIAN',
-    img: '/assets/Kashmir-Z2M0N-Rm.png'
-  },
-  {
-    id: 'rajasthan',
-    title: "Rajasthan ‘Crunchy Chaat’ Bowl",
-    desc: "Crispy spiced chickpeas, puffed rice, kachumber salad, mint-coriander-tamarind chutney, pomegranate seeds, lemon squeeze, chaat masala.",
-    price: '€9.9',
+    id: 'bihar',
+    title: "Bihar 'Lentil Potato' Bowl",
+    desc: 'White rice, yellow lentil dal, sautéed potatoes, spiced black chickpeas, cucumber salad and marinated mango.',
+    price: '€10.5',
     badge: 'VEGAN',
     isVeganLeaf: true,
-    img: '/assets/Rajasthan-DL_KoxiT.png'
+    img: '/assets/bihar-lentil-potato.png'
+  },
+  {
+    id: 'punjab-naan',
+    title: "Punjab Naan Pockets",
+    desc: 'Warm naan pockets stuffed with grilled chicken or paneer, fresh salad, and delicious regional sauces.',
+    price: '€9.5',
+    badge: 'NON-VEGETARIAN',
+    img: '/assets/punjab-naan-pocket.jpg'
+  },
+  {
+    id: 'croissant-green',
+    title: "Croissant with Green Chutney and Cheese",
+    desc: 'Flaky, buttery croissant toasted with mixed Cheddar and green coriander chutney.',
+    price: '€4.0',
+    badge: 'VEGETARIAN',
+    img: '/assets/croissant-green-chutney.jpg'
+  },
+  {
+    id: 'empty-placeholder',
+    title: "New Creation",
+    desc: "We are crafting something fresh and exciting here. Check back soon!",
+    price: "",
+    badge: 'VEGETARIAN',
+    img: ''
   }
 ];
 
@@ -156,27 +156,51 @@ export const HOT_DRINKS: DrinkItem[] = [
   }
 ];
 
-export const MAATI_WAY_STEPS = [
+export interface MaatiWayStep {
+  id?: string;
+  step: number;
+  title: string;
+  titleDe?: string;
+  items: string[];
+  itemsDe?: string[];
+}
+
+export const MAATI_WAY_STEPS: MaatiWayStep[] = [
   {
+    id: 'step-1',
     step: 1,
     title: 'Choose your base (Upto 1)',
-    items: ['White Rice', 'Red Rice', 'Bulgar Wheat', 'Pearl Barley', 'Salad(Mix)']
+    titleDe: 'Wählen Sie Ihre Basis (Bis zu 1)',
+    items: ['White Rice', 'Red Rice', 'Bulgar Wheat', 'Pearl Barley', 'Salad(Mix)'],
+    itemsDe: ['Weißer Reis', 'Roter Reis', 'Bulgur Weizen', 'Perlgraupen', 'Salatmischung']
   },
   {
+    id: 'step-2',
     step: 2,
     title: 'Choose your Protein',
+    titleDe: 'Wählen Sie Ihr Protein',
     items: [
       'Poached Chicken (+€2)',
-      'Grilled Chicken (+€2) 🌶️',
+      'Grilled Chicken (+€2) (Spicy)',
       'Grilled Spicy chicken (+€2.5)',
       'Butter Garlic Prawns (+€3)',
       'Grilled Paneer (+€1.5)',
       'Grilled Tofu (+€1)'
+    ],
+    itemsDe: [
+      'Pochiertes Hähnchen (+€2)',
+      'Gegrilltes Hähnchen (+€2) (Scharf)',
+      'Scharfes gegrilltes Hähnchen (+€2.5)',
+      'Butter-Knoblauch-Garnelen (+€3)',
+      'Gegrillter Paneer (+€1.5)',
+      'Gegrillter Tofu (+€1)'
     ]
   },
   {
+    id: 'step-3',
     step: 3,
     title: 'Choose your sides (Upto 2)',
+    titleDe: 'Wählen Sie Ihre Beilagen (Bis zu 2)',
     items: [
       'Dark Green Salad leaves',
       'Mixed salad (Kachumbar)',
@@ -185,11 +209,22 @@ export const MAATI_WAY_STEPS = [
       'Grilled Beetroot',
       'Sprout Salad',
       'Baby Carrots'
+    ],
+    itemsDe: [
+      'Dunkelgrüne Salatblätter',
+      'Gemischter Salat (Kachumbar)',
+      'Gegrillte Paprika',
+      'Kirschtomaten',
+      'Gegrillte Rote Bete',
+      'Sprossensalat',
+      'Baby-Karotten'
     ]
   },
   {
+    id: 'step-4',
     step: 4,
     title: 'Choose your Sauce (Pick 1)',
+    titleDe: 'Wählen Sie Ihre Sauce (Wählen Sie 1)',
     items: [
       'Tomato Cream Sauce',
       'Coconut Mustard Sauce',
@@ -197,19 +232,38 @@ export const MAATI_WAY_STEPS = [
       'Coconut Tamarind Sauce',
       'Chettinad Curry Sauce',
       'Coriander Mint Lemon Chutney'
+    ],
+    itemsDe: [
+      'Tomaten-Sahne-Sauce',
+      'Kokos-Senf-Sauce',
+      'Fenchel-Ingwer-Joghurt-Sauce',
+      'Kokos-Tamarinden-Sauce',
+      'Chettinad-Currysauce',
+      'Koriander-Minze-Zitronen-Chutney'
     ]
   },
   {
+    id: 'step-5',
     step: 5,
     title: 'Finishers (Upto 2)',
+    titleDe: 'Toppings & Finishers (Bis zu 2)',
     items: [
       'Crushed Papads',
       'Spicy Crunchy Sev',
       'Diced Raw Mangoes',
-      'Coriander chutney 🌶️',
+      'Coriander chutney (Spicy)',
       'Tamarind chutney',
-      'Chopped Onions & Green Chillies 🌶️🌶️',
+      'Chopped Onions & Green Chillies (Extra Spicy)',
       'Roasted Cashews (+€2)'
+    ],
+    itemsDe: [
+      'Geknackte Papads',
+      'Knuspriges Sev',
+      'Gewürfelte Mangostücke',
+      'Koriander-Chutney (Scharf)',
+      'Tamarinden-Chutney',
+      'Zwiebeln & Grüne Chilis (Extra Scharf)',
+      'Geröstete Cashews (+€2)'
     ]
   }
 ];
@@ -230,7 +284,7 @@ export const DICTIONARY = {
     hero_fresh: 'FRESH INGREDIENTS',
     hero_spices: 'AUTHENTIC SPICES',
     hero_ready: 'READY IN MINUTES',
-    lunch_title: 'House Favorites (Lunch)',
+    lunch_title: 'Verwöhnen Sie Ihren Gaumen',
     lunch_desc: 'Discover our most-loved signature combinations, crafted for perfect balance.',
     maati_way_label: 'CUSTOMIZED TO YOUR TASTE',
     maati_way_title: 'The MAATI Way',
@@ -243,7 +297,7 @@ export const DICTIONARY = {
     experience_desc: 'A warm, modern space designed for quick breakfast & lunches and cozy events alike.',
     experience_img_alt: 'Restaurant Interior — Warm Dining Experience',
     ready_label: 'READY TO EAT?',
-    ready_title: 'Visit us at Zimmestr. 56, 10117 Berlin - where every bite tells a story.😊',
+    ready_title: 'Visit us at Zimmestr. 56, 10117 Berlin - where every bite tells a story.',
     ready_btn_menu: 'View Menu',
     ready_btn_res: 'Reservations',
     footer_tagline: 'Rooted in Indian tradition. Reimagined for the modern table.',
@@ -274,7 +328,7 @@ export const DICTIONARY = {
     hero_fresh: 'FRESH INGREDIENTS',
     hero_spices: 'AUTHENTIC SPICES',
     hero_ready: 'READY IN MINUTES',
-    lunch_title: 'House Favorites (Lunch)',
+    lunch_title: 'Treat Your Tastebuds',
     lunch_desc: 'Discover our most-loved signature combinations, crafted for perfect balance.',
     maati_way_label: 'CUSTOMIZED TO YOUR TASTE',
     maati_way_title: 'The MAATI Way',
@@ -287,7 +341,7 @@ export const DICTIONARY = {
     experience_desc: 'A warm, modern space designed for quick breakfast & lunches and cozy events alike.',
     experience_img_alt: 'Restaurant Interior — Warm Dining Experience',
     ready_label: 'READY TO EAT?',
-    ready_title: 'Visit us at Zimmestr. 56, 10117 Berlin - where every bite tells a story.😊',
+    ready_title: 'Visit us at Zimmestr. 56, 10117 Berlin - where every bite tells a story.',
     ready_btn_menu: 'View Menu',
     ready_btn_res: 'Reservations',
     footer_tagline: 'Rooted in Indian tradition. Reimagined for the modern table.',

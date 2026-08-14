@@ -1,7 +1,15 @@
 import { useState, useEffect } from 'react';
 import { sanityClient, isSanityConfigured, urlFor } from './sanity';
 import {
-  MenuItem,
+  getMenuCategoriesQuery,
+  getMenuItemsQuery,
+  getFeaturedMenuItemsQuery,
+  getMenuByCategoryQuery,
+  getHomepageQuery,
+  getSiteSettingsQuery,
+} from '../sanity/queries';
+import {
+  MenuItem as LocalMenuItem,
   BREAKFAST_ITEMS,
   NAAN_POCKET_ITEM,
   HAUSSPEZIALITAETEN_ITEMS,
@@ -9,151 +17,699 @@ import {
   NACHTISCH_ITEMS,
   COLD_DRINKS,
   HOT_DRINKS,
+  BOTTLED_DRINKS,
   ALKOHOLISCHE_GETRAENKE,
-  COCKTAILS
+  COCKTAILS,
 } from '../data/june2026MenuData';
 
-export interface FullMenuState {
-  breakfast: MenuItem[];
-  naanPocket: MenuItem;
-  lunchBowls: MenuItem[];
-  madeToOrder: MenuItem[];
-  desserts: MenuItem[];
-  coldDrinks: MenuItem[];
-  hotDrinks: MenuItem[];
-  alcoholic: MenuItem[];
-  cocktails: MenuItem[];
-  isLoading: boolean;
-  isFromSanity: boolean;
+export type FoodType = 'vegetarian' | 'nonVegetarian' | 'vegan';
+
+export interface SanityMenuItem {
+  _id: string;
+  id?: string;
+  titleEn: string;
+  titleDe: string;
+  slug?: { current: string } | string;
+  descEn?: string;
+  descDe?: string;
+  price: string;
+  priceEn?: string;
+  priceDe?: string;
+  foodType: FoodType;
+  image?: any;
+  img?: string;
+  featured?: boolean;
+  featuredOrder?: number;
+  available?: boolean;
+  popular?: boolean;
+  isSpicy?: boolean;
+  isVeganLeaf?: boolean;
+  badgeEn?: string;
+  badgeDe?: string;
+  displayOrder?: number;
+  category?: {
+    _id: string;
+    name: string;
+    nameDe?: string;
+    slug?: { current: string } | string;
+  };
 }
 
-const DEFAULT_MENU_STATE: FullMenuState = {
-  breakfast: BREAKFAST_ITEMS,
-  naanPocket: NAAN_POCKET_ITEM,
-  lunchBowls: HAUSSPEZIALITAETEN_ITEMS,
-  madeToOrder: AUF_BESTELLUNG_ITEMS,
-  desserts: NACHTISCH_ITEMS,
-  coldDrinks: COLD_DRINKS,
-  hotDrinks: HOT_DRINKS,
-  alcoholic: ALKOHOLISCHE_GETRAENKE,
-  cocktails: COCKTAILS,
-  isLoading: false,
-  isFromSanity: false
-};
+export interface SanityCategoryWithItems {
+  _id: string;
+  name: string;
+  nameDe?: string;
+  slug?: { current: string } | string;
+  description?: string;
+  descriptionDe?: string;
+  displayOrder?: number;
+  items: SanityMenuItem[];
+}
 
-/**
- * GROQ query to fetch all menu items from Sanity
- */
-const MENU_GROQ_QUERY = `*[_type == "menuItem"] | order(order asc, titleEn asc) {
-  _id,
-  id,
-  titleDe,
-  titleEn,
-  descDe,
-  descEn,
-  price,
-  badgeDe,
-  badgeEn,
-  isSpicy,
-  isVeganLeaf,
-  category,
-  "img": image.asset->url
-}`;
+export interface MaatiWayStep {
+  id?: string;
+  step: number;
+  title: string;
+  titleDe?: string;
+  items: string[];
+  itemsDe?: string[];
+}
 
-/**
- * Custom React Hook to fetch live menu items from Sanity CMS with fallback
- */
+export interface HomepageContent {
+  // 1. Hero
+  heroBadgeEn?: string;
+  heroBadgeDe?: string;
+  heroTitle1En?: string;
+  heroTitle1De?: string;
+  heroTitle2En?: string;
+  heroTitle2De?: string;
+  heroDescEn?: string;
+  heroDescDe?: string;
+  heroBtnMenuEn?: string;
+  heroBtnMenuDe?: string;
+  heroBtnResEn?: string;
+  heroBtnResDe?: string;
+  heroPill1En?: string;
+  heroPill1De?: string;
+  heroPill2En?: string;
+  heroPill2De?: string;
+  heroPill3En?: string;
+  heroPill3De?: string;
+  heroImage?: string;
+
+  // 2. House Favorites / Lunch
+  lunchTitleEn?: string;
+  lunchTitleDe?: string;
+  lunchDescEn?: string;
+  lunchDescDe?: string;
+
+  // 3. The MAATI Way
+  maatiWayBadgeEn?: string;
+  maatiWayBadgeDe?: string;
+  maatiWayTitleEn?: string;
+  maatiWayTitleDe?: string;
+  maatiWaySteps?: MaatiWayStep[];
+
+  // 4. Experience
+  experienceEyebrowEn?: string;
+  experienceEyebrowDe?: string;
+  experienceTitleEn?: string;
+  experienceTitleDe?: string;
+  experienceDescEn?: string;
+  experienceDescDe?: string;
+  experienceImg1?: string;
+  experienceImg2?: string;
+
+  // 5. Catering
+  cateringBadgeEn?: string;
+  cateringBadgeDe?: string;
+  cateringTitleEn?: string;
+  cateringTitleDe?: string;
+  cateringDescEn?: string;
+  cateringDescDe?: string;
+  cateringP2En?: string;
+  cateringP2De?: string;
+  cateringBullet1En?: string;
+  cateringBullet1De?: string;
+  cateringBullet2En?: string;
+  cateringBullet2De?: string;
+  cateringBullet3En?: string;
+  cateringBullet3De?: string;
+  cateringBullet4En?: string;
+  cateringBullet4De?: string;
+  cateringBtnEn?: string;
+  cateringBtnDe?: string;
+  cateringImage?: string;
+
+  // 6. Footer CTA
+  ctaTitleEn?: string;
+  ctaTitleDe?: string;
+  ctaDescEn?: string;
+  ctaDescDe?: string;
+  ctaBtnMenuEn?: string;
+  ctaBtnMenuDe?: string;
+  ctaBtnLocationsEn?: string;
+  ctaBtnLocationsDe?: string;
+}
+
+export interface SiteSettings {
+  restaurantName?: string;
+  taglineEn?: string;
+  taglineDe?: string;
+  logo?: any;
+  phone?: string;
+  email?: string;
+  address?: string;
+  openingHoursEn?: string;
+  openingHoursDe?: string;
+  instagram?: string;
+  facebook?: string;
+  googleMapsUrl?: string;
+}
+
+// ── Helper to convert local item into SanityMenuItem format ──
+function mapLocalToSanityItem(item: LocalMenuItem, defaultFoodType?: FoodType): SanityMenuItem {
+  let foodType: FoodType = defaultFoodType || 'vegetarian';
+  if (item.badgeDe === 'NON-VEGETARIAN' || item.badgeEn === 'NON-VEGETARIAN') {
+    foodType = 'nonVegetarian';
+  } else if (item.badgeDe === 'VEGAN' || item.badgeEn === 'VEGAN' || item.isVeganLeaf) {
+    foodType = 'vegan';
+  } else if (item.badgeDe === 'VEGETARISCH' || item.badgeEn === 'VEGETARIAN') {
+    foodType = 'vegetarian';
+  }
+
+  return {
+    _id: item.id,
+    id: item.id,
+    titleEn: item.titleEn,
+    titleDe: item.titleDe,
+    descEn: item.descEn,
+    descDe: item.descDe,
+    price: item.price,
+    priceEn: item.priceEn,
+    priceDe: item.priceDe,
+    foodType,
+    img: item.img,
+    isSpicy: item.isSpicy,
+    isVeganLeaf: foodType === 'vegan',
+    badgeEn: item.badgeEn,
+    badgeDe: item.badgeDe,
+    available: true,
+  };
+}
+
+// ── Fallback Category Data Generator ──
+function getLocalFallbackCategories(): SanityCategoryWithItems[] {
+  if (typeof window !== 'undefined') {
+    const saved = localStorage.getItem('maati_admin_menu');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch {}
+    }
+  }
+
+  return [
+    {
+      _id: 'cat-breakfast',
+      name: 'Morning Bites',
+      nameDe: 'Frühstück & Snacks',
+      displayOrder: 1,
+      items: BREAKFAST_ITEMS.map((item, idx) => ({
+        ...mapLocalToSanityItem(item, 'vegetarian'),
+        featured: idx === 0,
+        featuredOrder: idx === 0 ? 5 : undefined,
+      })),
+    },
+    {
+      _id: 'cat-naan-pockets',
+      name: 'Punjab Naan Pockets',
+      nameDe: 'Punjab Naan Taschen',
+      displayOrder: 2,
+      items: [{
+        ...mapLocalToSanityItem(NAAN_POCKET_ITEM, 'nonVegetarian'),
+        featured: true,
+        featuredOrder: 4,
+      }],
+    },
+    {
+      _id: 'cat-lunch-bowls',
+      name: 'Signature Bowls',
+      nameDe: 'Signatur Schalen',
+      displayOrder: 3,
+      items: HAUSSPEZIALITAETEN_ITEMS.map((item, idx) => ({
+        ...mapLocalToSanityItem(item),
+        featured: idx === 0 || idx === 1 || idx === 3,
+        featuredOrder: idx === 0 ? 1 : idx === 1 ? 2 : idx === 3 ? 3 : undefined,
+      })),
+    },
+    {
+      _id: 'cat-made-to-order',
+      name: 'Maati Specialties',
+      nameDe: 'Maati Spezialitäten',
+      displayOrder: 4,
+      items: AUF_BESTELLUNG_ITEMS.map((item) => mapLocalToSanityItem(item)),
+    },
+    {
+      _id: 'cat-desserts',
+      name: 'Desserts',
+      nameDe: 'Nachtisch',
+      displayOrder: 5,
+      items: NACHTISCH_ITEMS.map((item) => mapLocalToSanityItem(item, 'vegetarian')),
+    },
+    {
+      _id: 'cat-cold-drinks',
+      name: 'Homemade Drinks',
+      nameDe: 'Hausgemachte Getränke',
+      displayOrder: 6,
+      items: COLD_DRINKS.map((item) => mapLocalToSanityItem(item)),
+    },
+    {
+      _id: 'cat-hot-drinks',
+      name: 'Hot Drinks',
+      nameDe: 'Heisse Getränke',
+      displayOrder: 7,
+      items: HOT_DRINKS.map((item) => mapLocalToSanityItem(item, 'vegetarian')),
+    },
+    {
+      _id: 'cat-bottled-drinks',
+      name: 'Bottled Drinks',
+      nameDe: 'Flaschen Getränke',
+      displayOrder: 8,
+      items: BOTTLED_DRINKS.map((item) => mapLocalToSanityItem(item, 'vegan')),
+    },
+    {
+      _id: 'cat-alcoholic',
+      name: 'Alcoholic Beverages',
+      nameDe: 'Alkoholische Getränke',
+      displayOrder: 9,
+      items: ALKOHOLISCHE_GETRAENKE.map((item) => mapLocalToSanityItem(item, 'vegan')),
+    },
+    {
+      _id: 'cat-cocktails',
+      name: 'Cocktails',
+      nameDe: 'Cocktails',
+      displayOrder: 10,
+      items: COCKTAILS.map((item) => mapLocalToSanityItem(item, 'vegan')),
+    },
+  ];
+}
+
+// ── Fallback Featured Items (for Homepage) ──
+function getLocalFallbackFeatured(): SanityMenuItem[] {
+  if (typeof window !== 'undefined') {
+    const saved = localStorage.getItem('maati_admin_menu');
+    if (saved) {
+      try {
+        const parsed: SanityCategoryWithItems[] = JSON.parse(saved);
+        const featured = parsed
+          .flatMap((c) => c.items.filter((it) => it.featured && it.available !== false))
+          .sort((a, b) => (a.featuredOrder || 999) - (b.featuredOrder || 999));
+        if (featured.length > 0) return featured;
+      } catch {}
+    }
+  }
+
+  return [
+    mapLocalToSanityItem(HAUSSPEZIALITAETEN_ITEMS[0]), // Chettinad
+    mapLocalToSanityItem(HAUSSPEZIALITAETEN_ITEMS[1]), // Delhi
+    mapLocalToSanityItem(HAUSSPEZIALITAETEN_ITEMS[3]), // Bihar
+    mapLocalToSanityItem(NAAN_POCKET_ITEM),           // Punjab Naan
+    mapLocalToSanityItem(BREAKFAST_ITEMS[0]),         // Croissant
+  ];
+}
+
+// ─────────────────────────────────────────────
+// React Hook: useSanityMenu
+// ─────────────────────────────────────────────
 export function useSanityMenu() {
-  const [menu, setMenu] = useState<FullMenuState>(DEFAULT_MENU_STATE);
+  const [categories, setCategories] = useState<SanityCategoryWithItems[]>(getLocalFallbackCategories);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [isFromSanity, setIsFromSanity] = useState<boolean>(false);
 
   useEffect(() => {
-    if (!isSanityConfigured) {
-      return;
-    }
-
     let isMounted = true;
 
-    async function fetchMenuFromSanity() {
+    const handleLocalSync = () => {
+      if (isMounted) {
+        setCategories(getLocalFallbackCategories());
+      }
+    };
+
+    window.addEventListener('maati_menu_updated', handleLocalSync);
+    window.addEventListener('storage', handleLocalSync);
+
+    async function fetchMenu() {
+      if (!isSanityConfigured) {
+        setLoading(false);
+        return;
+      }
+
       try {
-        const items = await sanityClient.fetch<any[]>(MENU_GROQ_QUERY);
-        if (!items || !Array.isArray(items) || items.length === 0) return;
-
-        const breakfast: MenuItem[] = [];
-        let naanPocket: MenuItem = NAAN_POCKET_ITEM;
-        const lunchBowls: MenuItem[] = [];
-        const madeToOrder: MenuItem[] = [];
-        const desserts: MenuItem[] = [];
-        const coldDrinks: MenuItem[] = [];
-        const hotDrinks: MenuItem[] = [];
-        const alcoholic: MenuItem[] = [];
-        const cocktails: MenuItem[] = [];
-
-        items.forEach((item) => {
-          const menuItem: MenuItem = {
-            id: item.id || item._id,
-            titleDe: item.titleDe || item.titleEn,
-            titleEn: item.titleEn || item.titleDe,
-            descDe: item.descDe,
-            descEn: item.descEn,
-            price: item.price,
-            badgeDe: item.badgeDe,
-            badgeEn: item.badgeEn,
-            isSpicy: item.isSpicy,
-            isVeganLeaf: item.isVeganLeaf,
-            img: item.img || (item.image ? urlFor(item.image).url() : undefined)
-          };
-
-          const cat = (item.category || '').toLowerCase();
-
-          if (cat.includes('breakfast') || cat.includes('frühstück')) {
-            breakfast.push(menuItem);
-          } else if (cat.includes('naan') || cat.includes('pocket')) {
-            naanPocket = menuItem;
-          } else if (cat.includes('lunch') || cat.includes('bowl') || cat.includes('haus')) {
-            lunchBowls.push(menuItem);
-          } else if (cat.includes('order') || cat.includes('bestellung')) {
-            madeToOrder.push(menuItem);
-          } else if (cat.includes('dessert') || cat.includes('nachtisch')) {
-            desserts.push(menuItem);
-          } else if (cat.includes('cold') || cat.includes('kalt')) {
-            coldDrinks.push(menuItem);
-          } else if (cat.includes('hot') || cat.includes('heiß') || cat.includes('tea') || cat.includes('chai')) {
-            hotDrinks.push(menuItem);
-          } else if (cat.includes('beer') || cat.includes('alcohol') || cat.includes('bier')) {
-            alcoholic.push(menuItem);
-          } else if (cat.includes('cocktail')) {
-            cocktails.push(menuItem);
-          } else {
-            lunchBowls.push(menuItem);
-          }
-        });
-
-        if (isMounted) {
-          setMenu({
-            breakfast: breakfast.length > 0 ? breakfast : BREAKFAST_ITEMS,
-            naanPocket: naanPocket || NAAN_POCKET_ITEM,
-            lunchBowls: lunchBowls.length > 0 ? lunchBowls : HAUSSPEZIALITAETEN_ITEMS,
-            madeToOrder: madeToOrder.length > 0 ? madeToOrder : AUF_BESTELLUNG_ITEMS,
-            desserts: desserts.length > 0 ? desserts : NACHTISCH_ITEMS,
-            coldDrinks: coldDrinks.length > 0 ? coldDrinks : COLD_DRINKS,
-            hotDrinks: hotDrinks.length > 0 ? hotDrinks : HOT_DRINKS,
-            alcoholic: alcoholic.length > 0 ? alcoholic : ALKOHOLISCHE_GETRAENKE,
-            cocktails: cocktails.length > 0 ? cocktails : COCKTAILS,
-            isLoading: false,
-            isFromSanity: true
-          });
+        const data = await sanityClient.fetch<SanityCategoryWithItems[]>(getMenuByCategoryQuery);
+        if (isMounted && data && Array.isArray(data) && data.length > 0) {
+          const normalized = data.map((cat) => ({
+            ...cat,
+            items: (cat.items || []).map((item) => ({
+              ...item,
+              id: item.slug && typeof item.slug === 'object' ? item.slug.current : item.id || item._id,
+              img: item.image ? ((urlFor(item.image) as any)?.url?.() || item.img) : item.img,
+            })),
+          }));
+          setCategories(normalized);
+          setIsFromSanity(true);
         }
       } catch (err) {
-        console.warn('Sanity fetch fallback to local menu items:', err);
+        console.warn('Sanity menu fetch error, using local fallback:', err);
+      } finally {
+        if (isMounted) setLoading(false);
       }
     }
 
-    fetchMenuFromSanity();
+    fetchMenu();
+    return () => {
+      isMounted = false;
+      window.removeEventListener('maati_menu_updated', handleLocalSync);
+      window.removeEventListener('storage', handleLocalSync);
+    };
+  }, []);
 
+  return { categories, loading, isFromSanity };
+}
+
+// ─────────────────────────────────────────────
+// React Hook: useFeaturedMenu
+// ─────────────────────────────────────────────
+export function useFeaturedMenu() {
+  const [items, setItems] = useState<SanityMenuItem[]>(getLocalFallbackFeatured);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [isFromSanity, setIsFromSanity] = useState<boolean>(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const handleLocalSync = () => {
+      if (isMounted) {
+        setItems(getLocalFallbackFeatured());
+      }
+    };
+
+    window.addEventListener('maati_menu_updated', handleLocalSync);
+    window.addEventListener('storage', handleLocalSync);
+
+    async function fetchFeatured() {
+      if (!isSanityConfigured) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const data = await sanityClient.fetch<SanityMenuItem[]>(getFeaturedMenuItemsQuery);
+        if (isMounted && data && Array.isArray(data) && data.length > 0) {
+          const normalized = data.map((item) => ({
+            ...item,
+            id: item.slug && typeof item.slug === 'object' ? item.slug.current : item.id || item._id,
+            img: item.image ? ((urlFor(item.image) as any)?.url?.() || item.img) : item.img,
+          }));
+          setItems(normalized);
+          setIsFromSanity(true);
+        }
+      } catch (err) {
+        console.warn('Sanity featured items fetch error, using local fallback:', err);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    }
+
+    fetchFeatured();
+    return () => {
+      isMounted = false;
+      window.removeEventListener('maati_menu_updated', handleLocalSync);
+      window.removeEventListener('storage', handleLocalSync);
+    };
+  }, []);
+
+  return { items, loading, isFromSanity };
+}
+
+// ─────────────────────────────────────────────
+// React Hook: useHomepageContent
+// ─────────────────────────────────────────────
+export function useHomepageContent() {
+  const [content, setContent] = useState<HomepageContent>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('maati_admin_homepage');
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch {}
+      }
+    }
+    return {
+      // 1. Hero
+      heroBadgeEn: 'FAST CASUAL • INDIAN SOUL',
+      heroBadgeDe: 'FAST CASUAL • INDIAN SOUL',
+      heroTitle1En: 'Craft Your Own',
+      heroTitle1De: 'Kreieren Sie Ihre eigene',
+      heroTitle2En: 'Flavor Journey',
+      heroTitle2De: 'Geschmacksreise',
+      heroDescEn: 'Fresh, vibrant Indian ingredients in customizable Bowls, Salads, and Wraps. Authentic spices, Modern style.',
+      heroDescDe: 'Frische, lebendige indische Zutaten in anpassbaren Bowls, Salaten und Wraps. Authentische Gewürze, moderner Stil.',
+      heroBtnMenuEn: 'View Menu',
+      heroBtnMenuDe: 'Speisekarte',
+      heroBtnResEn: 'Reservations',
+      heroBtnResDe: 'Reservierungen',
+      heroPill1En: 'FRESH INGREDIENTS',
+      heroPill1De: 'FRISCHE ZUTATEN',
+      heroPill2En: 'AUTHENTIC SPICES',
+      heroPill2De: 'AUTHENTISCHE GEWÜRZE',
+      heroPill3En: 'READY IN MINUTES',
+      heroPill3De: 'SCHNELL SERVIERT',
+      heroImage: '/assets/hero-flatlay.jpg',
+
+      // 2. House Favorites
+      lunchTitleEn: 'Treat Your Tastebuds',
+      lunchTitleDe: 'Verwöhnen Sie Ihren Gaumen',
+      lunchDescEn: 'Discover our most-loved signature combinations, crafted for perfect balance.',
+      lunchDescDe: 'Entdecken Sie unsere beliebtesten Signatur-Kombinationen für perfekte Ausgewogenheit.',
+
+      // 3. The MAATI Way
+      maatiWayBadgeEn: 'CUSTOMIZED TO YOUR TASTE',
+      maatiWayBadgeDe: 'INDIVIDUELL NACH IHREM GESCHMACK',
+      maatiWayTitleEn: 'The MAATI Way',
+      maatiWayTitleDe: 'Der MAATI Weg',
+      maatiWaySteps: [
+        {
+          id: 'step-1',
+          step: 1,
+          title: 'Choose your base (Upto 1)',
+          titleDe: 'Wählen Sie Ihre Basis (Bis zu 1)',
+          items: ['White Rice', 'Red Rice', 'Bulgar Wheat', 'Pearl Barley', 'Salad(Mix)'],
+          itemsDe: ['Weißer Reis', 'Roter Reis', 'Bulgur Weizen', 'Perlgraupen', 'Salatmischung']
+        },
+        {
+          id: 'step-2',
+          step: 2,
+          title: 'Choose your Protein',
+          titleDe: 'Wählen Sie Ihr Protein',
+          items: [
+            'Poached Chicken (+€2)',
+            'Grilled Chicken (+€2) (Spicy)',
+            'Grilled Spicy chicken (+€2.5)',
+            'Butter Garlic Prawns (+€3)',
+            'Grilled Paneer (+€1.5)',
+            'Grilled Tofu (+€1)'
+          ],
+          itemsDe: [
+            'Pochiertes Hähnchen (+€2)',
+            'Gegrilltes Hähnchen (+€2) (Scharf)',
+            'Scharfes gegrilltes Hähnchen (+€2.5)',
+            'Butter-Knoblauch-Garnelen (+€3)',
+            'Gegrillter Paneer (+€1.5)',
+            'Gegrillter Tofu (+€1)'
+          ]
+        },
+        {
+          id: 'step-3',
+          step: 3,
+          title: 'Choose your sides (Upto 2)',
+          titleDe: 'Wählen Sie Ihre Beilagen (Bis zu 2)',
+          items: [
+            'Dark Green Salad leaves',
+            'Mixed salad (Kachumbar)',
+            'Grilled Paprika',
+            'Cherry Tomatoes',
+            'Grilled Beetroot',
+            'Sprout Salad',
+            'Baby Carrots'
+          ],
+          itemsDe: [
+            'Dunkelgrüne Salatblätter',
+            'Gemischter Salat (Kachumbar)',
+            'Gegrillte Paprika',
+            'Kirschtomaten',
+            'Gegrillte Rote Bete',
+            'Sprossensalat',
+            'Baby-Karotten'
+          ]
+        },
+        {
+          id: 'step-4',
+          step: 4,
+          title: 'Choose your Sauce (Pick 1)',
+          titleDe: 'Wählen Sie Ihre Sauce (Wählen Sie 1)',
+          items: [
+            'Tomato Cream Sauce',
+            'Coconut Mustard Sauce',
+            'Fennel Ginger Yoghurt Sauce',
+            'Coconut Tamarind Sauce',
+            'Chettinad Curry Sauce',
+            'Coriander Mint Lemon Chutney'
+          ],
+          itemsDe: [
+            'Tomaten-Sahne-Sauce',
+            'Kokos-Senf-Sauce',
+            'Fenchel-Ingwer-Joghurt-Sauce',
+            'Kokos-Tamarinden-Sauce',
+            'Chettinad-Currysauce',
+            'Koriander-Minze-Zitronen-Chutney'
+          ]
+        },
+        {
+          id: 'step-5',
+          step: 5,
+          title: 'Finishers (Upto 2)',
+          titleDe: 'Toppings & Finishers (Bis zu 2)',
+          items: [
+            'Crushed Papads',
+            'Spicy Crunchy Sev',
+            'Diced Raw Mangoes',
+            'Coriander chutney (Spicy)',
+            'Tamarind chutney',
+            'Chopped Onions & Green Chillies (Extra Spicy)',
+            'Roasted Cashews (+€2)'
+          ],
+          itemsDe: [
+            'Geknackte Papads',
+            'Knuspriges Sev',
+            'Gewürfelte Mangostücke',
+            'Koriander-Chutney (Scharf)',
+            'Tamarinden-Chutney',
+            'Zwiebeln & Grüne Chilis (Extra Scharf)',
+            'Geröstete Cashews (+€2)'
+          ]
+        }
+      ],
+
+      // 4. Experience
+      experienceEyebrowEn: 'EXPERIENCE',
+      experienceEyebrowDe: 'ERLEBNIS',
+      experienceTitleEn: 'Breakfast, Lunch and Events at MAATI',
+      experienceTitleDe: 'Frühstück, Mittagessen und Events bei MAATI',
+      experienceDescEn: 'A warm, modern space designed for quick breakfast & lunches and cozy events alike.',
+      experienceDescDe: 'Ein warmer, moderner Raum für ein schnelles Frühstück, Mittagessen und gemütliche Events.',
+      experienceImg1: '/assets/show5-BiQql1jr.jpeg',
+      experienceImg2: '/assets/show2-CM6MShfY.jpeg',
+
+      // 5. Catering
+      cateringBadgeEn: 'MAATI CATERING',
+      cateringBadgeDe: 'MAATI CATERING',
+      cateringTitleEn: 'Bold Flavours That Fuel Your Team',
+      cateringTitleDe: 'Kräftige Aromen, die Ihr Team begeistern',
+      cateringDescEn: 'From team lunches to full corporate events — we bring freshly crafted bowls, warm naan pockets, and signature drinks directly to your office.',
+      cateringDescDe: 'Von Team-Lunches bis hin zu großen Firmenfeiern — wir bringen frisch zubereitete Bowls, warme Naan-Taschen und Signature Drinks direkt in Ihr Büro.',
+      cateringP2En: 'Customized for your team, effortlessly delivered. Full setup available on request.',
+      cateringP2De: 'Individuell zusammengestellt, unkompliziert geliefert. Auf Wunsch mit individuellem Setup vor Ort.',
+      cateringBullet1En: 'Perfect for 10 to 200+ people',
+      cateringBullet1De: 'Perfekt für 10 bis 200+ Personen',
+      cateringBullet2En: '100% Vegan & Veggie friendly',
+      cateringBullet2De: '100% Vegan & Veggie-freundlich',
+      cateringBullet3En: 'On-time Berlin delivery',
+      cateringBullet3De: 'Pünktliche Berliner Lieferung',
+      cateringBullet4En: 'Custom corporate invoicing',
+      cateringBullet4De: 'Individuelle Firmenrechnung',
+      cateringBtnEn: 'Get a Quote',
+      cateringBtnDe: 'Catering Anfragen',
+      cateringImage: '/assets/show3-D0blnzja.jpeg',
+
+      // 6. Footer CTA
+      ctaTitleEn: 'Visit us at Zimmestr. 56, 10117 Berlin - where every bite tells a story.',
+      ctaTitleDe: 'Besuchen Sie uns in der Zimmerstr. 56, 10117 Berlin - wo jeder Bissen eine Geschichte erzählt.',
+      ctaDescEn: 'Experience modern Indian soul food in a cozy, welcoming atmosphere.',
+      ctaDescDe: 'Erleben Sie modernes indisches Soul Food in gemütlicher Atmosphäre.',
+      ctaBtnMenuEn: 'View Menu',
+      ctaBtnMenuDe: 'Speisekarte',
+      ctaBtnLocationsEn: 'Our Locations',
+      ctaBtnLocationsDe: 'Unsere Standorte',
+    };
+  });
+  const [loading, setLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function fetchHomepage() {
+      if (!isSanityConfigured) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const data = await sanityClient.fetch<HomepageContent>(getHomepageQuery);
+        if (isMounted && data && typeof data === 'object') {
+          setContent((prev) => ({ ...prev, ...data }));
+        }
+      } catch (err) {
+        console.warn('Sanity homepage fetch error, using local fallback:', err);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    }
+
+    fetchHomepage();
     return () => {
       isMounted = false;
     };
   }, []);
 
-  return menu;
+  return { content, loading };
+}
+
+// ─────────────────────────────────────────────
+// React Hook: useSiteSettings
+// ─────────────────────────────────────────────
+export function useSiteSettings() {
+  const [settings, setSettings] = useState<SiteSettings>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('maati_admin_settings');
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch {}
+      }
+    }
+    return {
+      restaurantName: 'MAATI Kitchen',
+      taglineEn: 'Indian Soul Food — Berlin Mitte',
+      taglineDe: 'Indisches Soul Food — Berlin Mitte',
+      phone: '+49 030 51891367',
+      email: 'hello@maatikitchen.com',
+      address: 'Dircksenstraße 105, 10178 Berlin',
+      openingHoursEn: 'Mon – Fri: 11:30 – 15:00',
+      openingHoursDe: 'Mo – Fr: 11:30 – 15:00 Uhr',
+      instagram: 'https://instagram.com/maatikitchen',
+      googleMapsUrl: 'https://maps.google.com/?q=MAATI+Kitchen+Berlin',
+    };
+  });
+  const [loading, setLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function fetchSettings() {
+      if (!isSanityConfigured) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const data = await sanityClient.fetch<SiteSettings>(getSiteSettingsQuery);
+        if (isMounted && data && typeof data === 'object') {
+          setSettings((prev) => ({ ...prev, ...data }));
+        }
+      } catch (err) {
+        console.warn('Sanity site settings fetch error, using local fallback:', err);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    }
+
+    fetchSettings();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  return { settings, loading };
 }

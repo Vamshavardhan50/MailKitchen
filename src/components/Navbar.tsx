@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Search, Globe, ChevronDown, Menu as MenuIcon, X } from 'lucide-react';
 import { DICTIONARY } from '../data/content';
 
@@ -12,31 +12,58 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({ lang, setLang, onOpenReservation, onOpenSearch }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const location = useLocation();
   const text = DICTIONARY[lang];
   const isDe = lang === 'de';
 
+  const handleCateringClick = (e: React.MouseEvent) => {
+    if (location.pathname === '/') {
+      e.preventDefault();
+      const el = document.getElementById('catering');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+    setMobileOpen(false);
+  };
+
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-[#1e382f] text-white shadow-lg" style={{ height: '72px' }}>
-      <div className="max-w-[1280px] mx-auto px-6 md:px-10 h-full flex items-center justify-between relative">
+      <div className="max-w-[1360px] mx-auto px-6 md:px-8 h-full flex items-center justify-between relative">
 
-        {/* LEFT NAV */}
-        <nav className="hidden md:flex items-center gap-8 font-bold text-[15px] text-white">
-          <Link to="/menu" className="hover:text-[#d85c27] transition-colors">{text.nav_menu}</Link>
-          <Link to="/events" className="hover:text-[#d85c27] transition-colors">{text.nav_events}</Link>
-          <Link to="/about" className="hover:text-[#d85c27] transition-colors">{text.nav_about}</Link>
-          <Link to="/locations" className="hover:text-[#d85c27] transition-colors">{text.nav_locations}</Link>
+        {/* LEFT NAV (1. About Us, 2. Events, 3. Catering, 4. Menu, 5. Contact Us) */}
+        <nav className="hidden lg:flex items-center gap-7 font-bold text-[14.5px] text-white">
+          <Link to="/about" className="hover:text-[#d85c27] transition-colors">
+            {isDe ? 'Über uns' : 'About Us'}
+          </Link>
+          <Link to="/events" className="hover:text-[#d85c27] transition-colors">
+            Events
+          </Link>
+          <a
+            href="/#catering"
+            onClick={handleCateringClick}
+            className="hover:text-[#d85c27] transition-colors cursor-pointer"
+          >
+            Catering
+          </a>
+          <Link to="/menu" className="hover:text-[#d85c27] transition-colors">
+            {isDe ? 'Speisekarte' : 'Menu'}
+          </Link>
+          <Link to="/locations" className="hover:text-[#d85c27] transition-colors">
+            {isDe ? 'Kontakt' : 'Contact Us'}
+          </Link>
         </nav>
 
         {/* Mobile menu trigger */}
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
-          className="md:hidden p-1 text-white"
+          className="lg:hidden p-1 text-white"
           aria-label="Toggle menu"
         >
           {mobileOpen ? <X className="w-6 h-6" /> : <MenuIcon className="w-6 h-6" />}
         </button>
 
-        {/* CENTER LOGO (matching user reference screenshot) */}
+        {/* CENTER LOGO */}
         <Link to="/" className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center py-1">
           <img
             src="/assets/logo-C86A0r1B.png"
@@ -47,7 +74,7 @@ export const Navbar: React.FC<NavbarProps> = ({ lang, setLang, onOpenReservation
         </Link>
 
         {/* RIGHT CONTROLS */}
-        <div className="hidden md:flex items-center gap-4">
+        <div className="hidden lg:flex items-center gap-4">
           {/* Search Button */}
           <button
             onClick={onOpenSearch}
@@ -62,7 +89,7 @@ export const Navbar: React.FC<NavbarProps> = ({ lang, setLang, onOpenReservation
             onClick={onOpenReservation}
             className="bg-[#d85c27] text-white font-bold text-[14px] px-5 py-2.5 rounded-full hover:bg-[#c2501f] transition-all shadow-md transform hover:scale-105"
           >
-            {text.nav_reservations}
+            {text.nav_reservations || (isDe ? 'Reservieren' : 'Reservations')}
           </button>
 
           {/* Language Toggle */}
@@ -80,24 +107,35 @@ export const Navbar: React.FC<NavbarProps> = ({ lang, setLang, onOpenReservation
 
       {/* Mobile Dropdown */}
       {mobileOpen && (
-        <div className="md:hidden absolute top-[88px] left-0 right-0 bg-[#1e382f] border-t border-white/10 shadow-xl z-40">
+        <div className="lg:hidden absolute top-[72px] left-0 right-0 bg-[#1e382f] border-t border-white/10 shadow-xl z-40">
           <nav className="flex flex-col px-6 py-4 gap-4 font-bold text-white text-[16px]">
-            <Link to="/menu" onClick={() => setMobileOpen(false)} className="hover:text-[#d85c27]">{text.nav_menu}</Link>
-            <Link to="/events" onClick={() => setMobileOpen(false)} className="hover:text-[#d85c27]">{text.nav_events}</Link>
-            <Link to="/about" onClick={() => setMobileOpen(false)} className="hover:text-[#d85c27]">{text.nav_about}</Link>
-            <Link to="/locations" onClick={() => setMobileOpen(false)} className="hover:text-[#d85c27]">{text.nav_locations}</Link>
+            <Link to="/about" onClick={() => setMobileOpen(false)} className="hover:text-[#d85c27]">
+              {isDe ? 'Über uns' : 'About Us'}
+            </Link>
+            <Link to="/events" onClick={() => setMobileOpen(false)} className="hover:text-[#d85c27]">
+              Events
+            </Link>
+            <a href="/#catering" onClick={handleCateringClick} className="hover:text-[#d85c27]">
+              Catering
+            </a>
+            <Link to="/menu" onClick={() => setMobileOpen(false)} className="hover:text-[#d85c27]">
+              {isDe ? 'Speisekarte' : 'Menu'}
+            </Link>
+            <Link to="/locations" onClick={() => setMobileOpen(false)} className="hover:text-[#d85c27]">
+              {isDe ? 'Kontakt' : 'Contact Us'}
+            </Link>
             <button
               onClick={() => { onOpenSearch(); setMobileOpen(false); }}
-              className="flex items-center gap-2 text-white/90 hover:text-[#d85c27]"
+              className="flex items-center gap-2 text-white/90 hover:text-[#d85c27] pt-2 border-t border-white/10"
             >
               <Search className="w-5 h-5 text-[#d85c27]" />
               <span>{isDe ? 'Speisekarte durchsuchen' : 'Search Menu'}</span>
             </button>
             <button
               onClick={() => { onOpenReservation(); setMobileOpen(false); }}
-              className="w-full text-center bg-[#d85c27] text-white py-3 rounded-full font-bold"
+              className="w-full text-center bg-[#d85c27] text-white py-3 rounded-full font-bold shadow-md"
             >
-              {text.nav_reservations}
+              {text.nav_reservations || (isDe ? 'Reservieren' : 'Reservations')}
             </button>
             <button
               onClick={() => { setLang(lang === 'en' ? 'de' : 'en'); setMobileOpen(false); }}

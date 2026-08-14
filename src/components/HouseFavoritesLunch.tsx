@@ -1,4 +1,5 @@
 import React from 'react';
+import { Flame, Leaf } from 'lucide-react';
 import { LunchItem, LUNCH_ITEMS, DICTIONARY } from '../data/content';
 
 interface HouseFavoritesLunchProps {
@@ -46,8 +47,16 @@ export const HouseFavoritesLunch: React.FC<HouseFavoritesLunchProps> = ({ lang, 
                 <p className="text-[#666] text-[13px] leading-relaxed flex-1">{item.desc}</p>
                 <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-100">
                   <div className="flex items-center gap-2">
-                    {item.isSpicy && <span className="text-[16px]">🌶️</span>}
-                    {item.isVeganLeaf && <span className="text-[16px]">🍃</span>}
+                    {item.isSpicy && (
+                      <span className="p-1 rounded-md bg-orange-50 text-orange-600" title="Spicy">
+                        <Flame className="w-4 h-4 fill-orange-500 text-orange-600" />
+                      </span>
+                    )}
+                    {item.isVeganLeaf && (
+                      <span className="p-1 rounded-md bg-emerald-50 text-emerald-600" title="Vegan">
+                        <Leaf className="w-4 h-4 text-emerald-600" />
+                      </span>
+                    )}
                   </div>
                   <span className="text-[#d85c27] font-black text-[20px]">{item.price}</span>
                 </div>

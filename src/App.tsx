@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { ScrollToTop } from './components/ScrollToTop';
 import { Navbar } from './components/Navbar';
 import { HomePage } from './components/HomePage';
@@ -13,21 +13,26 @@ import { Privacy } from './components/Privacy';
 import { Terms } from './components/Terms';
 import { Footer } from './components/Footer';
 import { SearchModal } from './components/SearchModal';
+import { StudioPage } from './components/StudioPage';
 
 export const App: React.FC = () => {
   const [lang, setLang] = useState<'de' | 'en'>('en');
   const [isReservationOpen, setIsReservationOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const location = useLocation();
+  const isStudio = location.pathname.startsWith('/studio');
 
   return (
     <div className="min-h-screen flex flex-col bg-[#f5f0e8]">
       <ScrollToTop />
-      <Navbar
-        lang={lang}
-        setLang={setLang}
-        onOpenReservation={() => setIsReservationOpen(true)}
-        onOpenSearch={() => setIsSearchOpen(true)}
-      />
+      {!isStudio && (
+        <Navbar
+          lang={lang}
+          setLang={setLang}
+          onOpenReservation={() => setIsReservationOpen(true)}
+          onOpenSearch={() => setIsSearchOpen(true)}
+        />
+      )}
 
       <main className="flex-1">
         <Routes>
@@ -106,13 +111,21 @@ export const App: React.FC = () => {
             path="/terms"
             element={<Terms lang={lang} />}
           />
+
+          {/* SANITY STUDIO MANAGEMENT */}
+          <Route
+            path="/studio/*"
+            element={<StudioPage />}
+          />
         </Routes>
       </main>
 
-      <Footer
-        lang={lang}
-        onOpenReservation={() => setIsReservationOpen(true)}
-      />
+      {!isStudio && (
+        <Footer
+          lang={lang}
+          onOpenReservation={() => setIsReservationOpen(true)}
+        />
+      )}
 
       {/* SEARCH MODAL */}
       <SearchModal
