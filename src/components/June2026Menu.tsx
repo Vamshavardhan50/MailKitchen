@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { MenuCard } from './MenuCard';
 import { useSanityMenu } from '../lib/sanityService';
 import { SEO } from './SEO';
-import { Info, Sparkles, ExternalLink, FileText, Download, Eye, X } from 'lucide-react';
+import { Info, Sparkles, ExternalLink, FileText, Eye, X } from 'lucide-react';
 
 interface June2026MenuProps {
   lang?: 'de' | 'en';
@@ -13,8 +13,6 @@ export const June2026Menu: React.FC<June2026MenuProps> = ({ lang = 'en' }) => {
   const isDe = lang === 'de';
   const { categories } = useSanityMenu();
   const [selectedPreviewImage, setSelectedPreviewImage] = useState<string | null>(null);
-
-  const pdfUrl = isDe ? '/assets/MAATI_Menu_DE.pdf' : '/assets/MAATI_Menu_EN.pdf';
 
   return (
     <div className="bg-[#f5f0e8] min-h-screen pt-24 sm:pt-28 pb-20 px-4 sm:px-8 md:px-16 lg:px-24">
@@ -32,22 +30,11 @@ export const June2026Menu: React.FC<June2026MenuProps> = ({ lang = 'en' }) => {
       <div className="max-w-[1360px] mx-auto space-y-12 sm:space-y-16">
         
         {/* ── HEADER ── */}
-        <div className="text-left pb-4 border-b border-[#ebdcd0] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="text-left pb-4 border-b border-[#ebdcd0]">
           <h1 className="text-[30px] sm:text-[36px] md:text-[48px] font-black text-[#1e382f] leading-tight flex items-center gap-3">
             <Sparkles className="w-7 h-7 sm:w-8 sm:h-8 text-[#d85c27] shrink-0" />
             <span>{isDe ? 'Speisekarte' : 'Full Menu'}</span>
           </h1>
-
-          {/* Quick PDF button in header */}
-          <a
-            href={pdfUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 bg-[#1e382f] hover:bg-[#142620] text-white text-[13px] sm:text-[14px] font-extrabold px-5 py-2.5 rounded-full shadow-sm transition-all hover:scale-105 shrink-0 self-start sm:self-auto"
-          >
-            <Download className="w-4 h-4 text-[#d85c27]" />
-            <span>{isDe ? 'Speisekarte PDF (A3)' : 'Download PDF Menu'}</span>
-          </a>
         </div>
 
         {/* ── DYNAMIC CATEGORIES RENDERED FROM SANITY ── */}
@@ -93,33 +80,19 @@ export const June2026Menu: React.FC<June2026MenuProps> = ({ lang = 'en' }) => {
 
         {/* ── COMPLETE PRINT / VISUAL MENU CARDS & HYPERLINK SECTION ── */}
         <div className="bg-white rounded-[28px] border border-[#ebdcd0] p-6 sm:p-10 md:p-12 shadow-sm space-y-8">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b border-gray-100">
-            <div>
-              <span className="text-[#d85c27] font-black text-[12px] uppercase tracking-[0.2em] flex items-center gap-1.5 mb-1">
-                <FileText className="w-4 h-4" />
-                {isDe ? 'OFFIZIELLE SPEISEKARTE' : 'OFFICIAL PRINT MENU'}
-              </span>
-              <h3 className="text-[26px] sm:text-[34px] font-black text-[#1e382f] leading-tight">
-                {isDe ? 'Vollständige Speisekarte ansehen' : 'View Full Visual Menu'}
-              </h3>
-              <p className="text-[#666] text-[14px] mt-1 max-w-[600px]">
-                {isDe
-                  ? 'Klicken Sie auf eine der Seiten, um sie zu vergrößern, oder öffnen Sie die hochauflösenden Menükarten direkt in einem neuen Tab.'
-                  : 'Click on any page below to inspect or open the high-resolution restaurant menu cards directly in a new tab.'}
-              </p>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3 shrink-0">
-              <a
-                href={pdfUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-6 py-3 rounded-full text-[13px] sm:text-[14px] shadow-sm hover:shadow-md transition-all flex items-center gap-2"
-              >
-                <Download className="w-4 h-4" />
-                <span>{isDe ? 'PDF herunterladen' : 'Download Complete PDF'}</span>
-              </a>
-            </div>
+          <div className="pb-6 border-b border-gray-100">
+            <span className="text-[#d85c27] font-black text-[12px] uppercase tracking-[0.2em] flex items-center gap-1.5 mb-1">
+              <FileText className="w-4 h-4" />
+              {isDe ? 'OFFIZIELLE SPEISEKARTE' : 'OFFICIAL PRINT MENU'}
+            </span>
+            <h3 className="text-[26px] sm:text-[34px] font-black text-[#1e382f] leading-tight">
+              {isDe ? 'Vollständige Speisekarte ansehen' : 'View Full Visual Menu'}
+            </h3>
+            <p className="text-[#666] text-[14px] mt-1 max-w-[600px]">
+              {isDe
+                ? 'Klicken Sie auf eine der Seiten, um sie zu vergrößern, oder öffnen Sie die hochauflösenden Menükarten direkt in einem neuen Tab.'
+                : 'Click on any page below to inspect or open the high-resolution restaurant menu cards directly in a new tab.'}
+            </p>
           </div>
 
           {/* Grid with 2 Menu Pages */}
