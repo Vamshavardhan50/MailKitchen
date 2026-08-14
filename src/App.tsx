@@ -20,7 +20,7 @@ export const App: React.FC = () => {
   const [isReservationOpen, setIsReservationOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const location = useLocation();
-  const isStudio = location.pathname.startsWith('/studio');
+  const isStudio = location.pathname.startsWith('/studio') || location.pathname.startsWith('/admin');
 
   return (
     <div className="min-h-screen flex flex-col bg-[#f5f0e8]">
@@ -112,11 +112,11 @@ export const App: React.FC = () => {
             element={<Terms lang={lang} />}
           />
 
-          {/* SANITY STUDIO MANAGEMENT */}
-          <Route
-            path="/studio/*"
-            element={<StudioPage />}
-          />
+          {/* SANITY / MAATI STUDIO ADMIN ROUTES */}
+          <Route path="/studio" element={<StudioPage />} />
+          <Route path="/studio/*" element={<StudioPage />} />
+          <Route path="/admin" element={<StudioPage />} />
+          <Route path="/admin/*" element={<StudioPage />} />
         </Routes>
       </main>
 
