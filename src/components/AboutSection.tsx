@@ -9,7 +9,7 @@ export const AboutSection: React.FC<AboutSectionProps> = ({ lang }) => {
   const isDe = lang === 'de';
 
   return (
-    <section id="about" className="bg-[#f5f0e8] min-h-screen pt-[130px] md:pt-[150px] pb-28 px-8 sm:px-12 md:px-16 lg:px-24">
+    <section id="about" className="bg-[#f5f0e8] min-h-screen pt-[96px] sm:pt-[120px] md:pt-[150px] pb-16 sm:pb-28 px-4 sm:px-8 md:px-16 lg:px-24">
       <SEO
         title={isDe ? 'Über Uns | MAATI Kitchen Berlin' : 'About Us | MAATI Kitchen Berlin'}
         description={
@@ -21,7 +21,7 @@ export const AboutSection: React.FC<AboutSectionProps> = ({ lang }) => {
         lang={lang}
       />
 
-      <div className="max-w-[1100px] mx-auto bg-white rounded-[36px] p-10 md:p-16 lg:p-20 shadow-sm border border-gray-100 text-center space-y-10">
+      <div className="max-w-[1100px] mx-auto bg-white rounded-[28px] sm:rounded-[36px] p-6 sm:p-10 md:p-16 lg:p-20 shadow-sm border border-gray-100 text-center space-y-8 sm:space-y-10">
 
         <div>
           <h1 className="text-[38px] md:text-[50px] font-black text-[#1a1a1a] mb-4">

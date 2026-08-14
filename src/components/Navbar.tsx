@@ -64,16 +64,33 @@ export const Navbar: React.FC<NavbarProps> = ({ lang, setLang, onOpenReservation
         </button>
 
         {/* CENTER LOGO */}
-        <Link to="/" className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center py-1">
+        <Link to="/" className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center py-1 pointer-events-none">
           <img
             src="/assets/logo-C86A0r1B.png"
             alt="maati - fresh indian food, made your way"
-            className="w-auto object-contain drop-shadow-md"
-            style={{ height: '300px' }}
+            className="w-auto object-contain drop-shadow-md h-[160px] sm:h-[220px] lg:h-[300px] pointer-events-auto"
           />
         </Link>
 
-        {/* RIGHT CONTROLS */}
+        {/* Mobile Right Controls */}
+        <div className="flex lg:hidden items-center gap-2">
+          <button
+            onClick={onOpenSearch}
+            aria-label="Search"
+            className="p-1.5 text-white/80 hover:text-white"
+          >
+            <Search className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => setLang(lang === 'en' ? 'de' : 'en')}
+            className="flex items-center gap-1 bg-white/10 hover:bg-white/20 text-white text-[12px] font-bold px-2.5 py-1 rounded-full border border-white/15"
+          >
+            <Globe className="w-3.5 h-3.5 text-[#d85c27]" />
+            <span className="uppercase">{lang}</span>
+          </button>
+        </div>
+
+        {/* RIGHT CONTROLS (DESKTOP) */}
         <div className="hidden lg:flex items-center gap-4">
           {/* Search Button */}
           <button

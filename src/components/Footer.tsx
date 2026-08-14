@@ -115,11 +115,6 @@ export const Footer: React.FC<FooterProps> = ({ lang = 'en' }) => {
                 {isDe ? 'Allgemeine Geschäftsbedingungen' : 'Terms and Conditions'}
               </Link>
             </li>
-            <li className="pt-2">
-              <Link to="/studio" className="text-[12px] font-bold text-[#d85c27] hover:underline flex items-center gap-1">
-                <span>⚙️ Admin Panel / Studio</span>
-              </Link>
-            </li>
           </ul>
         </div>
 

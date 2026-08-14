@@ -13,7 +13,7 @@ export const LocationSection: React.FC<LocationSectionProps> = ({ lang, onOpenRe
   const isDe = lang === 'de';
 
   return (
-    <section id="location" className="bg-[#f5f0e8] min-h-screen pt-[130px] md:pt-[150px] pb-28 px-8 sm:px-12 md:px-16 lg:px-24">
+    <section id="location" className="bg-[#f5f0e8] min-h-screen pt-[96px] sm:pt-[120px] md:pt-[150px] pb-16 sm:pb-28 px-4 sm:px-8 md:px-16 lg:px-24">
       <SEO
         title={isDe ? 'Standort & Kontakt | MAATI Kitchen Berlin' : 'Location & Hours | MAATI Kitchen Berlin'}
         description={
@@ -26,10 +26,10 @@ export const LocationSection: React.FC<LocationSectionProps> = ({ lang, onOpenRe
       />
 
       <div className="max-w-[1360px] mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-stretch">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-10 items-stretch">
 
           {/* ── Left: Info Card ── */}
-          <div className="bg-white rounded-[32px] p-10 md:p-14 shadow-sm border border-gray-100 flex flex-col justify-between space-y-10">
+          <div className="bg-white rounded-[28px] sm:rounded-[32px] p-6 sm:p-10 md:p-14 shadow-sm border border-gray-100 flex flex-col justify-between space-y-8 sm:space-y-10">
             <div>
               <h1 className="text-[34px] md:text-[44px] font-black text-[#1a1a1a] leading-tight mb-8">
                 MAATI Berlin

@@ -11,7 +11,7 @@ export const EventsSection: React.FC<EventsSectionProps> = ({ lang = 'en', onOpe
   const isDe = lang === 'de';
 
   return (
-    <section id="events" className="bg-[#f5f0e8] min-h-screen pt-[130px] md:pt-[150px] pb-28 px-8 sm:px-12 md:px-16 lg:px-24">
+    <section id="events" className="bg-[#f5f0e8] min-h-screen pt-[96px] sm:pt-[120px] md:pt-[150px] pb-16 sm:pb-28 px-4 sm:px-8 md:px-16 lg:px-24">
       <SEO
         title={isDe ? 'Events & Feiern | MAATI Kitchen Berlin' : 'Events & Private Dining | MAATI Kitchen Berlin'}
         description={
@@ -24,7 +24,7 @@ export const EventsSection: React.FC<EventsSectionProps> = ({ lang = 'en', onOpe
       />
 
       <div className="max-w-[1360px] mx-auto">
-        <div className="bg-[#1e382f] rounded-[36px] overflow-hidden text-white grid grid-cols-1 lg:grid-cols-2 p-10 md:p-16 lg:p-20 gap-12 lg:gap-16 items-center shadow-2xl border border-white/10">
+        <div className="bg-[#1e382f] rounded-[28px] sm:rounded-[36px] overflow-hidden text-white grid grid-cols-1 lg:grid-cols-2 p-6 sm:p-10 md:p-16 lg:p-20 gap-8 sm:gap-12 lg:gap-16 items-center shadow-2xl border border-white/10">
 
           {/* ── Left Text ── */}
           <div className="flex flex-col justify-center">
