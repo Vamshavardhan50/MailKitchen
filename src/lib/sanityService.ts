@@ -35,6 +35,7 @@ export interface SanityMenuItem {
   price: string;
   priceEn?: string;
   priceDe?: string;
+  options?: { nameEn: string; nameDe?: string; price: string }[];
   foodType: FoodType;
   image?: any;
   img?: string;

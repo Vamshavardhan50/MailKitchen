@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Database,
   Plus,
   Trash2,
   Edit3,
@@ -13,8 +12,6 @@ import {
   Home,
   ExternalLink,
   Star,
-  Eye,
-  EyeOff,
   ChevronDown,
   ChevronUp,
   Image as ImageIcon,
@@ -22,17 +19,17 @@ import {
   Lock,
   LogOut,
   Sparkles,
-  Info,
-  DollarSign,
-  Grid,
   Search,
   X,
   Flame,
-  Globe,
-  FolderOpen,
-  FolderClosed,
-  Layers,
-  PlusCircle
+  PlusCircle,
+  Tag,
+  CheckCircle2,
+  AlertCircle,
+  Compass,
+  ArrowRight,
+  ArrowLeft,
+  Lightbulb
 } from 'lucide-react';
 import {
   SanityMenuItem,
@@ -44,49 +41,79 @@ import {
   HomepageContent,
   MaatiWayStep
 } from '../lib/sanityService';
-import { sanityConfig } from '../lib/sanity';
+import {
+  GalleryAssetItem,
+  DEFAULT_GALLERY_ASSETS,
+  compressImageFile
+} from '../data/galleryAssets';
 
-// Available gallery assets for instant selection
-const AVAILABLE_ASSETS = [
-  { name: "Chettinad Bowl", path: "/assets/Chettinad-D21PABvG.png", category: "Bowls" },
-  { name: "Delhi Butter Chicken", path: "/assets/Delhi-BteN_mdh.png", category: "Bowls" },
-  { name: "Bihar Lentil Potato", path: "/assets/bihar-lentil-potato.png", category: "Bowls" },
-  { name: "Bengal Fish Curry", path: "/assets/Bengal-birKfnj1.png", category: "Bowls" },
-  { name: "Goa Prawn Curry", path: "/assets/Goa-DLdcEMCP.png", category: "Bowls" },
-  { name: "Kashmir Lamb Rogan", path: "/assets/Kashmir-Z2M0N-Rm.png", category: "Bowls" },
-  { name: "Rajasthan Laal Maas", path: "/assets/Rajasthan-DL_KoxiT.png", category: "Bowls" },
-  { name: "Pondicherry Caesar Salad", path: "/assets/Pondichery-Cesear-Salad.png", category: "Bowls" },
-  { name: "Mango Salad", path: "/assets/Mango Salad.png", category: "Bowls" },
-  { name: "Punjab Naan Pocket", path: "/assets/punjab-naan-pocket.jpg", category: "Naan" },
-  { name: "Butter Chicken Naan", path: "/assets/Naan-Pocket-Butter-Chicken.jpg", category: "Naan" },
-  { name: "Paneer Tikka Naan", path: "/assets/Naan-Pocket-Paneer-Tikka.jpg", category: "Naan" },
-  { name: "Green Chutney Croissant", path: "/assets/croissant-green-chutney.jpg", category: "Bakery" },
-  { name: "Mango Lassi", path: "/assets/Mango Lassi.png", category: "Drinks" },
-  { name: "Rose Milk", path: "/assets/Rosemilk.png", category: "Drinks" },
-  { name: "Buttermilk (Chaas)", path: "/assets/Buttermilk.png", category: "Drinks" },
-  { name: "Fresh Lemonade", path: "/assets/Lemonade.png", category: "Drinks" },
-  { name: "Sugarcane Juice", path: "/assets/Sugarcane Juice.png", category: "Drinks" },
-  { name: "Cafe Latte", path: "/assets/Cafe Latte_Maati.png", category: "Coffee" },
-  { name: "Flat White", path: "/assets/FlatWhite_Maati.png", category: "Coffee" },
-  { name: "Americano", path: "/assets/Americano_Maati.png", category: "Coffee" },
-  { name: "Matcha Latte", path: "/assets/Matcha Latte_Maati.png", category: "Coffee" },
-  { name: "Brownie with Sea Salt", path: "/assets/Brownie mit Meersalzflocken_Maati.png", category: "Desserts" },
-  { name: "Milk Cake", path: "/assets/MilkCake_Maati.png", category: "Desserts" },
-  { name: "Signature Cocktail 1", path: "/assets/cocktail-1.jpg", category: "Cocktails" },
-  { name: "Signature Cocktail 2", path: "/assets/cocktail-2.jpg", category: "Cocktails" },
-  { name: "Signature Cocktail 3", path: "/assets/cocktail-3.jpg", category: "Cocktails" },
-  { name: "Signature Cocktail 4", path: "/assets/cocktail-4.jpg", category: "Cocktails" },
-  { name: "Signature Cocktail 5", path: "/assets/cocktail-5.jpg", category: "Cocktails" },
-  { name: "Signature Cocktail 6", path: "/assets/cocktail-6.jpg", category: "Cocktails" },
-  { name: "Hero Spread Flatlay", path: "/assets/hero-flatlay.jpg", category: "Showcase" },
-  { name: "Interior Ambience 1", path: "/assets/show5-BiQql1jr.jpeg", category: "Showcase" },
-  { name: "Interior Ambience 2", path: "/assets/show2-CM6MShfY.jpeg", category: "Showcase" },
-  { name: "Catering Spread Photo", path: "/assets/show3-D0blnzja.jpeg", category: "Showcase" },
-  { name: "Coca-Cola", path: "/assets/cola.png", category: "Bottled" },
-  { name: "Fanta", path: "/assets/fanta.png", category: "Bottled" },
-  { name: "Mezzo Mix", path: "/assets/Mezo-Mix.png", category: "Bottled" },
-  { name: "Vio Schorle", path: "/assets/vio-schorle.png", category: "Bottled" },
-  { name: "Water", path: "/assets/water.png", category: "Bottled" }
+const AVAILABLE_TAGS = [
+  'Bowls & Mains',
+  'Naan Pockets',
+  'Drinks & Lassis',
+  'Coffee & Tea',
+  'Bakery & Desserts',
+  'Cocktails',
+  'Showcase & Ambience',
+  'Bottled Drinks',
+  'My Uploads',
+];
+
+interface TourStep {
+  selector: string;
+  title: string;
+  description: string;
+  tip?: string;
+  tab?: 'items' | 'categories' | 'homepage' | 'gallery' | 'settings';
+}
+
+const SPOTLIGHT_STEPS: TourStep[] = [
+  {
+    selector: '[data-tour="add-dish"]',
+    title: '+ Add New Dish',
+    description: 'Click here anytime to add a new dish with title, prices, ingredients, and photos.',
+    tip: 'You can set single pricing or multiple options like Chicken / Prawns.',
+    tab: 'items',
+  },
+  {
+    selector: '[data-tour="nav-tabs"]',
+    title: 'Main Navigation Bar',
+    description: 'Easily switch between your Dishes list, Categories, Homepage texts, and the Photo Library.',
+    tip: 'The numbers show how many items you currently have.',
+    tab: 'items',
+  },
+  {
+    selector: '[data-tour="metrics"]',
+    title: 'Live Menu Overview',
+    description: 'See at a glance how many dishes are available, sold out, or featured on your homepage.',
+    tab: 'items',
+  },
+  {
+    selector: '[data-tour="dish-available"]',
+    title: '1-Click Availability Toggle',
+    description: 'Click this button to instantly mark any dish as Available or Sold Out for the day.',
+    tip: 'Sold-out items will be greyed out automatically.',
+    tab: 'items',
+  },
+  {
+    selector: '[data-tour="dish-star"]',
+    title: 'Feature on Homepage',
+    description: 'Click the Star on your signature dishes to showcase them on the homepage "Treat Your Tastebuds" section.',
+    tip: 'You can arrange their order using the arrows above.',
+    tab: 'items',
+  },
+  {
+    selector: '[data-tour="dish-edit"]',
+    title: 'Edit Dish Details',
+    description: 'Click the blue pencil to change prices, descriptions in English & German, or dish photos.',
+    tab: 'items',
+  },
+  {
+    selector: '[data-tour="tab-gallery"]',
+    title: 'Photo Library & Fast Uploads',
+    description: 'Upload food photos directly from your phone. Photos are auto-compressed in milliseconds and organized by tags.',
+    tab: 'gallery',
+  },
 ];
 
 export const StudioPage: React.FC = () => {
@@ -101,7 +128,7 @@ export const StudioPage: React.FC = () => {
   const { content: initialHomepage } = useHomepageContent();
   const { settings: initialSettings } = useSiteSettings();
 
-  const [activeTab, setActiveTab] = useState<'items' | 'homepage' | 'categories' | 'settings'>('items');
+  const [activeTab, setActiveTab] = useState<'items' | 'categories' | 'homepage' | 'gallery' | 'settings'>('items');
   const [categories, setCategories] = useState<SanityCategoryWithItems[]>([]);
   const [selectedCatId, setSelectedCatId] = useState<string>('all');
   
@@ -111,13 +138,100 @@ export const StudioPage: React.FC = () => {
   const [homepageContent, _setHomepageContent] = useState<HomepageContent>(initialHomepage);
 
   // Auto-track changes
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const setHomepageContent = (val: HomepageContent | ((prev: HomepageContent) => HomepageContent)) => {
     _setHomepageContent(val);
     setHasUnsavedChanges(true);
   };
 
+  // ── Interactive Spotlight Tour State ──
+  const [isTourActive, setIsTourActive] = useState(false);
+  const [currentTourIndex, setCurrentTourIndex] = useState(0);
+  const [spotlightRect, setSpotlightRect] = useState<{ top: number; left: number; width: number; height: number } | null>(null);
+
+  const startSpotlightTour = () => {
+    setSelectedCatId('all');
+    setAdminSearchQuery('');
+    setCurrentTourIndex(0);
+    setActiveTab(SPOTLIGHT_STEPS[0].tab || 'items');
+    setIsTourActive(true);
+  };
+
+  const stopSpotlightTour = () => {
+    setIsTourActive(false);
+    setSpotlightRect(null);
+    localStorage.setItem('maati_studio_tour_dismissed', 'true');
+    showToast('Tour completed! Enjoy using MAATI Studio 🎉');
+  };
+
+  // Position Spotlight Box with Retry Loop so elements are never missed
+  useEffect(() => {
+    if (!isTourActive) {
+      setSpotlightRect(null);
+      return;
+    }
+
+    const currentStep = SPOTLIGHT_STEPS[currentTourIndex];
+    if (currentStep.tab && activeTab !== currentStep.tab) {
+      setActiveTab(currentStep.tab);
+    }
+
+    let attempts = 0;
+    let timerId: any = null;
+
+    const updatePosition = () => {
+      const el = document.querySelector(currentStep.selector);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+        const rect = el.getBoundingClientRect();
+        setSpotlightRect({
+          top: rect.top + window.scrollY,
+          left: rect.left + window.scrollX,
+          width: rect.width,
+          height: rect.height,
+        });
+      } else {
+        attempts++;
+        if (attempts < 10) {
+          timerId = setTimeout(updatePosition, 100);
+        }
+      }
+    };
+
+    timerId = setTimeout(updatePosition, 60);
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition);
+
+    return () => {
+      if (timerId) clearTimeout(timerId);
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition);
+    };
+  }, [isTourActive, currentTourIndex, activeTab]);
+
+  const handleNextTourStep = () => {
+    if (currentTourIndex < SPOTLIGHT_STEPS.length - 1) {
+      const nextIndex = currentTourIndex + 1;
+      setCurrentTourIndex(nextIndex);
+      if (SPOTLIGHT_STEPS[nextIndex].tab) {
+        setActiveTab(SPOTLIGHT_STEPS[nextIndex].tab!);
+      }
+    } else {
+      stopSpotlightTour();
+    }
+  };
+
+  const handlePrevTourStep = () => {
+    if (currentTourIndex > 0) {
+      const prevIndex = currentTourIndex - 1;
+      setCurrentTourIndex(prevIndex);
+      if (SPOTLIGHT_STEPS[prevIndex].tab) {
+        setActiveTab(SPOTLIGHT_STEPS[prevIndex].tab!);
+      }
+    }
+  };
+
   // Gallery state for homepage sections
-  const activeGallerySectionRef = useRef<string | null>(null);
   const [activeGallerySection, setActiveGallerySection] = useState<string | null>(null);
 
   // Accordion open states for Homepage editor
@@ -137,8 +251,101 @@ export const StudioPage: React.FC = () => {
   // Edit / New Modal State
   const [editingItem, setEditingItem] = useState<SanityMenuItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState(false);
   const [showGallery, setShowGallery] = useState(false);
+
+  // Dynamic Gallery Assets with Delete & Custom Upload Management
+  const [galleryAssets, setGalleryAssets] = useState<GalleryAssetItem[]>(() => {
+    const saved = localStorage.getItem('maati_admin_gallery_v2');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch {}
+    }
+    return DEFAULT_GALLERY_ASSETS;
+  });
+  const [galleryFilterCat, setGalleryFilterCat] = useState<string>('All');
+  const [gallerySearch, setGallerySearch] = useState<string>('');
+
+  // ── Tagging & Photo Modal State ──
+  const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false);
+  const [photoModalData, setPhotoModalData] = useState<{
+    id?: string;
+    name: string;
+    category: string;
+    path: string;
+    originalSize?: number;
+    compressedSize?: number;
+    callback?: (url: string) => void;
+    isNew?: boolean;
+  }>({
+    name: '',
+    category: 'Bowls & Mains',
+    path: '',
+  });
+
+  const saveGalleryAssets = (updated: GalleryAssetItem[]) => {
+    setGalleryAssets(updated);
+    localStorage.setItem('maati_admin_gallery_v2', JSON.stringify(updated));
+  };
+
+  const handleDeleteGalleryImage = (e: React.MouseEvent, assetIdOrPath: string, assetName: string) => {
+    e.stopPropagation();
+    if (!window.confirm(`Are you sure you want to delete "${assetName}" from the photo library?`)) return;
+    const updated = galleryAssets.filter(
+      (a) => a.id !== assetIdOrPath && a.path !== assetIdOrPath
+    );
+    saveGalleryAssets(updated);
+    showToast(`Deleted "${assetName}" from photos`);
+  };
+
+  const handleOpenEditPhoto = (asset: GalleryAssetItem, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setPhotoModalData({
+      id: asset.id,
+      name: asset.name,
+      category: asset.category,
+      path: asset.path,
+      isNew: false,
+    });
+    setIsPhotoModalOpen(true);
+  };
+
+  const handleSavePhotoModal = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!photoModalData.path) return;
+
+    const assetId = photoModalData.id || ('custom_' + Date.now());
+    const assetName = photoModalData.name.trim() || 'Uploaded Photo';
+    const assetCategory = photoModalData.category.trim() || 'Bowls & Mains';
+
+    const updatedAsset: GalleryAssetItem = {
+      id: assetId,
+      name: assetName,
+      path: photoModalData.path,
+      category: assetCategory,
+      isCustom: true,
+    };
+
+    const exists = galleryAssets.some((a) => a.id === assetId || a.path === photoModalData.path);
+    let updatedList: GalleryAssetItem[];
+    if (exists) {
+      updatedList = galleryAssets.map((a) =>
+        a.id === assetId || a.path === photoModalData.path ? updatedAsset : a
+      );
+    } else {
+      updatedList = [updatedAsset, ...galleryAssets];
+    }
+
+    saveGalleryAssets(updatedList);
+
+    if (photoModalData.callback) {
+      photoModalData.callback(photoModalData.path);
+    }
+
+    setIsPhotoModalOpen(false);
+    showToast(`Photo "${assetName}" saved in "${assetCategory}"`);
+  };
 
   // Item Form Fields
   const [formTitleEn, setFormTitleEn] = useState('');
@@ -174,6 +381,10 @@ export const StudioPage: React.FC = () => {
   const [catDescEn, setCatDescEn] = useState('');
   const [catDescDe, setCatDescDe] = useState('');
 
+  // Add dish to category modal
+  const [isAddDishModalOpen, setIsAddDishModalOpen] = useState(false);
+  const [targetCategoryForAdd, setTargetCategoryForAdd] = useState<string>('');
+
   // Content Language Toggle for Admin (EN / DE)
   const [adminContentLang, setAdminContentLang] = useState<'en' | 'de'>('en');
   const [openSteps, setOpenSteps] = useState<Record<string, boolean>>({});
@@ -205,47 +416,29 @@ export const StudioPage: React.FC = () => {
     setCollapsedCategories({});
   };
 
-  // Add Dish to Category Picker Modal
-  const [assignModalCatId, setAssignModalCatId] = useState<string | null>(null);
-  const [assignModalTab, setAssignModalTab] = useState<'existing' | 'new'>('existing');
-  const [assignSearchQuery, setAssignSearchQuery] = useState('');
-
-  const handleOpenAddDishToCategory = (catId: string) => {
-    setAssignModalCatId(catId);
-    setAssignModalTab('existing');
-    setAssignSearchQuery('');
-  };
-
-  // Bottom Center Toast & Unsaved Changes State
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3500);
-  };
-
-  const handleSaveAllGlobal = () => {
-    localStorage.setItem('maati_admin_menu', JSON.stringify(categories));
-    localStorage.setItem('maati_admin_homepage', JSON.stringify(homepageContent));
-    localStorage.setItem('maati_admin_settings', JSON.stringify(siteSettings));
-    window.dispatchEvent(new Event('maati_menu_updated'));
-    window.dispatchEvent(new Event('maati_homepage_updated'));
-    window.dispatchEvent(new Event('maati_settings_updated'));
-    setHasUnsavedChanges(false);
-    showToast('All changes saved successfully!');
-  };
-
-  // Search in Admin Panel
+  // Admin Search Query
   const [adminSearchQuery, setAdminSearchQuery] = useState('');
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  // Toast State
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage((curr) => (curr === msg ? null : curr));
+    }, 3000);
+  };
 
+  // Load from local storage or initial
   useEffect(() => {
     const savedMenu = localStorage.getItem('maati_admin_menu');
     if (savedMenu) {
       try {
-        setCategories(JSON.parse(savedMenu));
+        const parsed = JSON.parse(savedMenu);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setCategories(parsed);
+        } else {
+          setCategories(initialCategories);
+        }
       } catch {
         setCategories(initialCategories);
       }
@@ -289,85 +482,42 @@ export const StudioPage: React.FC = () => {
     setCategories(newCats);
     localStorage.setItem('maati_admin_menu', JSON.stringify(newCats));
     window.dispatchEvent(new Event('maati_menu_updated'));
-    showToast('Menu items updated successfully!');
+    showToast('Menu updated live!');
   };
 
   const showSuccessToast = () => {
+    setHasUnsavedChanges(false);
     window.dispatchEvent(new Event('maati_homepage_updated'));
-    showToast('Homepage changes saved successfully!');
+    showToast('Homepage changes saved live!');
   };
 
-  // Add an existing menu item into a category
-  const handleAddExistingDishToCategory = (item: SanityMenuItem, targetCatId: string) => {
-    const clonedItem: SanityMenuItem = {
-      ...item,
-      _id: `custom-clone-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-      id: `clone-${Date.now()}`,
-    };
-
-    const updated = categories.map((cat) => {
-      if (cat._id === targetCatId) {
-        return {
-          ...cat,
-          items: [clonedItem, ...cat.items],
-        };
-      }
-      return cat;
-    });
-
-    saveAllToLocal(updated);
-    const targetCat = categories.find((c) => c._id === targetCatId);
-    showToast(`Added "${item.titleEn}" to ${targetCat ? targetCat.name : 'category'}!`);
-  };
-
-  // Move an existing dish from one category to another
-  const handleMoveExistingDishToCategory = (item: SanityMenuItem, fromCatId: string, targetCatId: string) => {
-    if (fromCatId === targetCatId) return;
-
-    let updated = categories.map((cat) => {
-      if (cat._id === fromCatId) {
-        return {
-          ...cat,
-          items: cat.items.filter((it) => it._id !== item._id && it.id !== item.id),
-        };
-      }
-      return cat;
-    });
-
-    updated = updated.map((cat) => {
-      if (cat._id === targetCatId) {
-        return {
-          ...cat,
-          items: [item, ...cat.items],
-        };
-      }
-      return cat;
-    });
-
-    saveAllToLocal(updated);
-    const targetCat = categories.find((c) => c._id === targetCatId);
-    showToast(`Moved "${item.titleEn}" to ${targetCat ? targetCat.name : 'category'}!`);
-  };
-
-  // Generic File Upload helper
-  const handleGenericFileUpload = (callback: (dataUrl: string) => void) => {
+  // Fast Client-Side Image Compression & Auto-Optimizer
+  const handleOptimizedImageUpload = async (callback: (dataUrl: string) => void) => {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
-    input.onchange = (e: any) => {
+    input.onchange = async (e: any) => {
       const file = e.target?.files?.[0];
       if (!file) return;
-      if (file.size > 5 * 1024 * 1024) {
-        alert('File size exceeds 5MB. Please choose an optimized image.');
-        return;
+      try {
+        showToast('Compressing photo...');
+        const { dataUrl, originalSize, compressedSize, cleanName } = await compressImageFile(file);
+
+        // Open Tagging dialog so user can name & select category tag
+        setPhotoModalData({
+          id: 'custom_' + Date.now(),
+          name: cleanName,
+          category: 'Bowls & Mains',
+          path: dataUrl,
+          originalSize,
+          compressedSize,
+          callback,
+          isNew: true,
+        });
+        setIsPhotoModalOpen(true);
+      } catch (err) {
+        showToast('Error loading photo');
       }
-      const reader = new FileReader();
-      reader.onload = () => {
-        if (typeof reader.result === 'string') {
-          callback(reader.result);
-        }
-      };
-      reader.readAsDataURL(file);
     };
     input.click();
   };
@@ -405,24 +555,15 @@ export const StudioPage: React.FC = () => {
     setFormDescEn(item.descEn || '');
     setFormDescDe(item.descDe || '');
 
-    if (item.priceEn && item.priceDe && (item.price.includes('|') || item.priceEn.includes('|'))) {
+    if (item.options && item.options.length >= 2) {
       setPriceType('double');
-      const partsEn = (item.priceEn || item.price).split('|').map(s => s.trim());
-      const partsDe = (item.priceDe || item.price).split('|').map(s => s.trim());
-      
-      const m1En = partsEn[0]?.match(/^([A-Za-z0-9ÄöüäÖÜß\s/,\.-]+)\s*([€\d.,]+)$/u);
-      const m2En = partsEn[1]?.match(/^([A-Za-z0-9ÄöüäÖÜß\s/,\.-]+)\s*([€\d.,]+)$/u);
-      const m1De = partsDe[0]?.match(/^([A-Za-z0-9ÄöüäÖÜß\s/,\.-]+)\s*([€\d.,]+)$/u);
-      const m2De = partsDe[1]?.match(/^([A-Za-z0-9ÄöüäÖÜß\s/,\.-]+)\s*([€\d.,]+)$/u);
-
-      setOpt1LabelEn(m1En ? m1En[1].trim() : 'Option 1');
-      setOpt1Price(m1En ? m1En[2].trim() : '€12,5');
-      setOpt2LabelEn(m2En ? m2En[1].trim() : 'Option 2');
-      setOpt2Price(m2En ? m2En[2].trim() : '€14,5');
-
-      setOpt1LabelDe(m1De ? m1De[1].trim() : 'Option 1');
-      setOpt2LabelDe(m2De ? m2De[1].trim() : 'Option 2');
-      setFormPrice(item.price);
+      setOpt1LabelEn(item.options[0].nameEn || 'Chicken');
+      setOpt1LabelDe(item.options[0].nameDe || 'Hähnchen');
+      setOpt1Price(item.options[0].price || '€12,5');
+      setOpt2LabelEn(item.options[1].nameEn || 'Prawns');
+      setOpt2LabelDe(item.options[1].nameDe || 'Garnelen');
+      setOpt2Price(item.options[1].price || '€14,5');
+      setFormPrice('');
     } else {
       setPriceType('single');
       setFormPrice(item.price || '€11,5');
@@ -437,61 +578,57 @@ export const StudioPage: React.FC = () => {
     setFormFoodType(item.foodType || 'vegetarian');
     setFormImg(item.img || '');
     setFormCatId(catId);
-    setFormFeatured(Boolean(item.featured));
+    setFormFeatured(!!item.featured);
     setFormAvailable(item.available !== false);
-    setFormSpicy(Boolean(item.isSpicy));
+    setFormSpicy(!!item.isSpicy);
     setShowGallery(false);
     setIsModalOpen(true);
   };
 
-  // Save Item (New or Edit)
+  // Save Item (Create or Update)
   const handleSaveItem = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formTitleEn) return;
+    if (!formTitleEn.trim()) return;
 
     let computedPrice = formPrice;
-    let computedPriceEn = undefined;
-    let computedPriceDe = undefined;
+    let computedOptions: { nameEn: string; nameDe?: string; price: string }[] | undefined = undefined;
 
     if (priceType === 'double') {
-      computedPriceEn = `${opt1LabelEn} ${opt1Price} | ${opt2LabelEn} ${opt2Price}`;
-      computedPriceDe = `${opt1LabelDe} ${opt1Price} | ${opt2LabelDe} ${opt2Price}`;
-      computedPrice = computedPriceEn;
+      computedPrice = `${opt1LabelEn} ${opt1Price} | ${opt2LabelEn} ${opt2Price}`;
+      computedOptions = [
+        { nameEn: opt1LabelEn, nameDe: opt1LabelDe || opt1LabelEn, price: opt1Price },
+        { nameEn: opt2LabelEn, nameDe: opt2LabelDe || opt2LabelEn, price: opt2Price }
+      ];
     }
 
-    const targetCatId = formCatId;
-    const newItemData: SanityMenuItem = {
-      _id: editingItem ? editingItem._id : `custom-item-${Date.now()}`,
-      id: editingItem ? editingItem.id || editingItem._id : `custom-${Date.now()}`,
-      titleEn: formTitleEn,
-      titleDe: formTitleDe || formTitleEn,
-      descEn: formDescEn,
-      descDe: formDescDe || formDescEn,
+    const itemData: SanityMenuItem = {
+      _id: editingItem ? editingItem._id : `item-${Date.now()}`,
+      id: editingItem ? editingItem.id || editingItem._id : `item-${Date.now()}`,
+      titleEn: formTitleEn.trim(),
+      titleDe: formTitleDe.trim() || formTitleEn.trim(),
+      descEn: formDescEn.trim(),
+      descDe: formDescDe.trim() || formDescEn.trim(),
       price: computedPrice,
-      priceEn: computedPriceEn,
-      priceDe: computedPriceDe,
+      options: computedOptions,
       foodType: formFoodType,
-      img: formImg,
+      img: formImg.trim() || undefined,
       featured: formFeatured,
       available: formAvailable,
       isSpicy: formSpicy,
-      isVeganLeaf: formFoodType === 'vegan',
     };
 
-    let updated = [...categories];
-
-    if (editingItem) {
-      updated = updated.map((cat) => ({
-        ...cat,
-        items: cat.items.filter((it) => it._id !== editingItem._id && it.id !== editingItem.id),
-      }));
-    }
+    let updated = categories.map((cat) => ({
+      ...cat,
+      items: cat.items.filter((it) => it._id !== itemData._id && it.id !== itemData._id),
+    }));
 
     updated = updated.map((cat) => {
-      if (cat._id === targetCatId) {
+      if (cat._id === formCatId) {
         return {
           ...cat,
-          items: [newItemData, ...cat.items],
+          items: editingItem
+            ? [...cat.items, itemData]
+            : [itemData, ...cat.items],
         };
       }
       return cat;
@@ -503,7 +640,7 @@ export const StudioPage: React.FC = () => {
 
   // Delete Item
   const handleDeleteItem = (itemId: string, catId: string) => {
-    if (!window.confirm('Are you sure you want to delete this menu item?')) return;
+    if (!window.confirm('Are you sure you want to delete this menu dish?')) return;
     const updated = categories.map((cat) => {
       if (cat._id === catId) {
         return {
@@ -528,7 +665,7 @@ export const StudioPage: React.FC = () => {
           items: cat.items.map((it) => {
             if (it._id === itemId || it.id === itemId) {
               foundTitle = it.titleEn || it.titleDe || 'Dish';
-              const currentAvailable = it.available !== false; // true if undefined
+              const currentAvailable = it.available !== false;
               isNowAvailable = !currentAvailable;
               return { ...it, available: isNowAvailable };
             }
@@ -542,12 +679,12 @@ export const StudioPage: React.FC = () => {
     saveAllToLocal(updated);
     showToast(
       isNowAvailable
-        ? `"${foundTitle || 'Dish'}" is now marked as AVAILABLE`
-        : `"${foundTitle || 'Dish'}" is now marked as SOLD OUT`
+        ? `"${foundTitle}" is now AVAILABLE`
+        : `"${foundTitle}" marked as SOLD OUT`
     );
   };
 
-  // Toggle Item Featured (assigning next chronological order or removing)
+  // Toggle Item Featured
   const handleToggleFeatured = (itemId: string, catId: string) => {
     const currentFeatured = categories.flatMap(c => c.items).filter(it => it.featured);
     const maxOrder = currentFeatured.reduce((max, it) => Math.max(max, it.featuredOrder || 0), 0);
@@ -609,7 +746,7 @@ export const StudioPage: React.FC = () => {
     saveAllToLocal(updated);
   };
 
-  // ── Category Management Handlers ──
+  // Category Management Handlers
   const handleOpenNewCategory = () => {
     setEditingCategory(null);
     setCatNameEn('');
@@ -666,8 +803,8 @@ export const StudioPage: React.FC = () => {
     const cat = categories.find((c) => c._id === catId);
     if (!cat) return;
     const confirmMsg = cat.items.length > 0
-      ? `Are you sure you want to delete category "${cat.name}" and all its ${cat.items.length} items?`
-      : `Are you sure you want to delete category "${cat.name}"?`;
+      ? `Delete category "${cat.name}" and its ${cat.items.length} dishes?`
+      : `Delete category "${cat.name}"?`;
     if (!window.confirm(confirmMsg)) return;
 
     const updated = categories.filter((c) => c._id !== catId);
@@ -689,11 +826,37 @@ export const StudioPage: React.FC = () => {
     saveAllToLocal(reordered);
   };
 
+  const handleOpenAddDishToCategory = (catId: string) => {
+    setTargetCategoryForAdd(catId);
+    setIsAddDishModalOpen(true);
+  };
+
+  const handleAddExistingDishToCategory = (item: SanityMenuItem, targetCatId: string) => {
+    let updated = categories.map((cat) => ({
+      ...cat,
+      items: cat.items.filter((it) => it._id !== item._id && it.id !== item.id),
+    }));
+
+    updated = updated.map((cat) => {
+      if (cat._id === targetCatId) {
+        return {
+          ...cat,
+          items: [item, ...cat.items],
+        };
+      }
+      return cat;
+    });
+
+    saveAllToLocal(updated);
+    const targetCat = categories.find((c) => c._id === targetCatId);
+    showToast(`Moved "${item.titleEn}" to ${targetCat ? targetCat.name : 'category'}!`);
+  };
+
   // Save Settings
   const handleSaveSettings = (e: React.FormEvent) => {
     e.preventDefault();
     localStorage.setItem('maati_admin_settings', JSON.stringify(siteSettings));
-    showSuccessToast();
+    showToast('Restaurant information saved!');
   };
 
   // Save Homepage
@@ -707,6 +870,10 @@ export const StudioPage: React.FC = () => {
   const allItemsWithCat = categories.flatMap((c) =>
     c.items.map((it) => ({ ...it, catId: c._id, catName: c.name }))
   );
+
+  const availableCount = allItemsWithCat.filter(it => it.available !== false).length;
+  const soldOutCount = allItemsWithCat.filter(it => it.available === false).length;
+  const featuredCount = allItemsWithCat.filter(it => it.featured).length;
 
   const adminQuery = adminSearchQuery.trim().toLowerCase();
 
@@ -753,62 +920,208 @@ export const StudioPage: React.FC = () => {
     });
   };
 
-  const handleUpdateStep = (index: number, updated: Partial<MaatiWayStep>) => {
-    const currentSteps = [...(homepageContent.maatiWaySteps || [])];
-    currentSteps[index] = { ...currentSteps[index], ...updated };
+  const handleDeleteStepCard = (idOrIdx: string | number) => {
+    const currentSteps = (homepageContent.maatiWaySteps || []).filter(
+      (s, idx) => s.id !== idOrIdx && idx !== idOrIdx
+    );
     setHomepageContent({
       ...homepageContent,
       maatiWaySteps: currentSteps
     });
   };
 
-  const handleMoveStep = (index: number, direction: 'up' | 'down') => {
-    const currentSteps = [...(homepageContent.maatiWaySteps || [])];
-    const targetIndex = direction === 'up' ? index - 1 : index + 1;
-    if (targetIndex < 0 || targetIndex >= currentSteps.length) return;
-    const temp = currentSteps[index];
-    currentSteps[index] = currentSteps[targetIndex];
-    currentSteps[targetIndex] = temp;
-    currentSteps.forEach((s, idx) => { s.step = idx + 1; });
-    setHomepageContent({
-      ...homepageContent,
-      maatiWaySteps: currentSteps
-    });
-  };
+  // Reusable Gallery Drawer with Search, Category Filter, Fast Upload, Tagging, and 1-Click Delete
+  const renderGalleryPicker = (
+    selectedPath: string,
+    onSelect: (path: string) => void,
+    onClose?: () => void
+  ) => {
+    const categoriesList = ['All', ...AVAILABLE_TAGS];
 
-  const handleDeleteStep = (index: number) => {
-    if (!window.confirm('Are you sure you want to delete this step card?')) return;
-    const currentSteps = (homepageContent.maatiWaySteps || []).filter((_, idx) => idx !== index);
-    currentSteps.forEach((s, idx) => { s.step = idx + 1; });
-    setHomepageContent({
-      ...homepageContent,
-      maatiWaySteps: currentSteps
+    const q = gallerySearch.toLowerCase().trim();
+    const filtered = galleryAssets.filter((asset) => {
+      const matchesCat = galleryFilterCat === 'All' || asset.category === galleryFilterCat;
+      if (!matchesCat) return false;
+      if (!q) return true;
+      return (
+        asset.name.toLowerCase().includes(q) ||
+        asset.category.toLowerCase().includes(q) ||
+        asset.path.toLowerCase().includes(q)
+      );
     });
+
+    return (
+      <div className="bg-[#fcf8f3] border border-[#ebdcd0] rounded-2xl p-4 sm:p-5 space-y-4 animate-fadeIn shadow-sm">
+        {/* Top Controls: Search + Upload */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={gallerySearch}
+              onChange={(e) => setGallerySearch(e.target.value)}
+              placeholder="Search photos (e.g. Bowl, Naan, Mango, Chai)..."
+              className="w-full pl-9 pr-3 py-1.5 bg-white border border-gray-200 rounded-xl text-[12.5px] focus:outline-none focus:border-[#d85c27]"
+            />
+            {gallerySearch && (
+              <button
+                type="button"
+                onClick={() => setGallerySearch('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => handleOptimizedImageUpload(onSelect)}
+              className="bg-[#1e382f] hover:bg-[#152721] text-white text-[12px] font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 shadow-sm transition-all"
+            >
+              <Upload className="w-3.5 h-3.5 text-[#d85c27]" />
+              <span>+ Upload Photo</span>
+            </button>
+
+            {onClose && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="p-2 hover:bg-gray-200 rounded-xl text-gray-500 transition-colors"
+                title="Close"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Category Pills */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar text-[11.5px]">
+          {categoriesList.map((cat) => {
+            const count = cat === 'All'
+              ? galleryAssets.length
+              : galleryAssets.filter((a) => a.category === cat).length;
+            if (count === 0 && cat !== 'All') return null;
+
+            return (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => setGalleryFilterCat(cat)}
+                className={`px-3 py-1 rounded-full font-bold whitespace-nowrap transition-all ${
+                  galleryFilterCat === cat
+                    ? 'bg-[#d85c27] text-white shadow-sm'
+                    : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+                }`}
+              >
+                {cat} ({count})
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Image Grid with Click to Select, Edit Tag, & Delete */}
+        {filtered.length === 0 ? (
+          <div className="py-8 text-center bg-white rounded-xl border border-dashed border-gray-200">
+            <p className="text-[13px] text-gray-500 font-medium">No photos found matching "{gallerySearch}"</p>
+            <button
+              type="button"
+              onClick={() => { setGallerySearch(''); setGalleryFilterCat('All'); }}
+              className="text-[#d85c27] text-[12px] font-bold mt-2 hover:underline"
+            >
+              Clear search
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 max-h-[320px] overflow-y-auto p-1 bg-white rounded-xl border border-gray-200">
+            {filtered.map((asset) => {
+              const isSelected = selectedPath === asset.path;
+              return (
+                <div
+                  key={asset.id || asset.path}
+                  onClick={() => {
+                    onSelect(asset.path);
+                    if (onClose) onClose();
+                  }}
+                  className={`group relative rounded-xl overflow-hidden border-2 cursor-pointer transition-all aspect-[4/3] bg-gray-50 flex flex-col justify-end ${
+                    isSelected
+                      ? 'border-[#d85c27] ring-2 ring-[#d85c27]/30 shadow-md'
+                      : 'border-gray-200 hover:border-gray-400 hover:shadow-sm'
+                  }`}
+                >
+                  <img
+                    src={asset.path}
+                    alt={asset.name}
+                    loading="lazy"
+                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+
+                  {/* Selected Checkmark Badge */}
+                  {isSelected && (
+                    <div className="absolute top-1.5 left-1.5 z-10 w-5 h-5 rounded-full bg-[#d85c27] text-white flex items-center justify-center shadow">
+                      <Check className="w-3.5 h-3.5 stroke-[3]" />
+                    </div>
+                  )}
+
+                  {/* Actions (Edit Tag & Delete) */}
+                  <div className="absolute top-1.5 right-1.5 z-10 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      type="button"
+                      onClick={(e) => handleOpenEditPhoto(asset, e)}
+                      title={`Edit name or tag for "${asset.name}"`}
+                      className="w-6 h-6 rounded-full bg-black/65 hover:bg-blue-600 text-white flex items-center justify-center shadow transition-all"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => handleDeleteGalleryImage(e, asset.id, asset.name)}
+                      title={`Delete "${asset.name}"`}
+                      className="w-6 h-6 rounded-full bg-black/65 hover:bg-rose-600 text-white flex items-center justify-center shadow transition-all"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  {/* Image Name Banner */}
+                  <div className="relative z-10 bg-gradient-to-t from-black/85 via-black/50 to-transparent p-1.5 pt-4 text-white">
+                    <p className="text-[10px] font-black truncate leading-tight">{asset.name}</p>
+                    <span className="text-[8.5px] text-white/75 font-medium block truncate">{asset.category}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
   };
 
   // ═══════════════════════════════════════════════
-  // 1. LOGIN SCREEN GATE
+  // 1. LOGIN SCREEN
   // ═══════════════════════════════════════════════
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-[#f5f0e8] flex items-center justify-center px-4 pt-20 pb-16">
-        <div className="w-full max-w-[440px] bg-white rounded-[32px] p-8 md:p-10 shadow-2xl border border-[#ebdcd0] text-center animate-fadeInUp">
+      <div className="min-h-screen bg-[#f5f0e8] flex items-center justify-center px-4 py-20">
+        <div className="w-full max-w-[420px] bg-white rounded-[32px] p-8 md:p-10 shadow-2xl border border-[#ebdcd0] text-center animate-fadeInUp">
           
-          <div className="w-16 h-16 rounded-2xl bg-[#d85c27] text-white flex items-center justify-center mx-auto mb-6 shadow-md">
+          <div className="w-16 h-16 rounded-2xl bg-[#d85c27] text-white flex items-center justify-center mx-auto mb-5 shadow-md">
             <Lock className="w-8 h-8" />
           </div>
 
-          <h1 className="text-[28px] font-black text-[#1e382f] mb-2">
-            MAATI Studio Admin
+          <h1 className="text-[26px] font-black text-[#1e382f] mb-1.5">
+            MAATI Studio
           </h1>
-          <p className="text-[14px] text-[#666] mb-8">
-            Enter your admin passcode to access live menu management and homepage controls.
+          <p className="text-[13.5px] text-[#666] mb-7">
+            Staff access to update menu dishes, prices, photos, and homepage content.
           </p>
 
           <form onSubmit={handleLogin} className="space-y-4 text-left">
             <div>
-              <label className="block text-[12px] font-extrabold uppercase tracking-wider text-[#333] mb-1.5">
-                Admin Passcode
+              <label className="block text-[11px] font-extrabold uppercase tracking-wider text-[#444] mb-1.5">
+                Passcode
               </label>
               <input
                 type="password"
@@ -828,14 +1141,14 @@ export const StudioPage: React.FC = () => {
 
             <button
               type="submit"
-              className="w-full bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold py-4 rounded-2xl text-[15px] shadow-md hover:shadow-lg transition-all transform hover:scale-[1.01]"
+              className="w-full bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold py-3.5 rounded-2xl text-[15px] shadow-md hover:shadow-lg transition-all transform hover:scale-[1.01]"
             >
-              Unlock Admin Panel
+              Open Studio
             </button>
           </form>
 
-          <div className="mt-8 pt-6 border-t border-gray-100 text-[12px] text-gray-500">
-            <span>MAATI Kitchen Berlin Mitte • Authorized Staff Only</span>
+          <div className="mt-8 pt-5 border-t border-gray-100 text-[11.5px] text-gray-500 font-medium">
+            MAATI Kitchen Berlin Mitte
           </div>
 
         </div>
@@ -843,115 +1156,169 @@ export const StudioPage: React.FC = () => {
     );
   }
 
+  const currentSpotlight = SPOTLIGHT_STEPS[currentTourIndex];
+
   // ═══════════════════════════════════════════════
   // 2. MAIN ADMIN DASHBOARD
   // ═══════════════════════════════════════════════
   return (
-    <div className="min-h-screen bg-[#f5f0e8] pt-28 pb-20 px-4 sm:px-8 md:px-12 lg:px-20">
-      <div className="max-w-[1360px] mx-auto">
+    <div className="min-h-screen bg-[#f5f0e8] pt-24 sm:pt-28 pb-28 px-4 sm:px-8 md:px-12 lg:px-20 relative">
+      <div className="max-w-[1360px] mx-auto space-y-6">
 
-        {/* ── Top Bar ── */}
-        <div className="bg-[#fffdfa] rounded-[28px] p-6 md:p-8 border border-[#ebdcd0] shadow-sm mb-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div>
-            <div className="flex items-center gap-3 mb-1">
-              <span className="p-2.5 rounded-xl bg-[#d85c27] text-white">
-                <Database className="w-6 h-6" />
-              </span>
-              <h1 className="text-[26px] md:text-[32px] font-black text-[#1e382f]">
-                MAATI Kitchen Admin Panel
-              </h1>
+        {/* ── Top Header Bar with Tour Guide Button ── */}
+        <header className="bg-[#fffdfa] rounded-[28px] p-5 sm:p-7 border border-[#ebdcd0] shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-[#1e382f] text-white flex items-center justify-center shadow-sm shrink-0">
+              <Sparkles className="w-6 h-6 text-[#d85c27]" />
             </div>
-            <p className="text-[#666] text-[14px]">
-              Direct live control over all menu dishes, double pricing, photos, and homepage sections.
-            </p>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-[24px] sm:text-[28px] font-black text-[#1e382f] leading-tight">
+                  MAATI Studio
+                </h1>
+                <span className="bg-emerald-100 text-emerald-800 text-[11px] font-black px-2.5 py-0.5 rounded-full">
+                  Live
+                </span>
+              </div>
+              <p className="text-[#666] text-[13px] mt-0.5">
+                Simple control over your dishes, categories, photos, and homepage.
+              </p>
+            </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            {saveSuccess && (
-              <span className="inline-flex items-center gap-1.5 bg-emerald-100 text-emerald-800 text-[13px] font-bold px-3 py-1.5 rounded-full animate-fadeIn">
-                <Check className="w-4 h-4 text-emerald-600" />
-                Changes Saved Live!
-              </span>
-            )}
+          <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto justify-start md:justify-end">
+            <button
+              type="button"
+              onClick={startSpotlightTour}
+              className="bg-[#fae8d8] hover:bg-[#f3d9c2] text-[#d85c27] border border-[#ebdcd0] font-black px-4 py-2.5 rounded-xl text-[13px] shadow-xs hover:shadow-sm transition-all flex items-center gap-1.5"
+            >
+              <Compass className="w-4 h-4" />
+              <span>Interactive Tour</span>
+            </button>
+
             <Link
               to="/"
-              className="bg-white hover:bg-gray-50 text-[#1e382f] border-2 border-[#ebdcd0] font-extrabold px-4 py-2 rounded-full text-[13px] shadow-xs hover:shadow-sm transition-all flex items-center gap-1.5"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-white hover:bg-gray-50 text-[#1e382f] border border-[#ebdcd0] font-bold px-4 py-2.5 rounded-xl text-[13px] shadow-xs hover:shadow-sm transition-all flex items-center gap-1.5"
             >
               <ExternalLink className="w-4 h-4 text-[#d85c27]" />
               <span>View Website</span>
             </Link>
+
             <button
+              data-tour="add-dish"
               onClick={() => handleOpenNewItem()}
-              className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-5 py-2.5 rounded-full text-[14px] shadow-sm hover:shadow-md transition-all flex items-center gap-2"
+              className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-5 py-2.5 rounded-xl text-[13px] shadow-sm hover:shadow-md transition-all flex items-center gap-1.5"
             >
               <Plus className="w-4 h-4" />
-              <span>Add New Dish</span>
+              <span>Add Dish</span>
             </button>
+
             <button
               onClick={handleLogout}
               title="Logout"
-              className="p-2.5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors"
+              className="p-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors"
             >
-              <LogOut className="w-5 h-5" />
+              <LogOut className="w-4 h-4" />
             </button>
           </div>
-        </div>
+        </header>
 
-        {/* ── Navigation Tabs ── */}
-        <div className="flex flex-wrap items-center gap-2 mb-8 bg-[#fffdfa] p-2 rounded-2xl border border-[#ebdcd0] shadow-sm">
+        {/* ── Segmented Navigation Tabs ── */}
+        <nav
+          data-tour="nav-tabs"
+          className="flex items-center gap-2 overflow-x-auto no-scrollbar bg-[#fffdfa] p-2 rounded-2xl border border-[#ebdcd0] shadow-sm"
+        >
           <button
             onClick={() => setActiveTab('items')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-[14px] transition-all ${
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-extrabold text-[13.5px] whitespace-nowrap transition-all ${
               activeTab === 'items'
                 ? 'bg-[#1e382f] text-white shadow-sm'
                 : 'text-[#1e382f] hover:bg-[#1e382f]/5'
             }`}
           >
-            <Utensils className="w-4 h-4" />
-            <span>Menu Items ({allItemsWithCat.length})</span>
+            <Utensils className="w-4 h-4 text-[#d85c27]" />
+            <span>Dishes ({allItemsWithCat.length})</span>
           </button>
-          <button
-            onClick={() => setActiveTab('homepage')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-[14px] transition-all ${
-              activeTab === 'homepage'
-                ? 'bg-[#1e382f] text-white shadow-sm'
-                : 'text-[#1e382f] hover:bg-[#1e382f]/5'
-            }`}
-          >
-            <Home className="w-4 h-4" />
-            <span>Homepage (All Sections)</span>
-          </button>
+
           <button
             onClick={() => setActiveTab('categories')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-[14px] transition-all ${
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-extrabold text-[13.5px] whitespace-nowrap transition-all ${
               activeTab === 'categories'
                 ? 'bg-[#1e382f] text-white shadow-sm'
                 : 'text-[#1e382f] hover:bg-[#1e382f]/5'
             }`}
           >
-            <FolderTree className="w-4 h-4" />
+            <FolderTree className="w-4 h-4 text-[#d85c27]" />
             <span>Categories ({categories.length})</span>
           </button>
+
+          <button
+            onClick={() => setActiveTab('homepage')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-extrabold text-[13.5px] whitespace-nowrap transition-all ${
+              activeTab === 'homepage'
+                ? 'bg-[#1e382f] text-white shadow-sm'
+                : 'text-[#1e382f] hover:bg-[#1e382f]/5'
+            }`}
+          >
+            <Home className="w-4 h-4 text-[#d85c27]" />
+            <span>Homepage Sections</span>
+          </button>
+
+          <button
+            data-tour="tab-gallery"
+            onClick={() => setActiveTab('gallery')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-extrabold text-[13.5px] whitespace-nowrap transition-all ${
+              activeTab === 'gallery'
+                ? 'bg-[#1e382f] text-white shadow-sm'
+                : 'text-[#1e382f] hover:bg-[#1e382f]/5'
+            }`}
+          >
+            <ImageIcon className="w-4 h-4 text-[#d85c27]" />
+            <span>Photo Library ({galleryAssets.length})</span>
+          </button>
+
           <button
             onClick={() => setActiveTab('settings')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-[14px] transition-all ${
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-extrabold text-[13.5px] whitespace-nowrap transition-all ${
               activeTab === 'settings'
                 ? 'bg-[#1e382f] text-white shadow-sm'
                 : 'text-[#1e382f] hover:bg-[#1e382f]/5'
             }`}
           >
-            <Sliders className="w-4 h-4" />
-            <span>Site Settings</span>
+            <Sliders className="w-4 h-4 text-[#d85c27]" />
+            <span>Restaurant Info</span>
           </button>
-        </div>
+        </nav>
 
         {/* ═══════════════════════════════════════════════
-            TAB 1: MENU ITEMS (NO INTERNAL IDS SHOWN)
+            TAB 1: MENU DISHES
         ═══════════════════════════════════════════════ */}
         {activeTab === 'items' && (
           <div className="space-y-6">
 
-            {/* ── Featured Items Live Order Bar ── */}
+            {/* Quick Metrics Cards */}
+            <div data-tour="metrics" className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+              <div className="bg-[#fffdfa] rounded-2xl p-4 border border-[#ebdcd0] shadow-xs">
+                <span className="text-[11px] font-extrabold text-[#777] uppercase tracking-wider block">Total Dishes</span>
+                <span className="text-[24px] font-black text-[#1e382f]">{allItemsWithCat.length}</span>
+              </div>
+              <div className="bg-[#fffdfa] rounded-2xl p-4 border border-[#ebdcd0] shadow-xs">
+                <span className="text-[11px] font-extrabold text-emerald-700 uppercase tracking-wider block">Available</span>
+                <span className="text-[24px] font-black text-emerald-700">{availableCount}</span>
+              </div>
+              <div className="bg-[#fffdfa] rounded-2xl p-4 border border-[#ebdcd0] shadow-xs">
+                <span className="text-[11px] font-extrabold text-rose-600 uppercase tracking-wider block">Sold Out</span>
+                <span className="text-[24px] font-black text-rose-600">{soldOutCount}</span>
+              </div>
+              <div className="bg-[#fffdfa] rounded-2xl p-4 border border-[#ebdcd0] shadow-xs">
+                <span className="text-[11px] font-extrabold text-amber-600 uppercase tracking-wider block">Featured on Home</span>
+                <span className="text-[24px] font-black text-amber-600">{featuredCount}</span>
+              </div>
+            </div>
+
+            {/* Featured Items Live Order Bar */}
             {(() => {
               const featuredList = allItemsWithCat
                 .filter((it) => it.featured)
@@ -960,31 +1327,29 @@ export const StudioPage: React.FC = () => {
               if (featuredList.length === 0) return null;
 
               return (
-                <div className="bg-[#fffdfa] rounded-[24px] border-2 border-amber-200 p-5 shadow-sm space-y-3">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-[22px] p-4 sm:p-5 border border-amber-200 shadow-xs space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                     <div className="flex items-center gap-2">
-                      <span className="p-1.5 rounded-lg bg-amber-500 text-white">
-                        <Star className="w-4 h-4 fill-white" />
-                      </span>
-                      <h3 className="text-[15px] font-black text-[#1e382f]">
-                        Homepage Featured Cards Order ({featuredList.length} dishes active)
+                      <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+                      <h3 className="text-[14px] font-black text-amber-900">
+                        Featured on Homepage ({featuredList.length} Dishes)
                       </h3>
                     </div>
-                    <span className="text-[12px] text-gray-500 font-medium">
-                      Dishes appear on homepage in this exact order (#1, #2, #3...)
+                    <span className="text-[11.5px] text-amber-800 font-semibold">
+                      Use ◀ ▶ arrows to change the order on the homepage
                     </span>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-2.5 pt-1">
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
                     {featuredList.map((item, idx) => (
                       <div
                         key={item._id || item.id}
-                        className="bg-[#fcf8f3] border border-amber-300 rounded-xl px-3 py-2 flex items-center gap-2 shadow-xs"
+                        className="bg-white border border-amber-300 rounded-xl px-3 py-1.5 flex items-center gap-2 shadow-xs"
                       >
-                        <span className="bg-amber-500 text-white font-black text-[11px] w-5 h-5 rounded-full flex items-center justify-center">
+                        <span className="bg-amber-500 text-white font-black text-[10.5px] w-5 h-5 rounded-full flex items-center justify-center">
                           {idx + 1}
                         </span>
-                        <span className="text-[13px] font-extrabold text-[#1a1a1a] max-w-[140px] truncate">
+                        <span className="text-[12.5px] font-bold text-[#1a1a1a] max-w-[130px] truncate">
                           {item.titleEn}
                         </span>
                         
@@ -993,8 +1358,8 @@ export const StudioPage: React.FC = () => {
                             type="button"
                             disabled={idx === 0}
                             onClick={() => handleMoveFeatured(item._id || item.id || '', 'prev')}
-                            title="Move Left / Earlier in order"
-                            className="p-1 text-gray-500 hover:text-black disabled:opacity-30 rounded hover:bg-amber-100"
+                            title="Move Earlier"
+                            className="p-1 text-gray-500 hover:text-black disabled:opacity-20 rounded"
                           >
                             ◀
                           </button>
@@ -1002,8 +1367,8 @@ export const StudioPage: React.FC = () => {
                             type="button"
                             disabled={idx === featuredList.length - 1}
                             onClick={() => handleMoveFeatured(item._id || item.id || '', 'next')}
-                            title="Move Right / Later in order"
-                            className="p-1 text-gray-500 hover:text-black disabled:opacity-30 rounded hover:bg-amber-100"
+                            title="Move Later"
+                            className="p-1 text-gray-500 hover:text-black disabled:opacity-20 rounded"
                           >
                             ▶
                           </button>
@@ -1011,7 +1376,7 @@ export const StudioPage: React.FC = () => {
                             type="button"
                             onClick={() => handleToggleFeatured(item._id || item.id || '', item.catId)}
                             title="Remove from Homepage"
-                            className="p-1 text-rose-500 hover:text-rose-700 rounded hover:bg-rose-50"
+                            className="p-1 text-rose-500 hover:text-rose-700 rounded"
                           >
                             ✕
                           </button>
@@ -1023,1552 +1388,376 @@ export const StudioPage: React.FC = () => {
               );
             })()}
 
-            {/* ── Admin Menu Search Bar ── */}
-            <div className="bg-[#fffdfa] rounded-[22px] p-4 border border-[#ebdcd0] shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-              <div className="relative flex-1 max-w-[560px]">
-                <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  value={adminSearchQuery}
-                  onChange={(e) => setAdminSearchQuery(e.target.value)}
-                  placeholder="Search dishes by name (EN/DE), description, ingredients, price..."
-                  className="w-full bg-white border border-[#ebdcd0] focus:border-[#d85c27] rounded-xl pl-10 pr-10 py-2.5 text-[14px] font-semibold text-[#1a1a1a] focus:outline-none transition-colors"
-                />
-                {adminSearchQuery && (
-                  <button
-                    onClick={() => setAdminSearchQuery('')}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
+            {/* Search & Category Filter Toolbar */}
+            <div className="bg-[#fffdfa] rounded-[22px] p-4 border border-[#ebdcd0] shadow-sm space-y-3">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                <div className="relative flex-1">
+                  <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={adminSearchQuery}
+                    onChange={(e) => setAdminSearchQuery(e.target.value)}
+                    placeholder="Search dishes (e.g. Butter Chicken, Bowl, Lassi, Coffee)..."
+                    className="w-full bg-white border border-[#ebdcd0] focus:border-[#d85c27] rounded-xl pl-10 pr-10 py-2 text-[13.5px] font-medium text-[#1a1a1a] focus:outline-none transition-colors"
+                  />
+                  {adminSearchQuery && (
+                    <button
+                      onClick={() => setAdminSearchQuery('')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-[12px] font-bold text-[#666] shrink-0">Category:</span>
+                  <select
+                    value={selectedCatId}
+                    onChange={(e) => setSelectedCatId(e.target.value)}
+                    className="bg-white border border-[#ebdcd0] text-[#1e382f] font-bold rounded-xl px-3 py-2 text-[13px] focus:outline-none focus:border-[#d85c27]"
                   >
-                    ✕
-                  </button>
-                )}
-              </div>
-              <div className="text-[13px] font-bold text-[#666] shrink-0 self-center sm:self-auto">
-                Showing <span className="text-[#d85c27] font-black">{displayedItems.length}</span> of {allItemsWithCat.length} dishes
+                    <option value="all">All Categories ({allItemsWithCat.length})</option>
+                    {categories.map((c) => (
+                      <option key={c._id} value={c._id}>
+                        {c.name} ({c.items?.length || 0})
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
 
-            {/* Category Filter Pills */}
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                onClick={() => setSelectedCatId('all')}
-                className={`px-4 py-1.5 rounded-full text-[13px] font-extrabold transition-all ${
-                  selectedCatId === 'all'
-                    ? 'bg-[#d85c27] text-white shadow-sm'
-                    : 'bg-white text-[#1e382f] hover:bg-white/80 border border-[#ebdcd0]'
-                }`}
-              >
-                All Categories ({allItemsWithCat.length})
-              </button>
-              {categories.map((c) => (
+            {/* Dishes Grid */}
+            {displayedItems.length === 0 ? (
+              <div className="bg-[#fffdfa] border-2 border-dashed border-[#ebdcd0] rounded-[24px] p-12 text-center space-y-3">
+                <Utensils className="w-8 h-8 text-gray-300 mx-auto" />
+                <p className="text-[14px] text-gray-500 font-bold">No dishes found matching your search</p>
                 <button
-                  key={c._id}
-                  onClick={() => setSelectedCatId(c._id)}
-                  className={`px-4 py-1.5 rounded-full text-[13px] font-extrabold transition-all ${
-                    selectedCatId === c._id
-                      ? 'bg-[#d85c27] text-white shadow-sm'
-                      : 'bg-white text-[#1e382f] hover:bg-white/80 border border-[#ebdcd0]'
-                  }`}
+                  onClick={() => { setAdminSearchQuery(''); setSelectedCatId('all'); }}
+                  className="text-[#d85c27] font-bold text-[13px] hover:underline"
                 >
-                  {c.name} ({c.items.length})
+                  Clear search filters
                 </button>
-              ))}
-            </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+                {displayedItems.map((item, idx) => {
+                  const isVeg = item.foodType === 'vegetarian';
+                  const isVegan = item.foodType === 'vegan';
+                  const isAvailable = item.available !== false;
 
-            {/* Items Table / Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {displayedItems.map((item) => {
-                const isVeg = item.foodType === 'vegetarian';
-                const isVegan = item.foodType === 'vegan';
-                const featuredIdx = allItemsWithCat
-                  .filter((it) => it.featured)
-                  .sort((a, b) => (a.featuredOrder || 999) - (b.featuredOrder || 999))
-                  .findIndex((x) => x._id === item._id || x.id === item.id);
+                  return (
+                    <div
+                      key={item._id || item.id}
+                      data-tour={idx === 0 ? "first-dish-card" : undefined}
+                      className={`bg-[#fffdfa] rounded-2xl p-4 border border-[#ebdcd0] shadow-xs hover:shadow-md transition-all flex flex-col justify-between ${
+                        !isAvailable ? 'opacity-60 bg-gray-50/50' : ''
+                      }`}
+                    >
+                      <div>
+                        {/* Header: Photo + Title + Diet badge */}
+                        <div className="flex items-start gap-3 mb-3">
+                          <div className="w-16 h-16 rounded-xl overflow-hidden bg-[#fae8d8] shrink-0 border border-[#ebdcd0]">
+                            {item.img ? (
+                              <img src={item.img} alt={item.titleEn} className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-[10px] font-bold text-gray-400">
+                                No Photo
+                              </div>
+                            )}
+                          </div>
 
-                return (
-                  <div
-                    key={item._id || item.id}
-                    className={`bg-[#fffdfa] rounded-[24px] overflow-hidden border border-[#ebdcd0] shadow-sm flex flex-col justify-between p-5 transition-all ${
-                      item.available === false ? 'opacity-50 grayscale' : ''
-                    }`}
-                  >
-                    <div>
-                      {/* Top bar with food image and pills */}
-                      <div className="flex items-center gap-4 mb-4">
-                        <div className="w-16 h-16 rounded-2xl overflow-hidden bg-[#fae8d8] shrink-0 border border-[#ebdcd0]">
-                          {item.img ? (
-                            <img src={item.img} alt={item.titleEn} className="w-full h-full object-cover" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-[10px] font-bold text-gray-400">
-                              MAATI
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5 mb-1">
+                              <span
+                                className={`text-[9.5px] font-black px-2 py-0.5 rounded-md text-white ${
+                                  isVegan ? 'bg-[#2d6a4f]' : isVeg ? 'bg-[#1e382f]' : 'bg-[#d85c27]'
+                                }`}
+                              >
+                                {isVegan ? 'VEGAN' : isVeg ? 'VEG' : 'NON-VEG'}
+                              </span>
+                              {item.isSpicy && (
+                                <span className="bg-rose-100 text-rose-700 text-[9.5px] font-black px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
+                                  <Flame className="w-3 h-3 text-rose-600" /> Spicy
+                                </span>
+                              )}
+                              <span className="text-[10px] text-gray-500 font-medium truncate">
+                                {item.catName}
+                              </span>
                             </div>
-                          )}
+
+                            <h4 className="font-extrabold text-[15px] text-[#1a1a1a] truncate leading-tight">
+                              {item.titleEn}
+                            </h4>
+                            <p className="text-[12px] text-[#777] truncate mt-0.5">
+                              {item.titleDe}
+                            </p>
+                          </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <span className="text-[11px] font-black tracking-wider uppercase text-[#d85c27]">
-                            {item.catName}
-                          </span>
-                          <h3 className="font-extrabold text-[16px] text-[#1a1a1a] truncate">
-                            {item.titleEn}
-                          </h3>
-                          <p className="text-[13px] text-[#777] truncate">
-                            {item.titleDe}
+
+                        {/* Description */}
+                        {(item.descEn || item.descDe) && (
+                          <p className="text-[12px] text-[#666] line-clamp-2 mb-3 leading-relaxed">
+                            {adminContentLang === 'en' ? (item.descEn || item.descDe) : (item.descDe || item.descEn)}
                           </p>
+                        )}
+                      </div>
+
+                      {/* Footer: Price + Quick Actions */}
+                      <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
+                        <span className="font-black text-[#d85c27] text-[14px]">
+                          {item.price}
+                        </span>
+
+                        <div className="flex items-center gap-1">
+                          {/* Available Toggle */}
+                          <button
+                            data-tour={idx === 0 ? "dish-available" : undefined}
+                            type="button"
+                            onClick={() => handleToggleAvailable(item._id || item.id || '', item.catId)}
+                            title={isAvailable ? 'Click to mark as Sold Out' : 'Click to mark as Available'}
+                            className={`px-2.5 py-1 rounded-lg text-[11px] font-extrabold transition-all flex items-center gap-1 ${
+                              isAvailable
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                : 'bg-gray-100 text-gray-500 border border-gray-200'
+                            }`}
+                          >
+                            {isAvailable ? <CheckCircle2 className="w-3 h-3" /> : <AlertCircle className="w-3 h-3" />}
+                            <span>{isAvailable ? 'Available' : 'Sold Out'}</span>
+                          </button>
+
+                          {/* Featured Star */}
+                          <button
+                            data-tour={idx === 0 ? "dish-star" : undefined}
+                            type="button"
+                            onClick={() => handleToggleFeatured(item._id || item.id || '', item.catId)}
+                            title={item.featured ? 'Featured on Home' : 'Feature on Homepage'}
+                            className={`p-1.5 rounded-lg transition-colors ${
+                              item.featured ? 'text-amber-500 bg-amber-50' : 'text-gray-400 hover:bg-gray-100'
+                            }`}
+                          >
+                            <Star className={`w-4 h-4 ${item.featured ? 'fill-amber-500' : ''}`} />
+                          </button>
+
+                          {/* Edit Dish */}
+                          <button
+                            data-tour={idx === 0 ? "dish-edit" : undefined}
+                            type="button"
+                            onClick={() => handleOpenEditItem(item, item.catId)}
+                            className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors"
+                            title="Edit Dish"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </button>
+
+                          {/* Delete Dish */}
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteItem(item._id || item.id || '', item.catId)}
+                            className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 transition-colors"
+                            title="Delete Dish"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
                       </div>
-
-                      {/* Badges & Tags */}
-                      <div className="flex flex-wrap items-center gap-2 mb-3">
-                        <span
-                          className={`text-[10px] font-black px-2.5 py-0.5 rounded-full text-white ${
-                            isVegan
-                              ? 'bg-[#2d6a4f]'
-                              : isVeg
-                              ? 'bg-[#1e382f]'
-                              : 'bg-[#d85c27]'
-                          }`}
-                        >
-                          {isVegan ? 'VEGAN' : isVeg ? 'VEGETARIAN' : 'NON-VEGETARIAN'}
-                        </span>
-                        {item.isSpicy && (
-                          <span className="p-1 rounded-md bg-orange-50 text-orange-600 flex items-center" title="Spicy">
-                            <Flame className="w-3.5 h-3.5 fill-orange-500 text-orange-600" />
-                          </span>
-                        )}
-                        {item.featured && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-black bg-amber-100 text-amber-800 px-2 py-0.5 rounded-md">
-                            <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
-                            #{featuredIdx + 1} on Homepage
-                          </span>
-                        )}
-                        {item.available === false && (
-                          <span className="text-[10px] font-black bg-rose-100 text-rose-800 px-2 py-0.5 rounded-md">
-                            Sold Out
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Price Badge (Supports Multi-price) */}
-                      <div className="mb-4 flex flex-wrap items-center gap-1.5">
-                        {item.price.includes('|') ? (
-                          item.price.split('|').map((p, idx) => (
-                            <span key={idx} className="inline-flex items-center bg-[#1e382f]/5 px-2.5 py-1 rounded-md text-[12px] font-black text-[#d85c27]">
-                              {p.trim()}
-                            </span>
-                          ))
-                        ) : (
-                          <span className="inline-flex items-center bg-[#1e382f]/5 px-2.5 py-1 rounded-md text-[13px] font-black text-[#d85c27]">
-                            {item.price}
-                          </span>
-                        )}
-                      </div>
                     </div>
+                  );
+                })}
+              </div>
+            )}
 
-                    {/* Action buttons */}
-                    <div className="pt-3 border-t border-[#ebdcd0] flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => handleToggleAvailable(item._id || item.id || '', item.catId)}
-                          title={item.available === false ? 'Mark Available' : 'Mark Unavailable'}
-                          className={`p-2 rounded-lg transition-colors ${
-                            item.available === false
-                              ? 'text-gray-400 hover:bg-gray-100'
-                              : 'text-emerald-700 hover:bg-emerald-50'
-                          }`}
-                        >
-                          {item.available === false ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        </button>
-                        <button
-                          onClick={() => handleToggleFeatured(item._id || item.id || '', item.catId)}
-                          title={item.featured ? 'Remove from Homepage' : 'Feature on Homepage'}
-                          className={`p-2 rounded-lg transition-colors ${
-                            item.featured
-                              ? 'text-amber-500 hover:bg-amber-50'
-                              : 'text-gray-400 hover:bg-gray-100'
-                          }`}
-                        >
-                          <Star className={`w-4 h-4 ${item.featured ? 'fill-amber-500' : ''}`} />
-                        </button>
-                      </div>
-
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => handleOpenEditItem(item, item.catId)}
-                          className="p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors"
-                          title="Edit Item"
-                        >
-                          <Edit3 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteItem(item._id || item.id || '', item.catId)}
-                          className="p-2 rounded-lg text-rose-600 hover:bg-rose-50 transition-colors"
-                          title="Delete Item"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
           </div>
         )}
 
         {/* ═══════════════════════════════════════════════
-            TAB 2: HOMEPAGE (CLEAN WITH EN/DE TOGGLE)
-        ═══════════════════════════════════════════════ */}
-        {activeTab === 'homepage' && (
-          <form onSubmit={handleSaveHomepage} className="space-y-6">
-            
-            {/* Top Save Action Bar with EN / DE Switcher */}
-            <div className="sticky top-6 z-20 bg-[#fffdfa]/95 backdrop-blur-md p-4 rounded-2xl border border-[#ebdcd0] shadow-md flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
-              <div>
-                <h2 className="text-[18px] font-black text-[#1e382f]">Edit Homepage Sections & Copy</h2>
-                <p className="text-[12px] text-[#777]">Choose language below to edit cleanly without clutter. Click Save when done.</p>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-3">
-                {/* ── Language Switcher Toggle Pill ── */}
-                <div className="flex items-center gap-1 bg-[#f5f0e8] p-1 rounded-xl border border-[#ebdcd0]">
-                  <button
-                    type="button"
-                    onClick={() => setAdminContentLang('en')}
-                    className={`px-4 py-2 rounded-lg text-[13px] font-extrabold transition-all flex items-center gap-1.5 ${
-                      adminContentLang === 'en'
-                        ? 'bg-[#1e382f] text-white shadow-xs'
-                        : 'text-[#1e382f] hover:bg-white/60'
-                    }`}
-                  >
-                    <Globe className="w-3.5 h-3.5" />
-                    <span>English (EN)</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setAdminContentLang('de')}
-                    className={`px-4 py-2 rounded-lg text-[13px] font-extrabold transition-all flex items-center gap-1.5 ${
-                      adminContentLang === 'de'
-                        ? 'bg-[#1e382f] text-white shadow-xs'
-                        : 'text-[#1e382f] hover:bg-white/60'
-                    }`}
-                  >
-                    <Globe className="w-3.5 h-3.5" />
-                    <span>Deutsch (DE)</span>
-                  </button>
-                </div>
-
-                <button
-                  type="submit"
-                  className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-6 py-2.5 rounded-full text-[14px] shadow-sm hover:shadow-md transition-all flex items-center gap-2 shrink-0"
-                >
-                  <Save className="w-4 h-4" />
-                  <span>Save All Changes</span>
-                </button>
-              </div>
-            </div>
-
-            {/* ── SECTION 1: HERO ── */}
-            <div className="bg-[#fffdfa] rounded-[24px] border border-[#ebdcd0] shadow-sm overflow-hidden">
-              <button
-                type="button"
-                onClick={() => toggleSection('hero')}
-                className="w-full px-6 py-5 flex items-center justify-between text-left hover:bg-black/2 transition-colors border-b border-[#ebdcd0]"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="w-8 h-8 rounded-full bg-[#d85c27] text-white font-black text-[13px] flex items-center justify-center">1</span>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-[18px] font-black text-[#1e382f]">1. Hero Section (Top of Homepage)</h3>
-                      <span className="text-[11px] font-black bg-[#1e382f]/10 text-[#1e382f] px-2 py-0.5 rounded-md uppercase">
-                        Editing {adminContentLang.toUpperCase()}
-                      </span>
-                    </div>
-                    <p className="text-[12px] text-[#777]">Main headline, subtitle, buttons, feature pills, and food photo</p>
-                  </div>
-                </div>
-                {openSections.hero ? <ChevronUp className="w-5 h-5 text-gray-500" /> : <ChevronDown className="w-5 h-5 text-gray-500" />}
-              </button>
-
-              {openSections.hero && (
-                <div className="p-6 md:p-8 space-y-5">
-                  {/* Top Pill Badge */}
-                  <div>
-                    <label className="block text-[12px] font-bold text-[#333] mb-1">
-                      Top Pill Badge ({adminContentLang === 'en' ? 'English' : 'German'})
-                    </label>
-                    <input
-                      type="text"
-                      value={adminContentLang === 'en' ? (homepageContent.heroBadgeEn || '') : (homepageContent.heroBadgeDe || '')}
-                      onChange={(e) =>
-                        setHomepageContent(
-                          adminContentLang === 'en'
-                            ? { ...homepageContent, heroBadgeEn: e.target.value }
-                            : { ...homepageContent, heroBadgeDe: e.target.value }
-                        )
-                      }
-                      placeholder={adminContentLang === 'en' ? 'FAST CASUAL • INDIAN SOUL' : 'FAST CASUAL • INDISCHE KÜCHE'}
-                      className="w-full border rounded-xl px-4 py-2.5 text-[14px] focus:outline-none focus:border-[#d85c27]"
-                    />
-                  </div>
-
-                  {/* Headline Line 1 & Line 2 */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[12px] font-bold text-[#333] mb-1">
-                        Headline Line 1 ({adminContentLang === 'en' ? 'English' : 'German'})
-                      </label>
-                      <input
-                        type="text"
-                        value={adminContentLang === 'en' ? (homepageContent.heroTitle1En || '') : (homepageContent.heroTitle1De || '')}
-                        onChange={(e) =>
-                          setHomepageContent(
-                            adminContentLang === 'en'
-                              ? { ...homepageContent, heroTitle1En: e.target.value }
-                              : { ...homepageContent, heroTitle1De: e.target.value }
-                          )
-                        }
-                        placeholder={adminContentLang === 'en' ? 'Craft Your Own' : 'Kreieren Sie Ihre eigene'}
-                        className="w-full border rounded-xl px-4 py-2.5 text-[14px] focus:outline-none focus:border-[#d85c27]"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[12px] font-bold text-[#333] mb-1">
-                        Headline Line 2 / Accent ({adminContentLang === 'en' ? 'English' : 'German'})
-                      </label>
-                      <input
-                        type="text"
-                        value={adminContentLang === 'en' ? (homepageContent.heroTitle2En || '') : (homepageContent.heroTitle2De || '')}
-                        onChange={(e) =>
-                          setHomepageContent(
-                            adminContentLang === 'en'
-                              ? { ...homepageContent, heroTitle2En: e.target.value }
-                              : { ...homepageContent, heroTitle2De: e.target.value }
-                          )
-                        }
-                        placeholder={adminContentLang === 'en' ? 'Flavor Journey' : 'Geschmacksreise'}
-                        className="w-full border rounded-xl px-4 py-2.5 text-[14px] focus:outline-none focus:border-[#d85c27]"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Description */}
-                  <div>
-                    <label className="block text-[12px] font-bold text-[#333] mb-1">
-                      Hero Description ({adminContentLang === 'en' ? 'English' : 'German'})
-                    </label>
-                    <textarea
-                      rows={2}
-                      value={adminContentLang === 'en' ? (homepageContent.heroDescEn || '') : (homepageContent.heroDescDe || '')}
-                      onChange={(e) =>
-                        setHomepageContent(
-                          adminContentLang === 'en'
-                            ? { ...homepageContent, heroDescEn: e.target.value }
-                            : { ...homepageContent, heroDescDe: e.target.value }
-                        )
-                      }
-                      placeholder="Fresh, vibrant Indian ingredients..."
-                      className="w-full border rounded-xl px-4 py-2 text-[14px] focus:outline-none focus:border-[#d85c27] resize-none"
-                    />
-                  </div>
-
-                  {/* Buttons Text */}
-                  <div className="bg-[#fcf8f3] border border-[#ebdcd0] rounded-2xl p-4 space-y-3">
-                    <label className="text-[12px] font-black text-[#1e382f] uppercase tracking-wider block">
-                      Hero Buttons ({adminContentLang === 'en' ? 'English' : 'German'})
-                    </label>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-[11px] font-bold text-[#555] mb-1">Menu Button Text</label>
-                        <input
-                          type="text"
-                          value={adminContentLang === 'en' ? (homepageContent.heroBtnMenuEn || '') : (homepageContent.heroBtnMenuDe || '')}
-                          onChange={(e) =>
-                            setHomepageContent(
-                              adminContentLang === 'en'
-                                ? { ...homepageContent, heroBtnMenuEn: e.target.value }
-                                : { ...homepageContent, heroBtnMenuDe: e.target.value }
-                            )
-                          }
-                          placeholder={adminContentLang === 'en' ? 'View Menu' : 'Speisekarte'}
-                          className="w-full bg-white border rounded-xl px-3 py-2 text-[13px]"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-bold text-[#555] mb-1">Reservation Button Text</label>
-                        <input
-                          type="text"
-                          value={adminContentLang === 'en' ? (homepageContent.heroBtnResEn || '') : (homepageContent.heroBtnResDe || '')}
-                          onChange={(e) =>
-                            setHomepageContent(
-                              adminContentLang === 'en'
-                                ? { ...homepageContent, heroBtnResEn: e.target.value }
-                                : { ...homepageContent, heroBtnResDe: e.target.value }
-                            )
-                          }
-                          placeholder={adminContentLang === 'en' ? 'Reservations' : 'Reservierungen'}
-                          className="w-full bg-white border rounded-xl px-3 py-2 text-[13px]"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 3 Feature Badges */}
-                  <div className="bg-[#fcf8f3] border border-[#ebdcd0] rounded-2xl p-4 space-y-3">
-                    <label className="text-[12px] font-black text-[#1e382f] uppercase tracking-wider block">
-                      3 Feature Badges Below Buttons ({adminContentLang === 'en' ? 'English' : 'German'})
-                    </label>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      <div>
-                        <label className="block text-[11px] font-bold text-[#555] mb-1">Badge 1</label>
-                        <input
-                          type="text"
-                          value={adminContentLang === 'en' ? (homepageContent.heroPill1En || '') : (homepageContent.heroPill1De || '')}
-                          onChange={(e) =>
-                            setHomepageContent(
-                              adminContentLang === 'en'
-                                ? { ...homepageContent, heroPill1En: e.target.value }
-                                : { ...homepageContent, heroPill1De: e.target.value }
-                            )
-                          }
-                          placeholder={adminContentLang === 'en' ? 'FRESH INGREDIENTS' : 'FRISCHE ZUTATEN'}
-                          className="w-full bg-white border rounded-xl px-3 py-2 text-[12px]"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-bold text-[#555] mb-1">Badge 2</label>
-                        <input
-                          type="text"
-                          value={adminContentLang === 'en' ? (homepageContent.heroPill2En || '') : (homepageContent.heroPill2De || '')}
-                          onChange={(e) =>
-                            setHomepageContent(
-                              adminContentLang === 'en'
-                                ? { ...homepageContent, heroPill2En: e.target.value }
-                                : { ...homepageContent, heroPill2De: e.target.value }
-                            )
-                          }
-                          placeholder={adminContentLang === 'en' ? 'AUTHENTIC SPICES' : 'AUTHENTISCHE GEWÜRZE'}
-                          className="w-full bg-white border rounded-xl px-3 py-2 text-[12px]"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-bold text-[#555] mb-1">Badge 3</label>
-                        <input
-                          type="text"
-                          value={adminContentLang === 'en' ? (homepageContent.heroPill3En || '') : (homepageContent.heroPill3De || '')}
-                          onChange={(e) =>
-                            setHomepageContent(
-                              adminContentLang === 'en'
-                                ? { ...homepageContent, heroPill3En: e.target.value }
-                                : { ...homepageContent, heroPill3De: e.target.value }
-                            )
-                          }
-                          placeholder={adminContentLang === 'en' ? 'READY IN MINUTES' : 'SCHNELL SERVIERT'}
-                          className="w-full bg-white border rounded-xl px-3 py-2 text-[12px]"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Hero Image Upload Block */}
-                  <div className="bg-[#fcf8f3] border border-[#ebdcd0] rounded-2xl p-5 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <label className="text-[13px] font-black text-[#1e382f] flex items-center gap-1.5">
-                          <ImageIcon className="w-4 h-4 text-[#d85c27]" />
-                          Hero Food Photo (Large flatlay)
-                        </label>
-                        <p className="text-[11.5px] text-[#666]">Recommended: <strong>1200 x 900 px</strong> (4:3 ratio), under 2MB.</p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setActiveGallerySection(activeGallerySection === 'hero' ? null : 'hero')}
-                        className="text-[12px] font-bold text-[#d85c27] hover:underline flex items-center gap-1"
-                      >
-                        <Grid className="w-3.5 h-3.5" />
-                        {activeGallerySection === 'hero' ? 'Hide Gallery' : 'Choose Existing Image'}
-                      </button>
-                    </div>
-
-                    <div className="flex items-center gap-4">
-                      <div className="w-20 h-20 rounded-2xl overflow-hidden bg-white shrink-0 border border-[#ebdcd0]">
-                        {homepageContent.heroImage ? (
-                          <img src={homepageContent.heroImage} alt="Hero" className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-400 font-bold">No Img</div>
-                        )}
-                      </div>
-                      <div className="flex-1 space-y-2">
-                        <div className="flex items-center gap-3">
-                          <button
-                            type="button"
-                            onClick={() => handleGenericFileUpload((url) => setHomepageContent({ ...homepageContent, heroImage: url }))}
-                            className="bg-[#1e382f] hover:bg-[#152721] text-white text-[13px] font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 transition-colors"
-                          >
-                            <Upload className="w-4 h-4" />
-                            Upload Hero Photo
-                          </button>
-                          {homepageContent.heroImage && (
-                            <button
-                              type="button"
-                              onClick={() => setHomepageContent({ ...homepageContent, heroImage: '' })}
-                              className="text-rose-600 hover:bg-rose-50 text-[12px] font-bold px-3 py-1.5 rounded-lg border border-rose-200"
-                            >
-                              Clear
-                            </button>
-                          )}
-                        </div>
-                        <input
-                          type="text"
-                          value={homepageContent.heroImage || ''}
-                          onChange={(e) => setHomepageContent({ ...homepageContent, heroImage: e.target.value })}
-                          placeholder="/assets/hero-flatlay.jpg"
-                          className="w-full bg-white border rounded-xl px-3 py-1.5 text-[13px] focus:outline-none focus:border-[#d85c27]"
-                        />
-                      </div>
-                    </div>
-
-                    {activeGallerySection === 'hero' && (
-                      <div className="mt-3 pt-3 border-t border-[#ebdcd0] space-y-2 animate-fadeIn">
-                        <p className="text-[12px] font-bold text-gray-700">Click to select photo:</p>
-                        <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 max-h-[200px] overflow-y-auto p-1 bg-white rounded-xl border">
-                          {AVAILABLE_ASSETS.map((asset, idx) => (
-                            <button
-                              key={idx}
-                              type="button"
-                              onClick={() => { setHomepageContent({ ...homepageContent, heroImage: asset.path }); setActiveGallerySection(null); }}
-                              className="rounded-xl overflow-hidden aspect-square border hover:border-[#d85c27] transition-all"
-                            >
-                              <img src={asset.path} alt={asset.name} className="w-full h-full object-cover" />
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* ── SECTION 2: HOUSE FAVORITES ── */}
-            <div className="bg-[#fffdfa] rounded-[24px] border border-[#ebdcd0] shadow-sm overflow-hidden">
-              <button
-                type="button"
-                onClick={() => toggleSection('favorites')}
-                className="w-full px-6 py-5 flex items-center justify-between text-left hover:bg-black/2 transition-colors border-b border-[#ebdcd0]"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="w-8 h-8 rounded-full bg-[#d85c27] text-white font-black text-[13px] flex items-center justify-center">2</span>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-[18px] font-black text-[#1e382f]">2. House Favorites ("Treat Your Tastebuds")</h3>
-                      <span className="text-[11px] font-black bg-[#1e382f]/10 text-[#1e382f] px-2 py-0.5 rounded-md uppercase">
-                        Editing {adminContentLang.toUpperCase()}
-                      </span>
-                    </div>
-                    <p className="text-[12px] text-[#777]">Green background section displaying your featured dishes</p>
-                  </div>
-                </div>
-                {openSections.favorites ? <ChevronUp className="w-5 h-5 text-gray-500" /> : <ChevronDown className="w-5 h-5 text-gray-500" />}
-              </button>
-
-              {openSections.favorites && (
-                <div className="p-6 md:p-8 space-y-4">
-                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 text-[13px] text-amber-900 font-medium">
-                    💡 <strong>Tip:</strong> The dishes displayed here are selected by clicking the <strong>⭐ Star</strong> button on dishes in the <strong>Menu Items</strong> or <strong>Categories</strong> tab.
-                  </div>
-
-                  <div>
-                    <label className="block text-[12px] font-bold text-[#333] mb-1">
-                      Section Heading ({adminContentLang === 'en' ? 'English' : 'German'})
-                    </label>
-                    <input
-                      type="text"
-                      value={adminContentLang === 'en' ? (homepageContent.lunchTitleEn || '') : (homepageContent.lunchTitleDe || '')}
-                      onChange={(e) =>
-                        setHomepageContent(
-                          adminContentLang === 'en'
-                            ? { ...homepageContent, lunchTitleEn: e.target.value }
-                            : { ...homepageContent, lunchTitleDe: e.target.value }
-                        )
-                      }
-                      placeholder={adminContentLang === 'en' ? 'Treat Your Tastebuds' : 'Verwöhnen Sie Ihren Gaumen'}
-                      className="w-full border rounded-xl px-4 py-2.5 text-[14px] focus:outline-none focus:border-[#d85c27]"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[12px] font-bold text-[#333] mb-1">
-                      Section Description ({adminContentLang === 'en' ? 'English' : 'German'})
-                    </label>
-                    <textarea
-                      rows={2}
-                      value={adminContentLang === 'en' ? (homepageContent.lunchDescEn || '') : (homepageContent.lunchDescDe || '')}
-                      onChange={(e) =>
-                        setHomepageContent(
-                          adminContentLang === 'en'
-                            ? { ...homepageContent, lunchDescEn: e.target.value }
-                            : { ...homepageContent, lunchDescDe: e.target.value }
-                        )
-                      }
-                      placeholder="Discover our most-loved signature combinations..."
-                      className="w-full border rounded-xl px-4 py-2 text-[14px] focus:outline-none focus:border-[#d85c27] resize-none"
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* ── SECTION 3: THE MAATI WAY (COLLAPSIBLE STEP CARDS) ── */}
-            <div className="bg-[#fffdfa] rounded-[24px] border border-[#ebdcd0] shadow-sm overflow-hidden">
-              <button
-                type="button"
-                onClick={() => toggleSection('maatiWay')}
-                className="w-full px-6 py-5 flex items-center justify-between text-left hover:bg-black/2 transition-colors border-b border-[#ebdcd0]"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="w-8 h-8 rounded-full bg-[#d85c27] text-white font-black text-[13px] flex items-center justify-center">3</span>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-[18px] font-black text-[#1e382f]">3. The MAATI Way Section ("Customized to your taste")</h3>
-                      <span className="text-[11px] font-black bg-[#1e382f]/10 text-[#1e382f] px-2 py-0.5 rounded-md uppercase">
-                        Editing {adminContentLang.toUpperCase()}
-                      </span>
-                    </div>
-                    <p className="text-[12px] text-[#777]">Step customization cards explaining bowls & naan pockets</p>
-                  </div>
-                </div>
-                {openSections.maatiWay ? <ChevronUp className="w-5 h-5 text-gray-500" /> : <ChevronDown className="w-5 h-5 text-gray-500" />}
-              </button>
-
-              {openSections.maatiWay && (
-                <div className="p-6 md:p-8 space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[12px] font-bold text-[#333] mb-1">
-                        Top Eyebrow Badge ({adminContentLang === 'en' ? 'English' : 'German'})
-                      </label>
-                      <input
-                        type="text"
-                        value={adminContentLang === 'en' ? (homepageContent.maatiWayBadgeEn || '') : (homepageContent.maatiWayBadgeDe || '')}
-                        onChange={(e) =>
-                          setHomepageContent(
-                            adminContentLang === 'en'
-                              ? { ...homepageContent, maatiWayBadgeEn: e.target.value }
-                              : { ...homepageContent, maatiWayBadgeDe: e.target.value }
-                          )
-                        }
-                        placeholder={adminContentLang === 'en' ? 'CUSTOMIZED TO YOUR TASTE' : 'INDIVIDUELL NACH IHREM GESCHMACK'}
-                        className="w-full border rounded-xl px-4 py-2.5 text-[14px] focus:outline-none focus:border-[#d85c27]"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[12px] font-bold text-[#333] mb-1">
-                        Section Heading ({adminContentLang === 'en' ? 'English' : 'German'})
-                      </label>
-                      <input
-                        type="text"
-                        value={adminContentLang === 'en' ? (homepageContent.maatiWayTitleEn || '') : (homepageContent.maatiWayTitleDe || '')}
-                        onChange={(e) =>
-                          setHomepageContent(
-                            adminContentLang === 'en'
-                              ? { ...homepageContent, maatiWayTitleEn: e.target.value }
-                              : { ...homepageContent, maatiWayTitleDe: e.target.value }
-                          )
-                        }
-                        placeholder={adminContentLang === 'en' ? 'The MAATI Way' : 'Der MAATI Weg'}
-                        className="w-full border rounded-xl px-4 py-2.5 text-[14px] focus:outline-none focus:border-[#d85c27]"
-                      />
-                    </div>
-                  </div>
-
-                  {/* ── Collapsible Step Cards Builder ── */}
-                  <div className="pt-6 border-t border-[#ebdcd0] space-y-4">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#fcf8f3] p-4 rounded-2xl border border-[#ebdcd0]">
-                      <div>
-                        <h4 className="text-[15px] font-black text-[#1e382f]">
-                          Step Customization Cards ({(homepageContent.maatiWaySteps || []).length})
-                        </h4>
-                        <p className="text-[12px] text-[#666]">
-                          Click any step to expand and edit its options. Cards stay collapsed to keep things organized.
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={handleAddStepCard}
-                        className="bg-[#d85c27] hover:bg-[#c24f1c] text-white text-[13px] font-extrabold px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition-all shadow-xs self-start sm:self-auto"
-                      >
-                        <Plus className="w-4 h-4" />
-                        <span>Add Step Card</span>
-                      </button>
-                    </div>
-
-                    <div className="space-y-3">
-                      {(homepageContent.maatiWaySteps || []).map((step, sIdx) => {
-                        const isExpanded = openSteps[step.id || String(sIdx)] || false;
-                        const activeTitle = adminContentLang === 'en' ? step.title : (step.titleDe || step.title);
-                        const activeItems = adminContentLang === 'en' ? step.items : (step.itemsDe || step.items);
-
-                        return (
-                          <div
-                            key={step.id || sIdx}
-                            className="bg-white border border-[#ebdcd0] rounded-2xl overflow-hidden shadow-xs transition-all"
-                          >
-                            {/* Collapsed Header Bar */}
-                            <div className="p-4 flex items-center justify-between gap-3 bg-white hover:bg-gray-50/70 transition-colors">
-                              <button
-                                type="button"
-                                onClick={() => toggleStep(step.id || String(sIdx))}
-                                className="flex-1 flex items-center gap-3 text-left"
-                              >
-                                <span className="w-8 h-8 rounded-full bg-[#d85c27] text-white font-black text-[13px] flex items-center justify-center shrink-0">
-                                  {step.step || sIdx + 1}
-                                </span>
-                                <div className="min-w-0">
-                                  <h5 className="font-extrabold text-[15px] text-[#1e382f] truncate">
-                                    {activeTitle || `Step ${sIdx + 1}`}
-                                  </h5>
-                                  <span className="text-[12px] font-bold text-gray-500">
-                                    {activeItems.length} options listed • Click to {isExpanded ? 'collapse' : 'edit'}
-                                  </span>
-                                </div>
-                              </button>
-
-                              <div className="flex items-center gap-1 shrink-0">
-                                <button
-                                  type="button"
-                                  disabled={sIdx === 0}
-                                  onClick={() => handleMoveStep(sIdx, 'up')}
-                                  title="Move Up"
-                                  className="p-1.5 text-gray-600 hover:text-black disabled:opacity-30 rounded-lg hover:bg-gray-100 transition-colors"
-                                >
-                                  ▲
-                                </button>
-                                <button
-                                  type="button"
-                                  disabled={sIdx === (homepageContent.maatiWaySteps || []).length - 1}
-                                  onClick={() => handleMoveStep(sIdx, 'down')}
-                                  title="Move Down"
-                                  className="p-1.5 text-gray-600 hover:text-black disabled:opacity-30 rounded-lg hover:bg-gray-100 transition-colors"
-                                >
-                                  ▼
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleDeleteStep(sIdx)}
-                                  title="Delete Step"
-                                  className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors ml-1"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => toggleStep(step.id || String(sIdx))}
-                                  className="p-1.5 text-gray-400 hover:text-gray-700 rounded-lg"
-                                >
-                                  {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                                </button>
-                              </div>
-                            </div>
-
-                            {/* Expanded Body Form */}
-                            {isExpanded && (
-                              <div className="p-5 border-t border-[#ebdcd0] bg-[#fcf8f3]/60 space-y-3 animate-fadeIn">
-                                <div>
-                                  <label className="block text-[11px] font-bold text-gray-700 mb-1">
-                                    Step Title ({adminContentLang === 'en' ? 'English' : 'German'})
-                                  </label>
-                                  <input
-                                    type="text"
-                                    value={adminContentLang === 'en' ? step.title : (step.titleDe || '')}
-                                    onChange={(e) =>
-                                      handleUpdateStep(
-                                        sIdx,
-                                        adminContentLang === 'en'
-                                          ? { title: e.target.value }
-                                          : { titleDe: e.target.value }
-                                      )
-                                    }
-                                    placeholder={adminContentLang === 'en' ? 'Choose your base (Upto 1)' : 'Wählen Sie Ihre Basis'}
-                                    className="w-full bg-white border rounded-xl px-3.5 py-2 text-[13px] focus:outline-none focus:border-[#d85c27]"
-                                  />
-                                </div>
-
-                                <div>
-                                  <label className="block text-[11px] font-bold text-gray-700 mb-1">
-                                    Options / Ingredients List ({adminContentLang === 'en' ? 'English' : 'German'} — one option per line)
-                                  </label>
-                                  <textarea
-                                    rows={4}
-                                    value={
-                                      adminContentLang === 'en'
-                                        ? step.items.join('\n')
-                                        : (step.itemsDe || []).join('\n')
-                                    }
-                                    onChange={(e) =>
-                                      handleUpdateStep(
-                                        sIdx,
-                                        adminContentLang === 'en'
-                                          ? { items: e.target.value.split('\n') }
-                                          : { itemsDe: e.target.value.split('\n') }
-                                      )
-                                    }
-                                    placeholder={adminContentLang === 'en' ? 'White Rice\nRed Rice\nBulgar Wheat' : 'Weißer Reis\nRoter Reis\nBulgur Weizen'}
-                                    className="w-full bg-white border rounded-xl px-3.5 py-2 text-[13px] focus:outline-none focus:border-[#d85c27] resize-y"
-                                  />
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* ── SECTION 4: DINING EXPERIENCE ── */}
-            <div className="bg-[#fffdfa] rounded-[24px] border border-[#ebdcd0] shadow-sm overflow-hidden">
-              <button
-                type="button"
-                onClick={() => toggleSection('experience')}
-                className="w-full px-6 py-5 flex items-center justify-between text-left hover:bg-black/2 transition-colors border-b border-[#ebdcd0]"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="w-8 h-8 rounded-full bg-[#d85c27] text-white font-black text-[13px] flex items-center justify-center">4</span>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-[18px] font-black text-[#1e382f]">4. Dining Experience Section</h3>
-                      <span className="text-[11px] font-black bg-[#1e382f]/10 text-[#1e382f] px-2 py-0.5 rounded-md uppercase">
-                        Editing {adminContentLang.toUpperCase()}
-                      </span>
-                    </div>
-                    <p className="text-[12px] text-[#777]">Atmosphere description and 2 side-by-side interior photos</p>
-                  </div>
-                </div>
-                {openSections.experience ? <ChevronUp className="w-5 h-5 text-gray-500" /> : <ChevronDown className="w-5 h-5 text-gray-500" />}
-              </button>
-
-              {openSections.experience && (
-                <div className="p-6 md:p-8 space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[12px] font-bold text-[#333] mb-1">
-                        Eyebrow Badge ({adminContentLang === 'en' ? 'English' : 'German'})
-                      </label>
-                      <input
-                        type="text"
-                        value={adminContentLang === 'en' ? (homepageContent.experienceEyebrowEn || '') : (homepageContent.experienceEyebrowDe || '')}
-                        onChange={(e) =>
-                          setHomepageContent(
-                            adminContentLang === 'en'
-                              ? { ...homepageContent, experienceEyebrowEn: e.target.value }
-                              : { ...homepageContent, experienceEyebrowDe: e.target.value }
-                          )
-                        }
-                        placeholder={adminContentLang === 'en' ? 'EXPERIENCE' : 'ERLEBNIS'}
-                        className="w-full border rounded-xl px-4 py-2.5 text-[14px]"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[12px] font-bold text-[#333] mb-1">
-                        Heading ({adminContentLang === 'en' ? 'English' : 'German'})
-                      </label>
-                      <input
-                        type="text"
-                        value={adminContentLang === 'en' ? (homepageContent.experienceTitleEn || '') : (homepageContent.experienceTitleDe || '')}
-                        onChange={(e) =>
-                          setHomepageContent(
-                            adminContentLang === 'en'
-                              ? { ...homepageContent, experienceTitleEn: e.target.value }
-                              : { ...homepageContent, experienceTitleDe: e.target.value }
-                          )
-                        }
-                        placeholder={adminContentLang === 'en' ? 'Breakfast, Lunch and Events at MAATI' : 'Frühstück, Mittagessen und Events'}
-                        className="w-full border rounded-xl px-4 py-2.5 text-[14px]"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-[12px] font-bold text-[#333] mb-1">
-                      Description ({adminContentLang === 'en' ? 'English' : 'German'})
-                    </label>
-                    <textarea
-                      rows={2}
-                      value={adminContentLang === 'en' ? (homepageContent.experienceDescEn || '') : (homepageContent.experienceDescDe || '')}
-                      onChange={(e) =>
-                        setHomepageContent(
-                          adminContentLang === 'en'
-                            ? { ...homepageContent, experienceDescEn: e.target.value }
-                            : { ...homepageContent, experienceDescDe: e.target.value }
-                        )
-                      }
-                      placeholder="A warm, modern space designed for quick breakfast..."
-                      className="w-full border rounded-xl px-4 py-2 text-[14px] resize-none"
-                    />
-                  </div>
-
-                  {/* Left & Right Photos Upload */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                    {/* Left Image */}
-                    <div className="bg-[#fcf8f3] border border-[#ebdcd0] rounded-2xl p-4 space-y-2">
-                      <label className="text-[12px] font-black text-[#1e382f] block">Left Interior Photo (800 x 1000 px)</label>
-                      <div className="flex items-center gap-3">
-                        <div className="w-14 h-14 rounded-xl overflow-hidden bg-white shrink-0 border">
-                          <img src={homepageContent.experienceImg1 || "/assets/show5-BiQql1jr.jpeg"} alt="Left" className="w-full h-full object-cover" />
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => handleGenericFileUpload((url) => setHomepageContent({ ...homepageContent, experienceImg1: url }))}
-                          className="bg-[#1e382f] text-white text-[12px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1"
-                        >
-                          <Upload className="w-3.5 h-3.5" /> Upload
-                        </button>
-                      </div>
-                      <input
-                        type="text"
-                        value={homepageContent.experienceImg1 || ''}
-                        onChange={(e) => setHomepageContent({ ...homepageContent, experienceImg1: e.target.value })}
-                        className="w-full bg-white border rounded-xl px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#d85c27]"
-                      />
-                    </div>
-
-                    {/* Right Image */}
-                    <div className="bg-[#fcf8f3] border border-[#ebdcd0] rounded-2xl p-4 space-y-2">
-                      <label className="text-[12px] font-black text-[#1e382f] block">Right Interior Photo (800 x 1000 px)</label>
-                      <div className="flex items-center gap-3">
-                        <div className="w-14 h-14 rounded-xl overflow-hidden bg-white shrink-0 border">
-                          <img src={homepageContent.experienceImg2 || "/assets/show2-CM6MShfY.jpeg"} alt="Right" className="w-full h-full object-cover" />
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => handleGenericFileUpload((url) => setHomepageContent({ ...homepageContent, experienceImg2: url }))}
-                          className="bg-[#1e382f] text-white text-[12px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1"
-                        >
-                          <Upload className="w-3.5 h-3.5" /> Upload
-                        </button>
-                      </div>
-                      <input
-                        type="text"
-                        value={homepageContent.experienceImg2 || ''}
-                        onChange={(e) => setHomepageContent({ ...homepageContent, experienceImg2: e.target.value })}
-                        className="w-full bg-white border rounded-xl px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#d85c27]"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* ── SECTION 5: MAATI CATERING ── */}
-            <div className="bg-[#fffdfa] rounded-[24px] border border-[#ebdcd0] shadow-sm overflow-hidden">
-              <button
-                type="button"
-                onClick={() => toggleSection('catering')}
-                className="w-full px-6 py-5 flex items-center justify-between text-left hover:bg-black/2 transition-colors border-b border-[#ebdcd0]"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="w-8 h-8 rounded-full bg-[#d85c27] text-white font-black text-[13px] flex items-center justify-center">5</span>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-[18px] font-black text-[#1e382f]">5. MAATI Catering Section</h3>
-                      <span className="text-[11px] font-black bg-[#1e382f]/10 text-[#1e382f] px-2 py-0.5 rounded-md uppercase">
-                        Editing {adminContentLang.toUpperCase()}
-                      </span>
-                    </div>
-                    <p className="text-[12px] text-[#777]">Corporate catering copy, 4 bullet highlights, and photo</p>
-                  </div>
-                </div>
-                {openSections.catering ? <ChevronUp className="w-5 h-5 text-gray-500" /> : <ChevronDown className="w-5 h-5 text-gray-500" />}
-              </button>
-
-              {openSections.catering && (
-                <div className="p-6 md:p-8 space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[12px] font-bold text-[#333] mb-1">
-                        Catering Eyebrow Badge ({adminContentLang === 'en' ? 'English' : 'German'})
-                      </label>
-                      <input
-                        type="text"
-                        value={adminContentLang === 'en' ? (homepageContent.cateringBadgeEn || '') : (homepageContent.cateringBadgeDe || '')}
-                        onChange={(e) =>
-                          setHomepageContent(
-                            adminContentLang === 'en'
-                              ? { ...homepageContent, cateringBadgeEn: e.target.value }
-                              : { ...homepageContent, cateringBadgeDe: e.target.value }
-                          )
-                        }
-                        placeholder="MAATI CATERING"
-                        className="w-full border rounded-xl px-4 py-2.5 text-[14px]"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[12px] font-bold text-[#333] mb-1">
-                        Catering Heading ({adminContentLang === 'en' ? 'English' : 'German'})
-                      </label>
-                      <input
-                        type="text"
-                        value={adminContentLang === 'en' ? (homepageContent.cateringTitleEn || '') : (homepageContent.cateringTitleDe || '')}
-                        onChange={(e) =>
-                          setHomepageContent(
-                            adminContentLang === 'en'
-                              ? { ...homepageContent, cateringTitleEn: e.target.value }
-                              : { ...homepageContent, cateringTitleDe: e.target.value }
-                          )
-                        }
-                        placeholder={adminContentLang === 'en' ? 'Bold Flavours That Fuel Your Team' : 'Kräftige Aromen, die Ihr Team begeistern'}
-                        className="w-full border rounded-xl px-4 py-2.5 text-[14px]"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-[12px] font-bold text-[#333] mb-1">
-                      Description Paragraph 1 ({adminContentLang === 'en' ? 'English' : 'German'})
-                    </label>
-                    <textarea
-                      rows={2}
-                      value={adminContentLang === 'en' ? (homepageContent.cateringDescEn || '') : (homepageContent.cateringDescDe || '')}
-                      onChange={(e) =>
-                        setHomepageContent(
-                          adminContentLang === 'en'
-                            ? { ...homepageContent, cateringDescEn: e.target.value }
-                            : { ...homepageContent, cateringDescDe: e.target.value }
-                        )
-                      }
-                      placeholder="From team lunches to full corporate events..."
-                      className="w-full border rounded-xl px-4 py-2 text-[14px] resize-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[12px] font-bold text-[#333] mb-1">
-                      Description Paragraph 2 ({adminContentLang === 'en' ? 'English' : 'German'})
-                    </label>
-                    <textarea
-                      rows={2}
-                      value={adminContentLang === 'en' ? (homepageContent.cateringP2En || '') : (homepageContent.cateringP2De || '')}
-                      onChange={(e) =>
-                        setHomepageContent(
-                          adminContentLang === 'en'
-                            ? { ...homepageContent, cateringP2En: e.target.value }
-                            : { ...homepageContent, cateringP2De: e.target.value }
-                        )
-                      }
-                      placeholder="Customized for your team, effortlessly delivered..."
-                      className="w-full border rounded-xl px-4 py-2 text-[14px] resize-none"
-                    />
-                  </div>
-
-                  {/* 4 Bullet Highlights */}
-                  <div className="bg-[#fcf8f3] border border-[#ebdcd0] rounded-2xl p-4 space-y-3">
-                    <label className="text-[12px] font-black text-[#1e382f] uppercase tracking-wider block">
-                      4 Key Highlights ({adminContentLang === 'en' ? 'English' : 'German'})
-                    </label>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-[11px] font-bold text-gray-500 mb-1">Bullet 1</label>
-                        <input
-                          type="text"
-                          value={adminContentLang === 'en' ? (homepageContent.cateringBullet1En || '') : (homepageContent.cateringBullet1De || '')}
-                          onChange={(e) =>
-                            setHomepageContent(
-                              adminContentLang === 'en'
-                                ? { ...homepageContent, cateringBullet1En: e.target.value }
-                                : { ...homepageContent, cateringBullet1De: e.target.value }
-                            )
-                          }
-                          placeholder={adminContentLang === 'en' ? 'Perfect for 10 to 200+ people' : 'Perfekt für 10 bis 200+ Personen'}
-                          className="w-full bg-white border rounded-xl px-3 py-2 text-[13px]"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-bold text-gray-500 mb-1">Bullet 2</label>
-                        <input
-                          type="text"
-                          value={adminContentLang === 'en' ? (homepageContent.cateringBullet2En || '') : (homepageContent.cateringBullet2De || '')}
-                          onChange={(e) =>
-                            setHomepageContent(
-                              adminContentLang === 'en'
-                                ? { ...homepageContent, cateringBullet2En: e.target.value }
-                                : { ...homepageContent, cateringBullet2De: e.target.value }
-                            )
-                          }
-                          placeholder={adminContentLang === 'en' ? '100% Vegan & Veggie friendly' : '100% Vegan & Veggie-freundlich'}
-                          className="w-full bg-white border rounded-xl px-3 py-2 text-[13px]"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-bold text-gray-500 mb-1">Bullet 3</label>
-                        <input
-                          type="text"
-                          value={adminContentLang === 'en' ? (homepageContent.cateringBullet3En || '') : (homepageContent.cateringBullet3De || '')}
-                          onChange={(e) =>
-                            setHomepageContent(
-                              adminContentLang === 'en'
-                                ? { ...homepageContent, cateringBullet3En: e.target.value }
-                                : { ...homepageContent, cateringBullet3De: e.target.value }
-                            )
-                          }
-                          placeholder={adminContentLang === 'en' ? 'On-time Berlin delivery' : 'Pünktliche Berliner Lieferung'}
-                          className="w-full bg-white border rounded-xl px-3 py-2 text-[13px]"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-bold text-gray-500 mb-1">Bullet 4</label>
-                        <input
-                          type="text"
-                          value={adminContentLang === 'en' ? (homepageContent.cateringBullet4En || '') : (homepageContent.cateringBullet4De || '')}
-                          onChange={(e) =>
-                            setHomepageContent(
-                              adminContentLang === 'en'
-                                ? { ...homepageContent, cateringBullet4En: e.target.value }
-                                : { ...homepageContent, cateringBullet4De: e.target.value }
-                            )
-                          }
-                          placeholder={adminContentLang === 'en' ? 'Custom corporate invoicing' : 'Individuelle Firmenrechnung'}
-                          className="w-full bg-white border rounded-xl px-3 py-2 text-[13px]"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Quote CTA Button Text */}
-                  <div>
-                    <label className="block text-[12px] font-bold text-[#333] mb-1">
-                      Catering Quote Button Text ({adminContentLang === 'en' ? 'English' : 'German'})
-                    </label>
-                    <input
-                      type="text"
-                      value={adminContentLang === 'en' ? (homepageContent.cateringBtnEn || '') : (homepageContent.cateringBtnDe || '')}
-                      onChange={(e) =>
-                        setHomepageContent(
-                          adminContentLang === 'en'
-                            ? { ...homepageContent, cateringBtnEn: e.target.value }
-                            : { ...homepageContent, cateringBtnDe: e.target.value }
-                        )
-                      }
-                      placeholder={adminContentLang === 'en' ? 'Get a Quote' : 'Catering Anfragen'}
-                      className="w-full border rounded-xl px-4 py-2.5 text-[14px]"
-                    />
-                  </div>
-
-                  {/* Catering Photo Upload */}
-                  <div className="bg-[#fcf8f3] border border-[#ebdcd0] rounded-2xl p-4 space-y-2">
-                    <label className="text-[12px] font-black text-[#1e382f] block">Catering Spread Photo (1000 x 1200 px)</label>
-                    <div className="flex items-center gap-3">
-                      <div className="w-16 h-16 rounded-xl overflow-hidden bg-white shrink-0 border">
-                        <img src={homepageContent.cateringImage || "/assets/show3-D0blnzja.jpeg"} alt="Catering" className="w-full h-full object-cover" />
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handleGenericFileUpload((url) => setHomepageContent({ ...homepageContent, cateringImage: url }))}
-                        className="bg-[#1e382f] text-white text-[12px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1"
-                      >
-                        <Upload className="w-3.5 h-3.5" /> Upload Catering Photo
-                      </button>
-                    </div>
-                    <input
-                      type="text"
-                      value={homepageContent.cateringImage || ''}
-                      onChange={(e) => setHomepageContent({ ...homepageContent, cateringImage: e.target.value })}
-                      className="w-full bg-white border rounded-xl px-3 py-1.5 text-[12px] focus:outline-none focus:border-[#d85c27]"
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* ── SECTION 6: VISIT US & FOOTER CTA ── */}
-            <div className="bg-[#fffdfa] rounded-[24px] border border-[#ebdcd0] shadow-sm overflow-hidden">
-              <button
-                type="button"
-                onClick={() => toggleSection('footerCta')}
-                className="w-full px-6 py-5 flex items-center justify-between text-left hover:bg-black/2 transition-colors border-b border-[#ebdcd0]"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="w-8 h-8 rounded-full bg-[#d85c27] text-white font-black text-[13px] flex items-center justify-center">6</span>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-[18px] font-black text-[#1e382f]">6. Visit Us & Footer Call-to-Action</h3>
-                      <span className="text-[11px] font-black bg-[#1e382f]/10 text-[#1e382f] px-2 py-0.5 rounded-md uppercase">
-                        Editing {adminContentLang.toUpperCase()}
-                      </span>
-                    </div>
-                    <p className="text-[12px] text-[#777]">Bottom banner headline, description, and action buttons</p>
-                  </div>
-                </div>
-                {openSections.footerCta ? <ChevronUp className="w-5 h-5 text-gray-500" /> : <ChevronDown className="w-5 h-5 text-gray-500" />}
-              </button>
-
-              {openSections.footerCta && (
-                <div className="p-6 md:p-8 space-y-4">
-                  <div>
-                    <label className="block text-[12px] font-bold text-[#333] mb-1">
-                      Banner Heading ({adminContentLang === 'en' ? 'English' : 'German'})
-                    </label>
-                    <input
-                      type="text"
-                      value={adminContentLang === 'en' ? (homepageContent.ctaTitleEn || '') : (homepageContent.ctaTitleDe || '')}
-                      onChange={(e) =>
-                        setHomepageContent(
-                          adminContentLang === 'en'
-                            ? { ...homepageContent, ctaTitleEn: e.target.value }
-                            : { ...homepageContent, ctaTitleDe: e.target.value }
-                        )
-                      }
-                      placeholder="Visit us at Zimmestr. 56..."
-                      className="w-full border rounded-xl px-4 py-2.5 text-[14px] focus:outline-none focus:border-[#d85c27]"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[12px] font-bold text-[#333] mb-1">
-                      Description ({adminContentLang === 'en' ? 'English' : 'German'})
-                    </label>
-                    <textarea
-                      rows={2}
-                      value={adminContentLang === 'en' ? (homepageContent.ctaDescEn || '') : (homepageContent.ctaDescDe || '')}
-                      onChange={(e) =>
-                        setHomepageContent(
-                          adminContentLang === 'en'
-                            ? { ...homepageContent, ctaDescEn: e.target.value }
-                            : { ...homepageContent, ctaDescDe: e.target.value }
-                        )
-                      }
-                      placeholder="Experience modern Indian soul food..."
-                      className="w-full border rounded-xl px-4 py-2 text-[14px] resize-none"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[12px] font-bold text-[#333] mb-1">
-                        Button 1 Menu Text ({adminContentLang === 'en' ? 'English' : 'German'})
-                      </label>
-                      <input
-                        type="text"
-                        value={adminContentLang === 'en' ? (homepageContent.ctaBtnMenuEn || '') : (homepageContent.ctaBtnMenuDe || '')}
-                        onChange={(e) =>
-                          setHomepageContent(
-                            adminContentLang === 'en'
-                              ? { ...homepageContent, ctaBtnMenuEn: e.target.value }
-                              : { ...homepageContent, ctaBtnMenuDe: e.target.value }
-                          )
-                        }
-                        placeholder={adminContentLang === 'en' ? 'View Menu' : 'Speisekarte'}
-                        className="w-full border rounded-xl px-4 py-2.5 text-[14px]"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[12px] font-bold text-[#333] mb-1">
-                        Button 2 Locations Text ({adminContentLang === 'en' ? 'English' : 'German'})
-                      </label>
-                      <input
-                        type="text"
-                        value={adminContentLang === 'en' ? (homepageContent.ctaBtnLocationsEn || '') : (homepageContent.ctaBtnLocationsDe || '')}
-                        onChange={(e) =>
-                          setHomepageContent(
-                            adminContentLang === 'en'
-                              ? { ...homepageContent, ctaBtnLocationsEn: e.target.value }
-                              : { ...homepageContent, ctaBtnLocationsDe: e.target.value }
-                          )
-                        }
-                        placeholder={adminContentLang === 'en' ? 'Our Locations' : 'Unsere Standorte'}
-                        className="w-full border rounded-xl px-4 py-2.5 text-[14px]"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Bottom Save Button */}
-            {/* Bottom Save Button */}
-            <div className="pt-4 flex justify-end">
-              <button
-                type="submit"
-                className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-8 py-3.5 rounded-full text-[15px] shadow-sm hover:shadow-md transition-all flex items-center gap-2"
-              >
-                <Save className="w-5 h-5" />
-                <span>Save All Homepage Changes</span>
-              </button>
-            </div>
-
-          </form>
-        )}
-
-        {/* ═══════════════════════════════════════════════
-            TAB 3: CATEGORIES (WITH COLLAPSIBLE SECTIONS & DISH PICKER)
+            TAB 2: MENU CATEGORIES
         ═══════════════════════════════════════════════ */}
         {activeTab === 'categories' && (
           <div className="space-y-6">
-            <div className="bg-[#fffdfa] rounded-[24px] p-6 md:p-8 border border-[#ebdcd0] shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="bg-[#fffdfa] rounded-[24px] p-5 sm:p-6 border border-[#ebdcd0] shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <h2 className="text-[22px] font-black text-[#1e382f]">Menu Categories & Dishes ({categories.length})</h2>
+                <h2 className="text-[20px] font-black text-[#1e382f]">Menu Categories</h2>
                 <p className="text-[13px] text-[#666] mt-0.5">
-                  Click any category to expand/collapse its dishes. Add existing dishes or create new ones.
+                  Organize your menu sections. Use ▲ ▼ to reorder.
                 </p>
               </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={handleExpandAllCategories}
-                  className="bg-white hover:bg-gray-50 text-[#1e382f] border border-[#ebdcd0] font-bold px-3.5 py-2 rounded-xl text-[13px] transition-all flex items-center gap-1.5"
-                >
-                  <FolderOpen className="w-4 h-4 text-[#d85c27]" />
-                  <span>Expand All</span>
-                </button>
+
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={handleCollapseAllCategories}
-                  className="bg-white hover:bg-gray-50 text-[#1e382f] border border-[#ebdcd0] font-bold px-3.5 py-2 rounded-xl text-[13px] transition-all flex items-center gap-1.5"
+                  className="bg-white border border-[#ebdcd0] text-gray-700 text-[12px] font-bold px-3 py-2 rounded-xl hover:bg-gray-50"
                 >
-                  <FolderClosed className="w-4 h-4 text-gray-500" />
-                  <span>Collapse All</span>
+                  Collapse All
                 </button>
                 <button
+                  type="button"
+                  onClick={handleExpandAllCategories}
+                  className="bg-white border border-[#ebdcd0] text-gray-700 text-[12px] font-bold px-3 py-2 rounded-xl hover:bg-gray-50"
+                >
+                  Expand All
+                </button>
+                <button
+                  type="button"
                   onClick={handleOpenNewCategory}
-                  className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-5 py-2.5 rounded-full text-[14px] shadow-sm hover:shadow-md transition-all flex items-center gap-2 self-start sm:self-auto"
+                  className="bg-[#d85c27] text-white font-extrabold px-4 py-2 rounded-xl text-[13px] hover:bg-[#c24f1c] transition-all flex items-center gap-1.5 shadow-sm"
                 >
                   <Plus className="w-4 h-4" />
-                  <span>Add New Category</span>
+                  <span>New Category</span>
                 </button>
               </div>
             </div>
 
-            <div className="space-y-5">
+            <div className="space-y-4">
               {categories.map((cat, idx) => {
-                const isCollapsed = collapsedCategories[cat._id] || false;
+                const isCollapsed = !!collapsedCategories[cat._id];
 
                 return (
                   <div
                     key={cat._id}
-                    className="bg-[#fffdfa] rounded-[26px] border border-[#ebdcd0] shadow-sm overflow-hidden transition-all"
+                    className="bg-[#fffdfa] rounded-[22px] border border-[#ebdcd0] shadow-xs overflow-hidden transition-all"
                   >
-                    {/* Category Header */}
-                    <div className="p-5 md:p-6 bg-[#fcf8f3] border-b border-[#ebdcd0] flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      {/* Left: Clickable Category Info */}
-                      <button
-                        type="button"
-                        onClick={() => toggleCategory(cat._id)}
-                        className="flex items-start gap-4 text-left flex-1 group"
-                      >
-                        <span className="w-10 h-10 rounded-2xl bg-[#d85c27] text-white font-black text-[15px] flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
+                    {/* Category Header Bar */}
+                    <div className="p-4 sm:p-5 flex items-center justify-between gap-4 bg-white/70 border-b border-[#ebdcd0]">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <button
+                          type="button"
+                          onClick={() => toggleCategory(cat._id)}
+                          className="p-1 rounded-lg hover:bg-gray-100 text-gray-500"
+                        >
+                          {isCollapsed ? <ChevronDown className="w-5 h-5" /> : <ChevronUp className="w-5 h-5" />}
+                        </button>
+                        <span className="w-7 h-7 rounded-lg bg-[#1e382f] text-white font-black text-[12px] flex items-center justify-center shrink-0">
                           {idx + 1}
                         </span>
-                        <div>
-                          <div className="flex flex-wrap items-center gap-2.5">
-                            <h3 className="font-black text-[20px] text-[#1e382f] group-hover:text-[#d85c27] transition-colors">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-black text-[16px] text-[#1e382f] truncate">
                               {cat.name}
                             </h3>
-                            <span className="text-[14px] font-bold text-[#888]">/ {cat.nameDe || cat.name}</span>
-                            <span className="text-[12px] font-black bg-[#1e382f]/10 text-[#1e382f] px-3 py-0.5 rounded-full">
-                              {cat.items.length} {cat.items.length === 1 ? 'dish' : 'dishes'}
+                            <span className="text-[11px] font-bold text-gray-400">
+                              / {cat.nameDe}
                             </span>
-                            <span className="text-[11px] font-bold text-[#d85c27] ml-1">
-                              {isCollapsed ? '(Click to expand ▾)' : '(Click to collapse ▴)'}
+                            <span className="bg-[#fae8d8] text-[#d85c27] text-[10.5px] font-extrabold px-2 py-0.5 rounded-full">
+                              {cat.items?.length || 0} dishes
                             </span>
                           </div>
-                          {(cat.description || cat.descriptionDe) && (
-                            <p className="text-[13px] text-[#666] mt-1 max-w-[700px] line-clamp-1">
-                              {cat.description || cat.descriptionDe}
+                          {cat.description && (
+                            <p className="text-[12px] text-gray-500 truncate mt-0.5">
+                              {cat.description}
                             </p>
                           )}
                         </div>
-                      </button>
+                      </div>
 
-                      {/* Right: Actions */}
-                      <div className="flex items-center gap-2 self-end md:self-auto shrink-0">
-                        {/* Move Up/Down Order */}
-                        <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-[#ebdcd0]">
-                          <button
-                            type="button"
-                            disabled={idx === 0}
-                            onClick={() => handleMoveCategory(cat._id, 'up')}
-                            title="Move Category Up"
-                            className="p-1.5 text-gray-600 hover:text-black disabled:opacity-30 rounded-lg hover:bg-gray-100 transition-colors"
-                          >
-                            ▲
-                          </button>
-                          <button
-                            type="button"
-                            disabled={idx === categories.length - 1}
-                            onClick={() => handleMoveCategory(cat._id, 'down')}
-                            title="Move Category Down"
-                            className="p-1.5 text-gray-600 hover:text-black disabled:opacity-30 rounded-lg hover:bg-gray-100 transition-colors"
-                          >
-                            ▼
-                          </button>
-                        </div>
-
-                        {/* Edit Category */}
+                      <div className="flex items-center gap-1.5 shrink-0">
                         <button
+                          type="button"
+                          disabled={idx === 0}
+                          onClick={() => handleMoveCategory(cat._id, 'up')}
+                          title="Move Category Up"
+                          className="p-1.5 text-gray-500 hover:text-black disabled:opacity-20 rounded-lg hover:bg-gray-100"
+                        >
+                          ▲
+                        </button>
+                        <button
+                          type="button"
+                          disabled={idx === categories.length - 1}
+                          onClick={() => handleMoveCategory(cat._id, 'down')}
+                          title="Move Category Down"
+                          className="p-1.5 text-gray-500 hover:text-black disabled:opacity-20 rounded-lg hover:bg-gray-100"
+                        >
+                          ▼
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenAddDishToCategory(cat._id)}
+                          className="bg-[#1e382f] text-white font-bold px-3 py-1.5 rounded-xl text-[12px] hover:bg-[#142620] transition-colors flex items-center gap-1"
+                        >
+                          <Plus className="w-3.5 h-3.5" /> Add Dish
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => handleOpenEditCategory(cat)}
-                          className="p-2 rounded-xl text-blue-600 bg-white hover:bg-blue-50 transition-colors border border-[#ebdcd0]"
+                          className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                           title="Edit Category Details"
                         >
                           <Edit3 className="w-4 h-4" />
                         </button>
-
-                        {/* Delete Category */}
                         <button
+                          type="button"
                           onClick={() => handleDeleteCategory(cat._id)}
-                          className="p-2 rounded-xl text-rose-600 bg-white hover:bg-rose-50 transition-colors border border-[#ebdcd0]"
+                          className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
                           title="Delete Category"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
-
-                        {/* Add Dish (Existing or New) */}
-                        <button
-                          onClick={() => handleOpenAddDishToCategory(cat._id)}
-                          className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-4 py-2 rounded-xl text-[13px] transition-all flex items-center gap-1.5 shadow-xs"
-                        >
-                          <Plus className="w-4 h-4" />
-                          <span>Add Dish</span>
-                        </button>
-
-                        {/* Expand / Collapse Chevron */}
-                        <button
-                          type="button"
-                          onClick={() => toggleCategory(cat._id)}
-                          className="p-2 rounded-xl text-gray-500 bg-white hover:bg-gray-100 transition-colors border border-[#ebdcd0]"
-                          title={isCollapsed ? 'Expand Category' : 'Collapse Category'}
-                        >
-                          {isCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
-                        </button>
                       </div>
                     </div>
 
-                    {/* Dishes inside this Category (Collapsible) */}
+                    {/* Category Dishes List */}
                     {!isCollapsed && (
-                      <div className="p-6 animate-fadeIn">
+                      <div className="p-4 sm:p-5 animate-fadeIn">
                         {cat.items.length === 0 ? (
-                          <div className="border-2 border-dashed border-[#ebdcd0] rounded-2xl p-8 text-center bg-white/50 space-y-3">
-                            <p className="text-[14px] text-gray-500 font-bold">
-                              No dishes in "{cat.name}" yet.
-                            </p>
+                          <div className="border-2 border-dashed border-[#ebdcd0] rounded-2xl p-6 text-center bg-white/50 space-y-2">
+                            <p className="text-[13px] text-gray-500 font-medium">No dishes in this category yet.</p>
                             <button
+                              type="button"
                               onClick={() => handleOpenAddDishToCategory(cat._id)}
-                              className="bg-[#1e382f] text-white font-extrabold px-4 py-2 rounded-xl text-[12px] hover:bg-[#152721] transition-colors inline-flex items-center gap-1.5"
+                              className="text-[#d85c27] text-[12.5px] font-bold hover:underline inline-flex items-center gap-1"
                             >
-                              <Plus className="w-3.5 h-3.5" />
-                              <span>Add Existing or New Dish</span>
+                              <PlusCircle className="w-4 h-4" /> Add a dish here
                             </button>
                           </div>
                         ) : (
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                            {cat.items.map((item) => {
-                              const isVeg = item.foodType === 'vegetarian';
-                              const isVegan = item.foodType === 'vegan';
-
-                              return (
-                                <div
-                                  key={item._id || item.id}
-                                  className={`bg-white rounded-2xl p-4 border border-[#ebdcd0] shadow-xs hover:shadow-md transition-all flex flex-col justify-between ${
-                                    item.available === false ? 'opacity-50 grayscale' : ''
-                                  }`}
-                                >
-                                  <div>
-                                    <div className="flex items-center gap-3 mb-3">
-                                      <div className="w-14 h-14 rounded-xl overflow-hidden bg-[#fae8d8] shrink-0 border border-[#ebdcd0]">
-                                        {item.img ? (
-                                          <img src={item.img} alt={item.titleEn} className="w-full h-full object-cover" />
-                                        ) : (
-                                          <div className="w-full h-full flex items-center justify-center text-[9px] font-bold text-gray-400">
-                                            No Img
-                                          </div>
-                                        )}
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                            {cat.items.map((item) => (
+                              <div
+                                key={item._id || item.id}
+                                className="bg-white rounded-xl p-3 border border-[#ebdcd0] shadow-xs flex items-center justify-between gap-3"
+                              >
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                  <div className="w-11 h-11 rounded-lg overflow-hidden bg-[#fae8d8] shrink-0 border border-[#ebdcd0]">
+                                    {item.img ? (
+                                      <img src={item.img} alt={item.titleEn} className="w-full h-full object-cover" />
+                                    ) : (
+                                      <div className="w-full h-full flex items-center justify-center text-[8px] text-gray-400 font-bold">
+                                        No Img
                                       </div>
-                                      <div className="flex-1 min-w-0">
-                                        <h4 className="font-extrabold text-[15px] text-[#1a1a1a] truncate">
-                                          {item.titleEn}
-                                        </h4>
-                                        <p className="text-[12px] text-[#777] truncate">
-                                          {item.titleDe}
-                                        </p>
-                                      </div>
-                                    </div>
-
-                                    <div className="flex flex-wrap items-center gap-1.5 mb-3">
-                                      <span
-                                        className={`text-[9px] font-black px-2 py-0.5 rounded-full text-white ${
-                                          isVegan
-                                            ? 'bg-[#2d6a4f]'
-                                            : isVeg
-                                            ? 'bg-[#1e382f]'
-                                            : 'bg-[#d85c27]'
-                                        }`}
-                                      >
-                                        {isVegan ? 'VEGAN' : isVeg ? 'VEGETARIAN' : 'NON-VEG'}
-                                      </span>
-                                      {item.isSpicy && (
-                                         <span className="p-0.5 rounded bg-orange-50 text-orange-600 inline-flex items-center" title="Spicy">
-                                           <Flame className="w-3 h-3 fill-orange-500 text-orange-600" />
-                                         </span>
-                                       )}
-                                      {item.featured && (
-                                        <span className="inline-flex items-center gap-0.5 text-[9px] font-black bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded-md">
-                                          <Star className="w-2.5 h-2.5 fill-amber-500 text-amber-500" /> Featured
-                                        </span>
-                                      )}
-                                      {item.available === false && (
-                                        <span className="text-[9px] font-black bg-rose-100 text-rose-800 px-1.5 py-0.5 rounded-md">
-                                          Sold Out
-                                        </span>
-                                      )}
-                                    </div>
-
-                                    <p className="text-[12.5px] text-[#555] line-clamp-2 mb-3">
-                                      {item.descEn || item.descDe || 'No description provided.'}
-                                    </p>
+                                    )}
                                   </div>
-
-                                  <div className="pt-3 border-t border-[#ebdcd0] flex items-center justify-between">
-                                    <span className="font-black text-[14px] text-[#d85c27]">
+                                  <div className="min-w-0">
+                                    <h5 className="font-bold text-[13.5px] text-[#1e382f] truncate">
+                                      {item.titleEn}
+                                    </h5>
+                                    <span className="text-[#d85c27] font-black text-[12px]">
                                       {item.price}
                                     </span>
-                                    <div className="flex items-center gap-1">
-                                      <button
-                                        onClick={() => handleToggleAvailable(item._id || item.id || '', cat._id)}
-                                        title={item.available === false ? 'Mark Available' : 'Mark Unavailable'}
-                                        className={`p-1.5 rounded-lg transition-colors ${
-                                          item.available === false ? 'text-gray-400 hover:bg-gray-100' : 'text-emerald-700 hover:bg-emerald-50'
-                                        }`}
-                                      >
-                                        {item.available === false ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                      </button>
-                                      <button
-                                        onClick={() => handleToggleFeatured(item._id || item.id || '', cat._id)}
-                                        title={item.featured ? 'Remove from Featured' : 'Feature on Homepage'}
-                                        className={`p-1.5 rounded-lg transition-colors ${
-                                          item.featured ? 'text-amber-500 hover:bg-amber-50' : 'text-gray-400 hover:bg-gray-100'
-                                        }`}
-                                      >
-                                        <Star className={`w-4 h-4 ${item.featured ? 'fill-amber-500' : ''}`} />
-                                      </button>
-                                      <button
-                                        onClick={() => handleOpenEditItem(item, cat._id)}
-                                        className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors"
-                                        title="Edit Dish"
-                                      >
-                                        <Edit3 className="w-4 h-4" />
-                                      </button>
-                                      <button
-                                        onClick={() => handleDeleteItem(item._id || item.id || '', cat._id)}
-                                        className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 transition-colors"
-                                        title="Delete Dish"
-                                      >
-                                        <Trash2 className="w-4 h-4" />
-                                      </button>
-                                    </div>
                                   </div>
                                 </div>
-                              );
-                            })}
+
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenEditItem(item, cat._id)}
+                                    className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                                    title="Edit"
+                                  >
+                                    <Edit3 className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteItem(item._id || item.id || '', cat._id)}
+                                    className="p-1 text-rose-600 hover:bg-rose-50 rounded"
+                                    title="Delete"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
                           </div>
                         )}
                       </div>
@@ -2581,82 +1770,707 @@ export const StudioPage: React.FC = () => {
         )}
 
         {/* ═══════════════════════════════════════════════
-            TAB 4: SITE SETTINGS
+            TAB 3: HOMEPAGE CONTENT
         ═══════════════════════════════════════════════ */}
-        {activeTab === 'settings' && (
-          <form onSubmit={handleSaveSettings} className="bg-[#fffdfa] rounded-[24px] p-6 md:p-8 border border-[#ebdcd0] shadow-sm space-y-6">
-            <h2 className="text-[20px] font-black text-[#1e382f]">Restaurant Information & Settings</h2>
+        {activeTab === 'homepage' && (
+          <form onSubmit={handleSaveHomepage} className="space-y-6">
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Language Banner */}
+            <div className="bg-[#fffdfa] rounded-[24px] p-5 sm:p-6 border border-[#ebdcd0] shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <label className="block text-[13px] font-bold text-[#333] mb-1">Restaurant Name</label>
-                <input
-                  type="text"
-                  value={siteSettings.restaurantName || ''}
-                  onChange={(e) => setSiteSettings({ ...siteSettings, restaurantName: e.target.value })}
-                  className="w-full border rounded-xl px-4 py-2.5 text-[14px] focus:outline-none focus:border-[#d85c27]"
-                />
+                <h2 className="text-[20px] font-black text-[#1e382f]">Homepage Content Sections</h2>
+                <p className="text-[13px] text-[#666] mt-0.5">
+                  Update headlines, descriptions, step cards, and photos across your landing page.
+                </p>
               </div>
-              <div>
-                <label className="block text-[13px] font-bold text-[#333] mb-1">Phone Number</label>
-                <input
-                  type="text"
-                  value={siteSettings.phone || ''}
-                  onChange={(e) => setSiteSettings({ ...siteSettings, phone: e.target.value })}
-                  className="w-full border rounded-xl px-4 py-2.5 text-[14px] focus:outline-none focus:border-[#d85c27]"
-                />
+
+              <div className="flex items-center gap-1.5 bg-[#fcf8f3] p-1.5 rounded-xl border border-[#ebdcd0]">
+                <span className="text-[11px] font-bold text-gray-500 uppercase px-2">Language:</span>
+                <button
+                  type="button"
+                  onClick={() => setAdminContentLang('en')}
+                  className={`px-3 py-1 text-[12px] font-extrabold rounded-lg transition-all ${
+                    adminContentLang === 'en' ? 'bg-[#1e382f] text-white shadow-xs' : 'text-[#1e382f] hover:bg-gray-200/60'
+                  }`}
+                >
+                  English (EN)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAdminContentLang('de')}
+                  className={`px-3 py-1 text-[12px] font-extrabold rounded-lg transition-all ${
+                    adminContentLang === 'de' ? 'bg-[#1e382f] text-white shadow-xs' : 'text-[#1e382f] hover:bg-gray-200/60'
+                  }`}
+                >
+                  Deutsch (DE)
+                </button>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-[13px] font-bold text-[#333] mb-1">Email Address</label>
-                <input
-                  type="email"
-                  value={siteSettings.email || ''}
-                  onChange={(e) => setSiteSettings({ ...siteSettings, email: e.target.value })}
-                  className="w-full border rounded-xl px-4 py-2.5 text-[14px] focus:outline-none focus:border-[#d85c27]"
-                />
-              </div>
-              <div>
-                <label className="block text-[13px] font-bold text-[#333] mb-1">Street Address</label>
-                <input
-                  type="text"
-                  value={siteSettings.address || ''}
-                  onChange={(e) => setSiteSettings({ ...siteSettings, address: e.target.value })}
-                  className="w-full border rounded-xl px-4 py-2.5 text-[14px] focus:outline-none focus:border-[#d85c27]"
-                />
-              </div>
+            {/* ── 1. Hero Section ── */}
+            <div className="bg-[#fffdfa] rounded-[22px] border border-[#ebdcd0] shadow-xs overflow-hidden">
+              <button
+                type="button"
+                onClick={() => toggleSection('hero')}
+                className="w-full p-5 flex items-center justify-between text-left bg-white/70 border-b border-[#ebdcd0]"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="w-7 h-7 rounded-lg bg-[#d85c27] text-white font-black text-[12px] flex items-center justify-center">1</span>
+                  <div>
+                    <h3 className="text-[16px] font-black text-[#1e382f]">Hero Banner Section</h3>
+                    <p className="text-[12px] text-gray-500">Main headline, intro tagline, action buttons & food image</p>
+                  </div>
+                </div>
+                {openSections.hero ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+              </button>
+
+              {openSections.hero && (
+                <div className="p-5 sm:p-6 space-y-4 animate-fadeIn">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[12px] font-bold text-[#333] mb-1">Headline Line 1</label>
+                      <input
+                        type="text"
+                        value={adminContentLang === 'en' ? (homepageContent.heroTitle1En || '') : (homepageContent.heroTitle1De || '')}
+                        onChange={(e) => setHomepageContent(adminContentLang === 'en' ? { ...homepageContent, heroTitle1En: e.target.value } : { ...homepageContent, heroTitle1De: e.target.value })}
+                        className="w-full border rounded-xl px-3.5 py-2 text-[13.5px] focus:outline-none focus:border-[#d85c27]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[12px] font-bold text-[#333] mb-1">Headline Line 2 (Highlighted)</label>
+                      <input
+                        type="text"
+                        value={adminContentLang === 'en' ? (homepageContent.heroTitle2En || '') : (homepageContent.heroTitle2De || '')}
+                        onChange={(e) => setHomepageContent(adminContentLang === 'en' ? { ...homepageContent, heroTitle2En: e.target.value } : { ...homepageContent, heroTitle2De: e.target.value })}
+                        className="w-full border rounded-xl px-3.5 py-2 text-[13.5px] focus:outline-none focus:border-[#d85c27]"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[12px] font-bold text-[#333] mb-1">Description Tagline</label>
+                    <textarea
+                      rows={2}
+                      value={adminContentLang === 'en' ? (homepageContent.heroDescEn || '') : (homepageContent.heroDescDe || '')}
+                      onChange={(e) => setHomepageContent(adminContentLang === 'en' ? { ...homepageContent, heroDescEn: e.target.value } : { ...homepageContent, heroDescDe: e.target.value })}
+                      className="w-full border rounded-xl px-3.5 py-2 text-[13.5px] focus:outline-none focus:border-[#d85c27] resize-none"
+                    />
+                  </div>
+
+                  {/* Hero Photo Picker */}
+                  <div className="bg-[#fcf8f3] border border-[#ebdcd0] rounded-2xl p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[12.5px] font-black text-[#1e382f] flex items-center gap-1.5">
+                        <ImageIcon className="w-4 h-4 text-[#d85c27]" />
+                        Hero Food Photo
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setActiveGallerySection(activeGallerySection === 'hero' ? null : 'hero')}
+                        className="text-[11.5px] font-bold text-[#d85c27] hover:underline bg-white px-2.5 py-1 rounded-lg border border-[#ebdcd0]"
+                      >
+                        {activeGallerySection === 'hero' ? 'Hide' : 'Browse Photos'}
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <div className="w-16 h-16 rounded-xl overflow-hidden bg-white shrink-0 border border-[#ebdcd0]">
+                        {homepageContent.heroImage ? (
+                          <img src={homepageContent.heroImage} alt="Hero" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-[9px] text-gray-400 font-bold">No Img</div>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleOptimizedImageUpload((url) => setHomepageContent({ ...homepageContent, heroImage: url }))}
+                        className="bg-[#1e382f] text-white text-[12px] font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-sm"
+                      >
+                        <Upload className="w-3.5 h-3.5 text-[#d85c27]" /> Upload Photo
+                      </button>
+                    </div>
+
+                    {activeGallerySection === 'hero' && (
+                      <div className="pt-2">
+                        {renderGalleryPicker(
+                          homepageContent.heroImage || '',
+                          (url) => setHomepageContent({ ...homepageContent, heroImage: url }),
+                          () => setActiveGallerySection(null)
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
-            <button
-              type="submit"
-              className="bg-[#d85c27] text-white font-extrabold px-8 py-3 rounded-full text-[14px] shadow-sm hover:shadow-md transition-all flex items-center gap-2"
-            >
-              <Save className="w-4 h-4" /> Save Settings
-            </button>
+            {/* ── 2. The MAATI Way Steps ── */}
+            <div className="bg-[#fffdfa] rounded-[22px] border border-[#ebdcd0] shadow-xs overflow-hidden">
+              <button
+                type="button"
+                onClick={() => toggleSection('maatiWay')}
+                className="w-full p-5 flex items-center justify-between text-left bg-white/70 border-b border-[#ebdcd0]"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="w-7 h-7 rounded-lg bg-[#d85c27] text-white font-black text-[12px] flex items-center justify-center">2</span>
+                  <div>
+                    <h3 className="text-[16px] font-black text-[#1e382f]">The MAATI Way (Build Your Bowl Steps)</h3>
+                    <p className="text-[12px] text-gray-500">Step cards showing Base, Proteins & Curries, Chutneys</p>
+                  </div>
+                </div>
+                {openSections.maatiWay ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+              </button>
+
+              {openSections.maatiWay && (
+                <div className="p-5 sm:p-6 space-y-4 animate-fadeIn">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[12px] font-bold text-[#333] mb-1">Section Title</label>
+                      <input
+                        type="text"
+                        value={adminContentLang === 'en' ? (homepageContent.maatiWayTitleEn || '') : (homepageContent.maatiWayTitleDe || '')}
+                        onChange={(e) => setHomepageContent(adminContentLang === 'en' ? { ...homepageContent, maatiWayTitleEn: e.target.value } : { ...homepageContent, maatiWayTitleDe: e.target.value })}
+                        className="w-full border rounded-xl px-3.5 py-2 text-[13.5px]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Step Cards List */}
+                  <div className="space-y-3 pt-2">
+                    {(homepageContent.maatiWaySteps || []).map((st, idx) => {
+                      const isStepOpen = openSteps[st.id || idx] !== false;
+                      const titleVal = adminContentLang === 'en' ? st.title : (st.titleDe || st.title);
+                      const itemsVal = (adminContentLang === 'en' ? st.items : (st.itemsDe || st.items)) || [];
+
+                      return (
+                        <div key={st.id || idx} className="bg-[#fcf8f3] border border-[#ebdcd0] rounded-2xl p-4 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <button
+                              type="button"
+                              onClick={() => toggleStep(st.id || idx)}
+                              className="flex items-center gap-2 font-bold text-[14px] text-[#1e382f]"
+                            >
+                              <span className="w-6 h-6 rounded-full bg-[#1e382f] text-white text-[11px] flex items-center justify-center font-black">
+                                {idx + 1}
+                              </span>
+                              <span>{titleVal || `Step ${idx + 1}`}</span>
+                              {isStepOpen ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteStepCard(st.id || idx)}
+                              className="text-rose-600 hover:text-rose-800 text-[11.5px] font-bold"
+                            >
+                              Delete Step
+                            </button>
+                          </div>
+
+                          {isStepOpen && (
+                            <div className="space-y-3 pt-2">
+                              <div>
+                                <label className="block text-[11px] font-bold text-gray-600 mb-1">Step Card Title</label>
+                                <input
+                                  type="text"
+                                  value={titleVal}
+                                  onChange={(e) => {
+                                    const nextSteps = [...(homepageContent.maatiWaySteps || [])];
+                                    if (adminContentLang === 'en') {
+                                      nextSteps[idx] = { ...nextSteps[idx], title: e.target.value };
+                                    } else {
+                                      nextSteps[idx] = { ...nextSteps[idx], titleDe: e.target.value };
+                                    }
+                                    setHomepageContent({ ...homepageContent, maatiWaySteps: nextSteps });
+                                  }}
+                                  className="w-full bg-white border rounded-xl px-3 py-1.5 text-[13px]"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-[11px] font-bold text-gray-600 mb-1">
+                                  Bullet Options (comma separated)
+                                </label>
+                                <input
+                                  type="text"
+                                  value={itemsVal.join(', ')}
+                                  onChange={(e) => {
+                                    const nextItems = e.target.value.split(',').map(s => s.trim()).filter(Boolean);
+                                    const nextSteps = [...(homepageContent.maatiWaySteps || [])];
+                                    if (adminContentLang === 'en') {
+                                      nextSteps[idx] = { ...nextSteps[idx], items: nextItems };
+                                    } else {
+                                      nextSteps[idx] = { ...nextSteps[idx], itemsDe: nextItems };
+                                    }
+                                    setHomepageContent({ ...homepageContent, maatiWaySteps: nextSteps });
+                                  }}
+                                  className="w-full bg-white border rounded-xl px-3 py-1.5 text-[13px]"
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+
+                    <button
+                      type="button"
+                      onClick={handleAddStepCard}
+                      className="w-full py-2.5 bg-white border-2 border-dashed border-[#ebdcd0] hover:border-[#d85c27] text-[#1e382f] font-bold text-[13px] rounded-xl flex items-center justify-center gap-1.5 transition-colors"
+                    >
+                      <Plus className="w-4 h-4 text-[#d85c27]" />
+                      <span>Add Another Step Card</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* ── 3. Dining Experience ── */}
+            <div className="bg-[#fffdfa] rounded-[22px] border border-[#ebdcd0] shadow-xs overflow-hidden">
+              <button
+                type="button"
+                onClick={() => toggleSection('experience')}
+                className="w-full p-5 flex items-center justify-between text-left bg-white/70 border-b border-[#ebdcd0]"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="w-7 h-7 rounded-lg bg-[#d85c27] text-white font-black text-[12px] flex items-center justify-center">3</span>
+                  <div>
+                    <h3 className="text-[16px] font-black text-[#1e382f]">Dining Experience & Ambience</h3>
+                    <p className="text-[12px] text-gray-500">Atmosphere story and 2 restaurant interior photos</p>
+                  </div>
+                </div>
+                {openSections.experience ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+              </button>
+
+              {openSections.experience && (
+                <div className="p-5 sm:p-6 space-y-4 animate-fadeIn">
+                  <div>
+                    <label className="block text-[12px] font-bold text-[#333] mb-1">Headline</label>
+                    <input
+                      type="text"
+                      value={adminContentLang === 'en' ? (homepageContent.experienceTitleEn || '') : (homepageContent.experienceTitleDe || '')}
+                      onChange={(e) => setHomepageContent(adminContentLang === 'en' ? { ...homepageContent, experienceTitleEn: e.target.value } : { ...homepageContent, experienceTitleDe: e.target.value })}
+                      className="w-full border rounded-xl px-3.5 py-2 text-[13.5px]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[12px] font-bold text-[#333] mb-1">Description</label>
+                    <textarea
+                      rows={2}
+                      value={adminContentLang === 'en' ? (homepageContent.experienceDescEn || '') : (homepageContent.experienceDescDe || '')}
+                      onChange={(e) => setHomepageContent(adminContentLang === 'en' ? { ...homepageContent, experienceDescEn: e.target.value } : { ...homepageContent, experienceDescDe: e.target.value })}
+                      className="w-full border rounded-xl px-3.5 py-2 text-[13.5px] resize-none"
+                    />
+                  </div>
+
+                  {/* 2 Photos */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                    <div className="bg-[#fcf8f3] border border-[#ebdcd0] rounded-2xl p-4 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[12px] font-black text-[#1e382f]">Photo 1 (Left)</label>
+                        <button
+                          type="button"
+                          onClick={() => setActiveGallerySection(activeGallerySection === 'exp1' ? null : 'exp1')}
+                          className="text-[11px] font-bold text-[#d85c27] bg-white px-2 py-0.5 rounded border border-[#ebdcd0]"
+                        >
+                          {activeGallerySection === 'exp1' ? 'Hide' : 'Browse'}
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="w-14 h-14 rounded-xl overflow-hidden bg-white shrink-0 border border-[#ebdcd0]">
+                          <img src={homepageContent.experienceImg1 || "/assets/show5-BiQql1jr.jpeg"} alt="Left" className="w-full h-full object-cover" />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleOptimizedImageUpload((url) => setHomepageContent({ ...homepageContent, experienceImg1: url }))}
+                          className="bg-[#1e382f] text-white text-[11.5px] font-bold px-3 py-1.5 rounded-xl flex items-center gap-1"
+                        >
+                          <Upload className="w-3 h-3 text-[#d85c27]" /> Upload
+                        </button>
+                      </div>
+                      {activeGallerySection === 'exp1' && (
+                        <div className="pt-2">
+                          {renderGalleryPicker(homepageContent.experienceImg1 || '', (url) => setHomepageContent({ ...homepageContent, experienceImg1: url }), () => setActiveGallerySection(null))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="bg-[#fcf8f3] border border-[#ebdcd0] rounded-2xl p-4 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[12px] font-black text-[#1e382f]">Photo 2 (Right)</label>
+                        <button
+                          type="button"
+                          onClick={() => setActiveGallerySection(activeGallerySection === 'exp2' ? null : 'exp2')}
+                          className="text-[11px] font-bold text-[#d85c27] bg-white px-2 py-0.5 rounded border border-[#ebdcd0]"
+                        >
+                          {activeGallerySection === 'exp2' ? 'Hide' : 'Browse'}
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="w-14 h-14 rounded-xl overflow-hidden bg-white shrink-0 border border-[#ebdcd0]">
+                          <img src={homepageContent.experienceImg2 || "/assets/show2-CM6MShfY.jpeg"} alt="Right" className="w-full h-full object-cover" />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleOptimizedImageUpload((url) => setHomepageContent({ ...homepageContent, experienceImg2: url }))}
+                          className="bg-[#1e382f] text-white text-[11.5px] font-bold px-3 py-1.5 rounded-xl flex items-center gap-1"
+                        >
+                          <Upload className="w-3 h-3 text-[#d85c27]" /> Upload
+                        </button>
+                      </div>
+                      {activeGallerySection === 'exp2' && (
+                        <div className="pt-2">
+                          {renderGalleryPicker(homepageContent.experienceImg2 || '', (url) => setHomepageContent({ ...homepageContent, experienceImg2: url }), () => setActiveGallerySection(null))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* ── 4. Catering Section ── */}
+            <div className="bg-[#fffdfa] rounded-[22px] border border-[#ebdcd0] shadow-xs overflow-hidden">
+              <button
+                type="button"
+                onClick={() => toggleSection('catering')}
+                className="w-full p-5 flex items-center justify-between text-left bg-white/70 border-b border-[#ebdcd0]"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="w-7 h-7 rounded-lg bg-[#d85c27] text-white font-black text-[12px] flex items-center justify-center">4</span>
+                  <div>
+                    <h3 className="text-[16px] font-black text-[#1e382f]">MAATI Catering Section</h3>
+                    <p className="text-[12px] text-gray-500">Corporate catering information, 4 key highlights & photo</p>
+                  </div>
+                </div>
+                {openSections.catering ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+              </button>
+
+              {openSections.catering && (
+                <div className="p-5 sm:p-6 space-y-4 animate-fadeIn">
+                  <div>
+                    <label className="block text-[12px] font-bold text-[#333] mb-1">Headline</label>
+                    <input
+                      type="text"
+                      value={adminContentLang === 'en' ? (homepageContent.cateringTitleEn || '') : (homepageContent.cateringTitleDe || '')}
+                      onChange={(e) => setHomepageContent(adminContentLang === 'en' ? { ...homepageContent, cateringTitleEn: e.target.value } : { ...homepageContent, cateringTitleDe: e.target.value })}
+                      className="w-full border rounded-xl px-3.5 py-2 text-[13.5px]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[12px] font-bold text-[#333] mb-1">Description</label>
+                    <textarea
+                      rows={2}
+                      value={adminContentLang === 'en' ? (homepageContent.cateringDescEn || '') : (homepageContent.cateringDescDe || '')}
+                      onChange={(e) => setHomepageContent(adminContentLang === 'en' ? { ...homepageContent, cateringDescEn: e.target.value } : { ...homepageContent, cateringDescDe: e.target.value })}
+                      className="w-full border rounded-xl px-3.5 py-2 text-[13.5px] resize-none"
+                    />
+                  </div>
+
+                  {/* Catering Photo */}
+                  <div className="bg-[#fcf8f3] border border-[#ebdcd0] rounded-2xl p-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[12px] font-black text-[#1e382f]">Catering Spread Photo</label>
+                      <button
+                        type="button"
+                        onClick={() => setActiveGallerySection(activeGallerySection === 'catering' ? null : 'catering')}
+                        className="text-[11px] font-bold text-[#d85c27] bg-white px-2 py-0.5 rounded border border-[#ebdcd0]"
+                      >
+                        {activeGallerySection === 'catering' ? 'Hide' : 'Browse Photos'}
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-16 h-16 rounded-xl overflow-hidden bg-white shrink-0 border border-[#ebdcd0]">
+                        <img src={homepageContent.cateringImage || "/assets/show3-D0blnzja.jpeg"} alt="Catering" className="w-full h-full object-cover" />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleOptimizedImageUpload((url) => setHomepageContent({ ...homepageContent, cateringImage: url }))}
+                        className="bg-[#1e382f] text-white text-[12px] font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-sm"
+                      >
+                        <Upload className="w-3.5 h-3.5 text-[#d85c27]" /> Upload Photo
+                      </button>
+                    </div>
+                    {activeGallerySection === 'catering' && (
+                      <div className="pt-2">
+                        {renderGalleryPicker(homepageContent.cateringImage || '', (url) => setHomepageContent({ ...homepageContent, cateringImage: url }), () => setActiveGallerySection(null))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Floating Save Button */}
+            {hasUnsavedChanges && (
+              <div className="fixed bottom-6 inset-x-0 z-40 flex justify-center px-4 animate-bounce">
+                <div className="bg-[#1e382f] text-white rounded-full shadow-2xl px-6 py-3.5 flex items-center gap-4 border border-white/20">
+                  <span className="text-[13.5px] font-bold">You have unsaved changes</span>
+                  <button
+                    type="submit"
+                    className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-black px-5 py-2 rounded-full text-[13px] shadow-sm transition-all"
+                  >
+                    Save All Changes
+                  </button>
+                </div>
+              </div>
+            )}
+
           </form>
         )}
 
         {/* ═══════════════════════════════════════════════
-            MODAL: ADD / EDIT ITEM (DOUBLE PRICING & UPLOAD)
+            TAB 4: PHOTO LIBRARY
+        ═══════════════════════════════════════════════ */}
+        {activeTab === 'gallery' && (
+          <div className="bg-[#fffdfa] rounded-[24px] p-5 sm:p-7 border border-[#ebdcd0] shadow-sm space-y-6 animate-fadeIn">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-[#ebdcd0]">
+              <div>
+                <h2 className="text-[20px] font-black text-[#1e382f] flex items-center gap-2">
+                  <ImageIcon className="w-5 h-5 text-[#d85c27]" />
+                  <span>Restaurant Photo Library</span>
+                </h2>
+                <p className="text-[13px] text-[#666] mt-0.5">
+                  All photos used across dishes, banners, and catering are stored here. Photos are auto-compressed for fast performance.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleOptimizedImageUpload(() => {})}
+                  className="bg-[#1e382f] hover:bg-[#142620] text-white text-[13px] font-bold px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-sm transition-all"
+                >
+                  <Upload className="w-4 h-4 text-[#d85c27]" />
+                  <span>+ Add Photo</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Filter Bar & Search */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="relative flex-1 max-w-[420px]">
+                <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={gallerySearch}
+                  onChange={(e) => setGallerySearch(e.target.value)}
+                  placeholder="Search photos by name (e.g. Bowl, Naan, Mango, Chai)..."
+                  className="w-full pl-10 pr-3 py-2 bg-white border border-[#ebdcd0] rounded-xl text-[13px] focus:outline-none focus:border-[#d85c27]"
+                />
+                {gallerySearch && (
+                  <button
+                    type="button"
+                    onClick={() => setGallerySearch('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-[11.5px]">
+                {['All', ...AVAILABLE_TAGS].map((cat) => {
+                  const count = cat === 'All'
+                    ? galleryAssets.length
+                    : galleryAssets.filter((a) => a.category === cat).length;
+                  if (count === 0 && cat !== 'All') return null;
+
+                  return (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setGalleryFilterCat(cat)}
+                      className={`px-3 py-1.5 rounded-full font-bold whitespace-nowrap transition-all ${
+                        galleryFilterCat === cat
+                          ? 'bg-[#d85c27] text-white shadow-sm'
+                          : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+                      }`}
+                    >
+                      {cat} ({count})
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Gallery Grid */}
+            {(() => {
+              const q = gallerySearch.toLowerCase().trim();
+              const filtered = galleryAssets.filter((asset) => {
+                const matchesCat = galleryFilterCat === 'All' || asset.category === galleryFilterCat;
+                if (!matchesCat) return false;
+                if (!q) return true;
+                return (
+                  asset.name.toLowerCase().includes(q) ||
+                  asset.category.toLowerCase().includes(q) ||
+                  asset.path.toLowerCase().includes(q)
+                );
+              });
+
+              if (filtered.length === 0) {
+                return (
+                  <div className="border-2 border-dashed border-[#ebdcd0] rounded-2xl p-12 text-center bg-white/50 space-y-3">
+                    <p className="text-[14px] text-gray-500 font-bold">No photos found matching "{gallerySearch}"</p>
+                    <button
+                      type="button"
+                      onClick={() => { setGallerySearch(''); setGalleryFilterCat('All'); }}
+                      className="text-[#d85c27] text-[13px] font-bold hover:underline"
+                    >
+                      Clear search
+                    </button>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3.5 sm:gap-4">
+                  {filtered.map((asset) => (
+                    <div
+                      key={asset.id || asset.path}
+                      className="group bg-white rounded-2xl border border-[#ebdcd0] overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between"
+                    >
+                      <div className="relative aspect-[4/3] bg-gray-100 overflow-hidden">
+                        <img
+                          src={asset.path}
+                          alt={asset.name}
+                          loading="lazy"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                        
+                        {/* Action buttons on card */}
+                        <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            type="button"
+                            onClick={(e) => handleOpenEditPhoto(asset, e)}
+                            title={`Edit name or tag for "${asset.name}"`}
+                            className="w-7 h-7 rounded-full bg-black/65 hover:bg-blue-600 text-white flex items-center justify-center shadow transition-all transform hover:scale-110"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => handleDeleteGalleryImage(e, asset.id, asset.name)}
+                            title={`Delete "${asset.name}"`}
+                            className="w-7 h-7 rounded-full bg-black/65 hover:bg-rose-600 text-white flex items-center justify-center shadow transition-all transform hover:scale-110"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+
+                        <span className="absolute bottom-2 left-2 bg-black/70 backdrop-blur-xs text-white text-[9px] font-extrabold px-2 py-0.5 rounded-md uppercase">
+                          {asset.category}
+                        </span>
+                      </div>
+
+                      <div className="p-3 flex items-center justify-between gap-2 border-t border-gray-100">
+                        <h4 className="font-extrabold text-[13px] text-[#1e382f] truncate leading-tight" title={asset.name}>
+                          {asset.name}
+                        </h4>
+                        <button
+                          type="button"
+                          onClick={(e) => handleOpenEditPhoto(asset, e)}
+                          title="Edit photo name and category tag"
+                          className="text-gray-400 hover:text-blue-600 p-1 hover:bg-blue-50 rounded-lg transition-colors shrink-0"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+          </div>
+        )}
+
+        {/* ═══════════════════════════════════════════════
+            TAB 5: RESTAURANT INFO
+        ═══════════════════════════════════════════════ */}
+        {activeTab === 'settings' && (
+          <form onSubmit={handleSaveSettings} className="bg-[#fffdfa] rounded-[24px] p-6 sm:p-8 border border-[#ebdcd0] shadow-sm space-y-6">
+            <div>
+              <h2 className="text-[20px] font-black text-[#1e382f]">Restaurant Information</h2>
+              <p className="text-[13px] text-[#666] mt-0.5">
+                Contact information and address displayed on the website.
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div>
+                <label className="block text-[12px] font-bold text-[#333] mb-1">Restaurant Name</label>
+                <input
+                  type="text"
+                  value={siteSettings.restaurantName || ''}
+                  onChange={(e) => setSiteSettings({ ...siteSettings, restaurantName: e.target.value })}
+                  className="w-full border rounded-xl px-3.5 py-2.5 text-[14px] focus:outline-none focus:border-[#d85c27]"
+                />
+              </div>
+              <div>
+                <label className="block text-[12px] font-bold text-[#333] mb-1">Phone Number</label>
+                <input
+                  type="text"
+                  value={siteSettings.phone || ''}
+                  onChange={(e) => setSiteSettings({ ...siteSettings, phone: e.target.value })}
+                  className="w-full border rounded-xl px-3.5 py-2.5 text-[14px] focus:outline-none focus:border-[#d85c27]"
+                />
+              </div>
+              <div>
+                <label className="block text-[12px] font-bold text-[#333] mb-1">Email Address</label>
+                <input
+                  type="email"
+                  value={siteSettings.email || ''}
+                  onChange={(e) => setSiteSettings({ ...siteSettings, email: e.target.value })}
+                  className="w-full border rounded-xl px-3.5 py-2.5 text-[14px] focus:outline-none focus:border-[#d85c27]"
+                />
+              </div>
+              <div>
+                <label className="block text-[12px] font-bold text-[#333] mb-1">Street Address</label>
+                <input
+                  type="text"
+                  value={siteSettings.address || ''}
+                  onChange={(e) => setSiteSettings({ ...siteSettings, address: e.target.value })}
+                  className="w-full border rounded-xl px-3.5 py-2.5 text-[14px] focus:outline-none focus:border-[#d85c27]"
+                />
+              </div>
+            </div>
+
+            <div className="pt-2">
+              <button
+                type="submit"
+                className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-6 py-3 rounded-full text-[14px] shadow-sm hover:shadow-md transition-all flex items-center gap-2"
+              >
+                <Save className="w-4 h-4" /> Save Information
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* ═══════════════════════════════════════════════
+            MODAL: ADD / EDIT DISH
         ═══════════════════════════════════════════════ */}
         {isModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
-            <div className="bg-white rounded-[28px] w-full max-w-[760px] max-h-[92vh] overflow-y-auto shadow-2xl p-6 md:p-8">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fadeIn">
+            <div className="bg-white rounded-[28px] w-full max-w-[720px] max-h-[92vh] overflow-y-auto shadow-2xl p-6 sm:p-8 space-y-5">
               
-              <div className="flex items-center justify-between pb-4 border-b border-gray-100 mb-6">
-                <div className="flex items-center gap-2">
-                  <span className="p-2 rounded-xl bg-[#d85c27]/10 text-[#d85c27]">
+              {/* Modal Header */}
+              <div className="flex items-center justify-between pb-4 border-b border-gray-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-[#d85c27]/10 text-[#d85c27] flex items-center justify-center">
                     <Utensils className="w-5 h-5" />
-                  </span>
-                  <h3 className="text-[20px] font-black text-[#1e382f]">
-                    {editingItem ? 'Edit Menu Item' : 'Add New Menu Item'}
-                  </h3>
+                  </div>
+                  <div>
+                    <h3 className="text-[19px] font-black text-[#1e382f]">
+                      {editingItem ? 'Edit Dish' : 'Add New Dish'}
+                    </h3>
+                    <p className="text-[12px] text-gray-500">Fill in dish details and photo</p>
+                  </div>
                 </div>
                 <button
                   onClick={() => setIsModalOpen(false)}
-                  className="text-gray-400 hover:text-gray-700 font-bold text-xl p-1"
+                  className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold flex items-center justify-center transition-colors"
                 >
                   ✕
                 </button>
@@ -2664,35 +2478,29 @@ export const StudioPage: React.FC = () => {
 
               <form onSubmit={handleSaveItem} className="space-y-5">
                 
-                {/* Language Switcher in Dish Modal */}
-                <div className="flex items-center justify-between bg-[#fcf8f3] p-3 rounded-2xl border border-[#ebdcd0]">
-                  <span className="text-[12px] font-black text-[#1e382f] uppercase tracking-wider">
-                    Editing Language: {adminContentLang.toUpperCase()}
+                {/* Language Switcher */}
+                <div className="flex items-center justify-between bg-[#fcf8f3] p-2.5 rounded-xl border border-[#ebdcd0]">
+                  <span className="text-[11.5px] font-extrabold text-[#1e382f] uppercase tracking-wider">
+                    Editing: {adminContentLang === 'en' ? 'English Content' : 'German Content'}
                   </span>
-                  <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-[#ebdcd0]">
+                  <div className="flex items-center gap-1 bg-white p-1 rounded-lg border border-[#ebdcd0]">
                     <button
                       type="button"
                       onClick={() => setAdminContentLang('en')}
-                      className={`px-3 py-1.5 text-[12px] font-extrabold rounded-lg transition-all flex items-center gap-1.5 ${
-                        adminContentLang === 'en'
-                          ? 'bg-[#1e382f] text-white shadow-xs'
-                          : 'text-[#1e382f] hover:bg-gray-100'
+                      className={`px-3 py-1 text-[11.5px] font-extrabold rounded-md transition-all ${
+                        adminContentLang === 'en' ? 'bg-[#1e382f] text-white shadow-xs' : 'text-[#1e382f] hover:bg-gray-100'
                       }`}
                     >
-                      <Globe className="w-3.5 h-3.5" />
-                      <span>English (EN)</span>
+                      English (EN)
                     </button>
                     <button
                       type="button"
                       onClick={() => setAdminContentLang('de')}
-                      className={`px-3 py-1.5 text-[12px] font-extrabold rounded-lg transition-all flex items-center gap-1.5 ${
-                        adminContentLang === 'de'
-                          ? 'bg-[#1e382f] text-white shadow-xs'
-                          : 'text-[#1e382f] hover:bg-gray-100'
+                      className={`px-3 py-1 text-[11.5px] font-extrabold rounded-md transition-all ${
+                        adminContentLang === 'de' ? 'bg-[#1e382f] text-white shadow-xs' : 'text-[#1e382f] hover:bg-gray-100'
                       }`}
                     >
-                      <Globe className="w-3.5 h-3.5" />
-                      <span>Deutsch (DE)</span>
+                      Deutsch (DE)
                     </button>
                   </div>
                 </div>
@@ -2705,12 +2513,10 @@ export const StudioPage: React.FC = () => {
                   <input
                     type="text"
                     value={adminContentLang === 'en' ? formTitleEn : formTitleDe}
-                    onChange={(e) =>
-                      adminContentLang === 'en' ? setFormTitleEn(e.target.value) : setFormTitleDe(e.target.value)
-                    }
+                    onChange={(e) => adminContentLang === 'en' ? setFormTitleEn(e.target.value) : setFormTitleDe(e.target.value)}
                     required={adminContentLang === 'en'}
                     placeholder={adminContentLang === 'en' ? 'e.g. Chettinad Spicy Chicken Bowl' : 'e.g. Chettinad "Spicy Chicken" Schale'}
-                    className="w-full border rounded-xl px-4 py-2.5 text-[14px] focus:outline-none focus:border-[#d85c27]"
+                    className="w-full border rounded-xl px-3.5 py-2.5 text-[14px] focus:outline-none focus:border-[#d85c27]"
                   />
                 </div>
 
@@ -2721,7 +2527,7 @@ export const StudioPage: React.FC = () => {
                     <select
                       value={formCatId}
                       onChange={(e) => setFormCatId(e.target.value)}
-                      className="w-full border rounded-xl px-4 py-2.5 text-[14px] focus:outline-none focus:border-[#d85c27]"
+                      className="w-full border rounded-xl px-3.5 py-2.5 text-[13.5px] focus:outline-none focus:border-[#d85c27] bg-white font-medium"
                     >
                       {categories.map((c) => (
                         <option key={c._id} value={c._id}>
@@ -2731,11 +2537,11 @@ export const StudioPage: React.FC = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[12px] font-bold text-[#333] mb-1">Dietary Classification *</label>
+                    <label className="block text-[12px] font-bold text-[#333] mb-1">Dietary Tag *</label>
                     <select
                       value={formFoodType}
                       onChange={(e) => setFormFoodType(e.target.value as FoodType)}
-                      className="w-full border rounded-xl px-4 py-2.5 text-[14px] focus:outline-none focus:border-[#d85c27]"
+                      className="w-full border rounded-xl px-3.5 py-2.5 text-[13.5px] focus:outline-none focus:border-[#d85c27] bg-white font-medium"
                     >
                       <option value="vegetarian">Vegetarian (VEG)</option>
                       <option value="nonVegetarian">Non-Vegetarian (NON-VEG)</option>
@@ -2744,19 +2550,18 @@ export const StudioPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* 3. Pricing Configuration (Single vs Double / Multi Pricing) */}
-                <div className="bg-[#fcf8f3] border border-[#ebdcd0] rounded-2xl p-5 space-y-4">
+                {/* 3. Pricing */}
+                <div className="bg-[#fcf8f3] border border-[#ebdcd0] rounded-2xl p-4 space-y-3">
                   <div className="flex items-center justify-between">
-                    <label className="text-[13px] font-black text-[#1e382f] flex items-center gap-1.5">
-                      <DollarSign className="w-4 h-4 text-[#d85c27]" />
-                      Pricing Format
+                    <label className="text-[12px] font-black text-[#1e382f] uppercase tracking-wider">
+                      Pricing Option
                     </label>
-                    <div className="flex bg-white rounded-xl p-1 border border-[#ebdcd0]">
+                    <div className="flex items-center gap-1 bg-white p-1 rounded-lg border border-[#ebdcd0]">
                       <button
                         type="button"
                         onClick={() => setPriceType('single')}
-                        className={`px-3 py-1 text-[12px] font-bold rounded-lg transition-all ${
-                          priceType === 'single' ? 'bg-[#d85c27] text-white shadow-sm' : 'text-gray-600'
+                        className={`px-3 py-1 text-[11.5px] font-bold rounded-md transition-all ${
+                          priceType === 'single' ? 'bg-[#1e382f] text-white shadow-xs' : 'text-[#1e382f]'
                         }`}
                       >
                         Single Price
@@ -2764,212 +2569,154 @@ export const StudioPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setPriceType('double')}
-                        className={`px-3 py-1 text-[12px] font-bold rounded-lg transition-all ${
-                          priceType === 'double' ? 'bg-[#d85c27] text-white shadow-sm' : 'text-gray-600'
+                        className={`px-3 py-1 text-[11.5px] font-bold rounded-md transition-all ${
+                          priceType === 'double' ? 'bg-[#1e382f] text-white shadow-xs' : 'text-[#1e382f]'
                         }`}
                       >
-                        Double / Multi-Price
+                        Two Options (e.g. Chicken / Prawns)
                       </button>
                     </div>
                   </div>
 
                   {priceType === 'single' ? (
                     <div>
-                      <label className="block text-[12px] font-bold text-[#555] mb-1">Price (e.g. €11,5)</label>
                       <input
                         type="text"
                         value={formPrice}
                         onChange={(e) => setFormPrice(e.target.value)}
-                        placeholder="€11,5"
+                        placeholder="e.g. €11,5"
                         required
-                        className="w-full bg-white border rounded-xl px-4 py-2.5 text-[14px] font-bold focus:outline-none focus:border-[#d85c27]"
+                        className="w-full bg-white border rounded-xl px-3.5 py-2 text-[14px] font-bold text-[#d85c27] focus:outline-none focus:border-[#d85c27]"
                       />
                     </div>
                   ) : (
                     <div className="space-y-3 pt-1">
-                      {/* Option 1 */}
-                      <div className="grid grid-cols-3 gap-3 bg-white p-3 rounded-xl border border-[#ebdcd0]">
+                      <div className="grid grid-cols-3 gap-2 bg-white p-3 rounded-xl border border-[#ebdcd0]">
                         <div>
-                          <label className="block text-[11px] font-bold text-gray-500 mb-1">Option 1 (EN)</label>
+                          <label className="block text-[10.5px] font-bold text-gray-500 mb-1">Option 1 (EN)</label>
                           <input
                             type="text"
                             value={opt1LabelEn}
                             onChange={(e) => setOpt1LabelEn(e.target.value)}
                             placeholder="Chicken"
-                            className="w-full border rounded-lg px-3 py-1.5 text-[13px] font-bold focus:outline-none focus:border-[#d85c27]"
+                            className="w-full border rounded-lg px-2.5 py-1.5 text-[12.5px] font-bold"
                           />
                         </div>
                         <div>
-                          <label className="block text-[11px] font-bold text-gray-500 mb-1">Option 1 (DE)</label>
+                          <label className="block text-[10.5px] font-bold text-gray-500 mb-1">Option 1 (DE)</label>
                           <input
                             type="text"
                             value={opt1LabelDe}
                             onChange={(e) => setOpt1LabelDe(e.target.value)}
                             placeholder="Hähnchen"
-                            className="w-full border rounded-lg px-3 py-1.5 text-[13px] font-bold focus:outline-none focus:border-[#d85c27]"
+                            className="w-full border rounded-lg px-2.5 py-1.5 text-[12.5px] font-bold"
                           />
                         </div>
                         <div>
-                          <label className="block text-[11px] font-bold text-gray-500 mb-1">Price 1</label>
+                          <label className="block text-[10.5px] font-bold text-gray-500 mb-1">Price 1</label>
                           <input
                             type="text"
                             value={opt1Price}
                             onChange={(e) => setOpt1Price(e.target.value)}
                             placeholder="€12,5"
-                            className="w-full border rounded-lg px-3 py-1.5 text-[13px] font-bold text-[#d85c27] focus:outline-none focus:border-[#d85c27]"
+                            className="w-full border rounded-lg px-2.5 py-1.5 text-[12.5px] font-bold text-[#d85c27]"
                           />
                         </div>
                       </div>
 
-                      {/* Option 2 */}
-                      <div className="grid grid-cols-3 gap-3 bg-white p-3 rounded-xl border border-[#ebdcd0]">
+                      <div className="grid grid-cols-3 gap-2 bg-white p-3 rounded-xl border border-[#ebdcd0]">
                         <div>
-                          <label className="block text-[11px] font-bold text-gray-500 mb-1">Option 2 (EN)</label>
+                          <label className="block text-[10.5px] font-bold text-gray-500 mb-1">Option 2 (EN)</label>
                           <input
                             type="text"
                             value={opt2LabelEn}
                             onChange={(e) => setOpt2LabelEn(e.target.value)}
                             placeholder="Prawns"
-                            className="w-full border rounded-lg px-3 py-1.5 text-[13px] font-bold focus:outline-none focus:border-[#d85c27]"
+                            className="w-full border rounded-lg px-2.5 py-1.5 text-[12.5px] font-bold"
                           />
                         </div>
                         <div>
-                          <label className="block text-[11px] font-bold text-gray-500 mb-1">Option 2 (DE)</label>
+                          <label className="block text-[10.5px] font-bold text-gray-500 mb-1">Option 2 (DE)</label>
                           <input
                             type="text"
                             value={opt2LabelDe}
                             onChange={(e) => setOpt2LabelDe(e.target.value)}
                             placeholder="Garnelen"
-                            className="w-full border rounded-lg px-3 py-1.5 text-[13px] font-bold focus:outline-none focus:border-[#d85c27]"
+                            className="w-full border rounded-lg px-2.5 py-1.5 text-[12.5px] font-bold"
                           />
                         </div>
                         <div>
-                          <label className="block text-[11px] font-bold text-gray-500 mb-1">Price 2</label>
+                          <label className="block text-[10.5px] font-bold text-gray-500 mb-1">Price 2</label>
                           <input
                             type="text"
                             value={opt2Price}
                             onChange={(e) => setOpt2Price(e.target.value)}
                             placeholder="€14,5"
-                            className="w-full border rounded-lg px-3 py-1.5 text-[13px] font-bold text-[#d85c27] focus:outline-none focus:border-[#d85c27]"
+                            className="w-full border rounded-lg px-2.5 py-1.5 text-[12.5px] font-bold text-[#d85c27]"
                           />
                         </div>
-                      </div>
-
-                      {/* Preview Badge */}
-                      <div className="text-[12px] text-gray-600 bg-white p-2.5 rounded-xl border border-dashed border-[#ebdcd0] flex items-center justify-between">
-                        <span className="font-bold">Live Preview:</span>
-                        <span className="bg-[#1e382f]/5 text-[#d85c27] font-black px-2.5 py-1 rounded-md">
-                          {opt1LabelEn} {opt1Price} | {opt2LabelEn} {opt2Price}
-                        </span>
                       </div>
                     </div>
                   )}
                 </div>
 
-                {/* 4. Image Upload & Available Gallery Selector */}
-                <div className="bg-[#fffdfa] border border-[#ebdcd0] rounded-2xl p-5 space-y-4">
+                {/* 4. Dish Photo Block */}
+                <div className="bg-[#fffdfa] border border-[#ebdcd0] rounded-2xl p-4 sm:p-5 space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
-                      <label className="text-[13px] font-black text-[#1e382f] flex items-center gap-1.5">
+                      <label className="text-[12.5px] font-black text-[#1e382f] flex items-center gap-1.5">
                         <ImageIcon className="w-4 h-4 text-[#d85c27]" />
-                        Dish Image
+                        Dish Photo
                       </label>
-                      <p className="text-[11.5px] text-[#666] mt-0.5">
-                        Recommended size: <strong className="text-[#1a1a1a]">600 x 450 px</strong> (4:3 ratio), under 2MB.
-                      </p>
+                      <p className="text-[11px] text-[#666]">Choose an existing photo or upload a new one.</p>
                     </div>
                     
                     <button
                       type="button"
                       onClick={() => setShowGallery(!showGallery)}
-                      className="text-[12px] font-bold text-[#d85c27] hover:underline flex items-center gap-1"
+                      className="text-[11.5px] font-bold text-[#d85c27] hover:underline bg-[#fae8d8] px-3 py-1.5 rounded-xl border border-[#ebdcd0]"
                     >
-                      <Grid className="w-3.5 h-3.5" />
-                      {showGallery ? 'Hide Gallery' : 'Choose Existing Image'}
+                      {showGallery ? 'Hide Photos' : 'Browse Photos'}
                     </button>
                   </div>
 
-                  {/* Image Upload Row */}
                   <div className="flex items-center gap-4">
-                    {/* Preview Thumbnail */}
-                    <div className="w-20 h-20 rounded-2xl overflow-hidden bg-[#fae8d8] shrink-0 border border-[#ebdcd0]">
+                    <div className="w-18 h-18 rounded-2xl overflow-hidden bg-[#fae8d8] shrink-0 border border-[#ebdcd0]">
                       {formImg ? (
                         <img src={formImg} alt="Preview" className="w-full h-full object-cover" />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-400 font-bold">
-                          No Image
+                        <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-400 font-bold p-2 text-center">
+                          No Photo
                         </div>
                       )}
                     </div>
 
                     <div className="flex-1 space-y-2">
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2">
                         <button
                           type="button"
-                          onClick={() => fileInputRef.current?.click()}
-                          className="bg-[#1e382f] hover:bg-[#152721] text-white text-[13px] font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 transition-colors"
+                          onClick={() => handleOptimizedImageUpload((url) => setFormImg(url))}
+                          className="bg-[#1e382f] hover:bg-[#152721] text-white text-[12.5px] font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 shadow-sm transition-colors"
                         >
-                          <Upload className="w-4 h-4" />
-                          Upload New Photo
+                          <Upload className="w-3.5 h-3.5 text-[#d85c27]" />
+                          <span>+ Upload Photo</span>
                         </button>
-                        <input
-                          ref={fileInputRef}
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (!file) return;
-                            const reader = new FileReader();
-                            reader.onload = () => {
-                              if (typeof reader.result === 'string') setFormImg(reader.result);
-                            };
-                            reader.readAsDataURL(file);
-                          }}
-                          className="hidden"
-                        />
                         {formImg && (
                           <button
                             type="button"
                             onClick={() => setFormImg('')}
-                            className="bg-rose-50 hover:bg-rose-100 text-rose-700 text-[12px] font-bold px-3 py-2 rounded-xl flex items-center gap-1 transition-colors"
+                            className="bg-rose-50 hover:bg-rose-100 text-rose-700 text-[11.5px] font-bold px-3 py-2 rounded-xl transition-colors"
                           >
-                            <X className="w-3.5 h-3.5" />
-                            <span>Remove</span>
+                            Remove
                           </button>
                         )}
                       </div>
-
-                      <input
-                        type="text"
-                        value={formImg}
-                        onChange={(e) => setFormImg(e.target.value)}
-                        placeholder="Upload a photo, choose from gallery, or paste image URL..."
-                        className="w-full border rounded-xl px-3 py-1.5 text-[13px] focus:outline-none focus:border-[#d85c27]"
-                      />
                     </div>
                   </div>
 
-                  {/* ── Interactive Image Gallery Grid ── */}
                   {showGallery && (
-                    <div className="mt-4 pt-4 border-t border-gray-100 space-y-3 animate-fadeIn">
-                      <p className="text-[12px] font-bold text-gray-700">Click any image to select:</p>
-                      <div className="grid grid-cols-4 sm:grid-cols-6 gap-2.5 max-h-[220px] overflow-y-auto p-1">
-                        {AVAILABLE_ASSETS.map((asset, idx) => (
-                          <button
-                            key={idx}
-                            type="button"
-                            onClick={() => { setFormImg(asset.path); setShowGallery(false); }}
-                            className={`group relative rounded-xl overflow-hidden border-2 transition-all aspect-square ${
-                              formImg === asset.path ? 'border-[#d85c27] ring-2 ring-[#d85c27]/30' : 'border-gray-200 hover:border-gray-400'
-                            }`}
-                          >
-                            <img src={asset.path} alt={asset.name} className="w-full h-full object-cover" />
-                            <span className="absolute inset-x-0 bottom-0 bg-black/60 text-white text-[9px] font-bold py-0.5 truncate px-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              {asset.name}
-                            </span>
-                          </button>
-                        ))}
-                      </div>
+                    <div className="mt-3 pt-3 border-t border-[#ebdcd0]">
+                      {renderGalleryPicker(formImg, (url) => setFormImg(url), () => setShowGallery(false))}
                     </div>
                   )}
                 </div>
@@ -2982,25 +2729,14 @@ export const StudioPage: React.FC = () => {
                   <textarea
                     rows={2}
                     value={adminContentLang === 'en' ? formDescEn : formDescDe}
-                    onChange={(e) =>
-                      adminContentLang === 'en' ? setFormDescEn(e.target.value) : setFormDescDe(e.target.value)
-                    }
+                    onChange={(e) => adminContentLang === 'en' ? setFormDescEn(e.target.value) : setFormDescDe(e.target.value)}
                     placeholder={adminContentLang === 'en' ? 'Fresh ingredients description...' : 'Deutsche Beschreibung...'}
-                    className="w-full border rounded-xl px-4 py-2 text-[14px] focus:outline-none focus:border-[#d85c27] resize-none"
+                    className="w-full border rounded-xl px-3.5 py-2 text-[13.5px] focus:outline-none focus:border-[#d85c27] resize-none"
                   />
                 </div>
 
-                {/* 6. Toggles */}
-                <div className="flex flex-wrap items-center gap-6 pt-2">
-                  <label className="flex items-center gap-2 cursor-pointer text-[13px] font-bold text-[#333]">
-                    <input
-                      type="checkbox"
-                      checked={formFeatured}
-                      onChange={(e) => setFormFeatured(e.target.checked)}
-                      className="w-4 h-4 rounded text-[#d85c27]"
-                    />
-                    <span>Feature on Homepage ("Treat Your Tastebuds")</span>
-                  </label>
+                {/* 6. Switches */}
+                <div className="flex flex-wrap items-center gap-6 pt-1">
                   <label className="flex items-center gap-2 cursor-pointer text-[13px] font-bold text-[#333]">
                     <input
                       type="checkbox"
@@ -3008,8 +2744,19 @@ export const StudioPage: React.FC = () => {
                       onChange={(e) => setFormAvailable(e.target.checked)}
                       className="w-4 h-4 rounded text-[#d85c27]"
                     />
-                    <span>Available / In Stock</span>
+                    <span>Available for Ordering</span>
                   </label>
+
+                  <label className="flex items-center gap-2 cursor-pointer text-[13px] font-bold text-[#333]">
+                    <input
+                      type="checkbox"
+                      checked={formFeatured}
+                      onChange={(e) => setFormFeatured(e.target.checked)}
+                      className="w-4 h-4 rounded text-[#d85c27]"
+                    />
+                    <span>Feature on Homepage</span>
+                  </label>
+
                   <label className="flex items-center gap-2 cursor-pointer text-[13px] font-bold text-[#333]">
                     <input
                       type="checkbox"
@@ -3017,29 +2764,28 @@ export const StudioPage: React.FC = () => {
                       onChange={(e) => setFormSpicy(e.target.checked)}
                       className="w-4 h-4 rounded text-[#d85c27]"
                     />
-                    <span className="flex items-center gap-1">
-                      <span>Spicy</span>
-                      <Flame className="w-3.5 h-3.5 fill-orange-500 text-orange-600" />
-                    </span>
+                    <span>Spicy Dish</span>
                   </label>
                 </div>
 
-                {/* Submit */}
-                <div className="pt-4 flex items-center justify-end gap-3 border-t border-gray-100">
+                {/* Submit Buttons */}
+                <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
                   <button
                     type="button"
                     onClick={() => setIsModalOpen(false)}
-                    className="px-5 py-2.5 rounded-full font-bold text-[14px] text-gray-600 hover:bg-gray-100"
+                    className="px-5 py-2.5 rounded-xl font-bold text-[13.5px] text-gray-600 hover:bg-gray-100 transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-6 py-2.5 rounded-full text-[14px] shadow-sm transition-all"
+                    className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-6 py-2.5 rounded-xl text-[13.5px] shadow-sm hover:shadow-md transition-all flex items-center gap-1.5"
                   >
-                    {editingItem ? 'Save Changes' : 'Create Menu Item'}
+                    <Check className="w-4 h-4" />
+                    <span>{editingItem ? 'Save Changes' : 'Add Dish'}</span>
                   </button>
                 </div>
+
               </form>
             </div>
           </div>
@@ -3049,353 +2795,449 @@ export const StudioPage: React.FC = () => {
             MODAL: ADD / EDIT CATEGORY
         ═══════════════════════════════════════════════ */}
         {isCatModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
-            <div className="bg-white rounded-[28px] w-full max-w-[560px] shadow-2xl p-6 md:p-8 animate-scaleIn">
-              
-              <div className="flex items-center justify-between pb-4 border-b border-gray-100 mb-6">
-                <div className="flex items-center gap-2">
-                  <span className="p-2 rounded-xl bg-[#d85c27]/10 text-[#d85c27]">
-                    <FolderTree className="w-5 h-5" />
-                  </span>
-                  <h3 className="text-[20px] font-black text-[#1e382f]">
-                    {editingCategory ? 'Edit Menu Category' : 'Create New Category'}
-                  </h3>
-                </div>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fadeIn">
+            <div className="bg-white rounded-[28px] w-full max-w-[500px] shadow-2xl p-6 sm:p-8 space-y-5">
+              <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+                <h3 className="text-[18px] font-black text-[#1e382f]">
+                  {editingCategory ? 'Edit Category' : 'New Menu Category'}
+                </h3>
                 <button
                   onClick={() => setIsCatModalOpen(false)}
-                  className="text-gray-400 hover:text-gray-700 font-bold text-xl p-1"
+                  className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold flex items-center justify-center"
                 >
                   ✕
                 </button>
               </div>
 
-              <form onSubmit={handleSaveCategory} className="space-y-5">
-                {/* Language Switcher in Category Modal */}
-                <div className="flex items-center justify-between bg-[#fcf8f3] p-3 rounded-2xl border border-[#ebdcd0]">
-                  <span className="text-[12px] font-black text-[#1e382f] uppercase tracking-wider">
-                    Editing Language: {adminContentLang.toUpperCase()}
-                  </span>
-                  <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-[#ebdcd0]">
-                    <button
-                      type="button"
-                      onClick={() => setAdminContentLang('en')}
-                      className={`px-3 py-1.5 text-[12px] font-extrabold rounded-lg transition-all flex items-center gap-1.5 ${
-                        adminContentLang === 'en'
-                          ? 'bg-[#1e382f] text-white shadow-xs'
-                          : 'text-[#1e382f] hover:bg-gray-100'
-                      }`}
-                    >
-                      <Globe className="w-3.5 h-3.5" />
-                      <span>English (EN)</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setAdminContentLang('de')}
-                      className={`px-3 py-1.5 text-[12px] font-extrabold rounded-lg transition-all flex items-center gap-1.5 ${
-                        adminContentLang === 'de'
-                          ? 'bg-[#1e382f] text-white shadow-xs'
-                          : 'text-[#1e382f] hover:bg-gray-100'
-                      }`}
-                    >
-                      <Globe className="w-3.5 h-3.5" />
-                      <span>Deutsch (DE)</span>
-                    </button>
-                  </div>
-                </div>
-
+              <form onSubmit={handleSaveCategory} className="space-y-4">
                 <div>
-                  <label className="block text-[12px] font-bold text-[#333] mb-1">
-                    Category Name ({adminContentLang === 'en' ? 'English' : 'German'}) *
-                  </label>
+                  <label className="block text-[12px] font-bold text-[#333] mb-1">Category Name (English) *</label>
                   <input
                     type="text"
-                    value={adminContentLang === 'en' ? catNameEn : catNameDe}
-                    onChange={(e) =>
-                      adminContentLang === 'en' ? setCatNameEn(e.target.value) : setCatNameDe(e.target.value)
-                    }
-                    required={adminContentLang === 'en'}
-                    placeholder={adminContentLang === 'en' ? 'e.g. Street Food Snacks, Signature Bowls...' : 'e.g. Straßenessen Snacks, Signatur Schalen...'}
-                    className="w-full border-2 border-[#ebdcd0] focus:border-[#d85c27] rounded-xl px-4 py-2.5 text-[14px] font-bold focus:outline-none transition-colors"
+                    value={catNameEn}
+                    onChange={(e) => setCatNameEn(e.target.value)}
+                    required
+                    placeholder="e.g. Signature Bowls"
+                    className="w-full border rounded-xl px-3.5 py-2.5 text-[14px] focus:outline-none focus:border-[#d85c27]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[12px] font-bold text-[#333] mb-1">
-                    Description ({adminContentLang === 'en' ? 'English' : 'German'})
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={adminContentLang === 'en' ? catDescEn : catDescDe}
-                    onChange={(e) =>
-                      adminContentLang === 'en' ? setCatDescEn(e.target.value) : setCatDescDe(e.target.value)
-                    }
-                    placeholder={adminContentLang === 'en' ? 'Short description for this menu section...' : 'Kurze Beschreibung für diesen Bereich...'}
-                    className="w-full border-2 border-[#ebdcd0] focus:border-[#d85c27] rounded-xl px-4 py-2 text-[14px] focus:outline-none transition-colors resize-none"
+                  <label className="block text-[12px] font-bold text-[#333] mb-1">Category Name (German)</label>
+                  <input
+                    type="text"
+                    value={catNameDe}
+                    onChange={(e) => setCatNameDe(e.target.value)}
+                    placeholder="e.g. Spezial-Schalen"
+                    className="w-full border rounded-xl px-3.5 py-2.5 text-[14px] focus:outline-none focus:border-[#d85c27]"
                   />
                 </div>
 
-                {/* Buttons */}
-                <div className="pt-3 flex items-center justify-end gap-3 border-t border-gray-100">
+                <div>
+                  <label className="block text-[12px] font-bold text-[#333] mb-1">Description (English)</label>
+                  <textarea
+                    rows={2}
+                    value={catDescEn}
+                    onChange={(e) => setCatDescEn(e.target.value)}
+                    placeholder="Brief description..."
+                    className="w-full border rounded-xl px-3.5 py-2 text-[13px] resize-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[12px] font-bold text-[#333] mb-1">Description (German)</label>
+                  <textarea
+                    rows={2}
+                    value={catDescDe}
+                    onChange={(e) => setCatDescDe(e.target.value)}
+                    placeholder="Deutsche Beschreibung..."
+                    className="w-full border rounded-xl px-3.5 py-2 text-[13px] resize-none"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-100">
                   <button
                     type="button"
                     onClick={() => setIsCatModalOpen(false)}
-                    className="px-5 py-2.5 rounded-full font-bold text-[14px] text-gray-600 hover:bg-gray-100"
+                    className="px-4 py-2 rounded-xl text-[13px] font-bold text-gray-600 hover:bg-gray-100"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-6 py-2.5 rounded-full text-[14px] shadow-sm transition-all"
+                    className="bg-[#d85c27] text-white font-extrabold px-5 py-2 rounded-xl text-[13px] hover:bg-[#c24f1c]"
                   >
-                    {editingCategory ? 'Save Category' : 'Create Category'}
+                    Save Category
                   </button>
                 </div>
               </form>
-
             </div>
           </div>
         )}
 
         {/* ═══════════════════════════════════════════════
-            MODAL: ADD DISH TO CATEGORY (EXISTING OR NEW)
+            MODAL: ADD DISH TO CATEGORY
         ═══════════════════════════════════════════════ */}
-        {assignModalCatId && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
-            <div className="bg-white rounded-[28px] w-full max-w-[840px] max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-scaleIn">
-              
-              {/* Modal Header */}
-              {(() => {
-                const targetCat = categories.find((c) => c._id === assignModalCatId);
-                const catName = targetCat ? targetCat.name : 'Category';
-                const catItemsIds = new Set((targetCat?.items || []).map((it) => it._id || it.id));
-                const allDishes = categories.flatMap((c) =>
-                  c.items.map((it) => ({ ...it, sourceCatId: c._id, sourceCatName: c.name }))
-                );
-                const filteredDishes = allDishes.filter((it) => {
-                  if (!assignSearchQuery.trim()) return true;
-                  const q = assignSearchQuery.toLowerCase();
-                  return (
-                    (it.titleEn || '').toLowerCase().includes(q) ||
-                    (it.titleDe || '').toLowerCase().includes(q) ||
-                    (it.descEn || '').toLowerCase().includes(q) ||
-                    (it.price || '').toLowerCase().includes(q) ||
-                    (it.sourceCatName || '').toLowerCase().includes(q)
-                  );
-                });
+        {isAddDishModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fadeIn">
+            <div className="bg-white rounded-[28px] w-full max-w-[620px] max-h-[85vh] overflow-y-auto shadow-2xl p-6 space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+                <div>
+                  <h3 className="text-[18px] font-black text-[#1e382f]">Add Dish to Category</h3>
+                  <p className="text-[12px] text-gray-500">
+                    Category: <strong>{categories.find(c => c._id === targetCategoryForAdd)?.name}</strong>
+                  </p>
+                </div>
+                <button
+                  onClick={() => setIsAddDishModalOpen(false)}
+                  className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold flex items-center justify-center"
+                >
+                  ✕
+                </button>
+              </div>
 
-                return (
-                  <>
-                    <div className="p-6 bg-[#fcf8f3] border-b border-[#ebdcd0] flex items-center justify-between">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="p-2 rounded-xl bg-[#d85c27] text-white">
-                            <Plus className="w-4 h-4" />
-                          </span>
-                          <h3 className="text-[20px] font-black text-[#1e382f]">
-                            Add Dish to "{catName}"
-                          </h3>
-                        </div>
-                        <p className="text-[12px] text-[#666] mt-1">
-                          Pick from existing dishes in your menu, or create a brand new dish.
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => setAssignModalCatId(null)}
-                        className="text-gray-400 hover:text-gray-700 font-bold text-xl p-1"
-                      >
-                        ✕
-                      </button>
-                    </div>
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-[12.5px] text-gray-600 font-medium">
+                  Create a fresh dish or move an existing dish into this category:
+                </p>
+                <button
+                  onClick={() => {
+                    setIsAddDishModalOpen(false);
+                    handleOpenNewItem(targetCategoryForAdd);
+                  }}
+                  className="bg-[#d85c27] text-white font-bold px-3.5 py-1.5 rounded-xl text-[12px] hover:bg-[#c24f1c] shrink-0"
+                >
+                  + Create New Dish
+                </button>
+              </div>
 
-                    {/* Tab Options & Search Bar */}
-                    <div className="p-6 border-b border-[#ebdcd0] space-y-4 bg-white">
-                      <div className="flex items-center justify-between gap-4 flex-wrap">
-                        <div className="flex items-center gap-2 bg-[#f5f0e8] p-1 rounded-xl border border-[#ebdcd0]">
-                          <button
-                            type="button"
-                            onClick={() => setAssignModalTab('existing')}
-                            className={`px-4 py-2 rounded-lg text-[13px] font-extrabold transition-all flex items-center gap-1.5 ${
-                              assignModalTab === 'existing'
-                                ? 'bg-[#1e382f] text-white shadow-xs'
-                                : 'text-[#1e382f] hover:bg-white/60'
-                            }`}
-                          >
-                            <Layers className="w-4 h-4" />
-                            <span>Choose from Existing Dishes ({allDishes.length})</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const targetId = assignModalCatId;
-                              setAssignModalCatId(null);
-                              handleOpenNewItem(targetId);
-                            }}
-                            className="px-4 py-2 rounded-lg text-[13px] font-extrabold text-[#d85c27] hover:bg-white/60 transition-all flex items-center gap-1.5"
-                          >
-                            <PlusCircle className="w-4 h-4" />
-                            <span>Create Brand New Dish</span>
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Search Bar for Existing Dishes */}
-                      {assignModalTab === 'existing' && (
-                        <div className="relative">
-                          <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                          <input
-                            type="text"
-                            value={assignSearchQuery}
-                            onChange={(e) => setAssignSearchQuery(e.target.value)}
-                            placeholder="Search dishes by name, ingredients, or category..."
-                            className="w-full pl-10 pr-4 py-2.5 bg-[#fcf8f3] border border-[#ebdcd0] rounded-xl text-[14px] focus:outline-none focus:border-[#d85c27]"
-                          />
-                          {assignSearchQuery && (
-                            <button
-                              onClick={() => setAssignSearchQuery('')}
-                              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
+              <div className="space-y-2 max-h-[350px] overflow-y-auto pr-1">
+                {allItemsWithCat
+                  .filter(it => it.catId !== targetCategoryForAdd)
+                  .map((item) => (
+                    <div
+                      key={item._id || item.id}
+                      className="bg-gray-50 hover:bg-[#fae8d8] rounded-xl p-3 border border-gray-200 flex items-center justify-between gap-3 transition-colors"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-10 h-10 rounded-lg overflow-hidden bg-white shrink-0 border border-gray-200">
+                          {item.img ? (
+                            <img src={item.img} alt={item.titleEn} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-[8px] font-bold text-gray-400">
+                              No Img
+                            </div>
                           )}
                         </div>
-                      )}
-                    </div>
-
-                    {/* Dish Grid */}
-                    <div className="p-6 overflow-y-auto max-h-[50vh] space-y-3 bg-[#faf7f2]">
-                      {filteredDishes.length === 0 ? (
-                        <div className="text-center py-10 text-gray-500 font-bold">
-                          No matching dishes found.
+                        <div className="min-w-0">
+                          <h5 className="font-bold text-[13px] text-[#1e382f] truncate">{item.titleEn}</h5>
+                          <span className="text-[11px] text-gray-500 truncate block">Currently in: {item.catName}</span>
                         </div>
-                      ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          {filteredDishes.map((dish) => {
-                            const isAlreadyInCat = catItemsIds.has(dish._id) || catItemsIds.has(dish.id);
+                      </div>
 
-                            return (
-                              <div
-                                key={dish._id || dish.id}
-                                className={`bg-white rounded-2xl p-3.5 border border-[#ebdcd0] shadow-xs flex items-center justify-between gap-3 ${
-                                  isAlreadyInCat ? 'bg-gray-50/80 opacity-70' : 'hover:border-[#d85c27]'
-                                }`}
-                              >
-                                <div className="flex items-center gap-3 min-w-0">
-                                  <div className="w-12 h-12 rounded-xl overflow-hidden bg-[#fae8d8] shrink-0 border border-[#ebdcd0]">
-                                    {dish.img ? (
-                                      <img src={dish.img} alt={dish.titleEn} className="w-full h-full object-cover" />
-                                    ) : (
-                                      <div className="w-full h-full flex items-center justify-center text-[8px] font-bold text-gray-400">
-                                        No Img
-                                      </div>
-                                    )}
-                                  </div>
-                                  <div className="min-w-0">
-                                    <h4 className="font-extrabold text-[14px] text-[#1e382f] truncate">
-                                      {dish.titleEn}
-                                    </h4>
-                                    <div className="flex items-center gap-2 text-[11px] text-gray-500">
-                                      <span className="font-bold text-[#d85c27]">{dish.price}</span>
-                                      <span>•</span>
-                                      <span className="truncate">In: {dish.sourceCatName}</span>
-                                    </div>
-                                  </div>
-                                </div>
-
-                                <div className="shrink-0 flex items-center gap-1.5">
-                                  {isAlreadyInCat ? (
-                                    <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200">
-                                      Already In
-                                    </span>
-                                  ) : (
-                                    <>
-                                      <button
-                                        type="button"
-                                        onClick={() => handleAddExistingDishToCategory(dish, assignModalCatId)}
-                                        className="bg-[#1e382f] hover:bg-[#152721] text-white text-[12px] font-extrabold px-3 py-1.5 rounded-lg flex items-center gap-1 transition-all"
-                                        title="Add a copy of this dish to this category"
-                                      >
-                                        <Plus className="w-3.5 h-3.5" />
-                                        <span>Add</span>
-                                      </button>
-                                      {dish.sourceCatId !== assignModalCatId && (
-                                        <button
-                                          type="button"
-                                          onClick={() =>
-                                            handleMoveExistingDishToCategory(dish, dish.sourceCatId, assignModalCatId)
-                                          }
-                                          className="text-gray-700 hover:bg-gray-100 border border-gray-300 text-[12px] font-bold px-2.5 py-1.5 rounded-lg transition-all"
-                                          title="Move from current category to this category"
-                                        >
-                                          Move
-                                        </button>
-                                      )}
-                                    </>
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Footer */}
-                    <div className="p-4 bg-white border-t border-[#ebdcd0] flex items-center justify-between">
-                      <span className="text-[12px] text-gray-500 font-medium">
-                        Showing {filteredDishes.length} menu dishes
-                      </span>
                       <button
-                        type="button"
-                        onClick={() => setAssignModalCatId(null)}
-                        className="px-5 py-2 rounded-full font-bold text-[13px] text-gray-700 hover:bg-gray-100 transition-colors"
+                        onClick={() => {
+                          handleAddExistingDishToCategory(item, targetCategoryForAdd);
+                          setIsAddDishModalOpen(false);
+                        }}
+                        className="bg-[#1e382f] text-white font-bold px-3 py-1.5 rounded-lg text-[11.5px] hover:bg-[#142620] shrink-0"
                       >
-                        Close
+                        Move Here
                       </button>
                     </div>
-                  </>
-                );
-              })()}
-
+                  ))}
+              </div>
             </div>
           </div>
         )}
 
         {/* ═══════════════════════════════════════════════
-            BOTTOM-CENTER FLOATING TOAST & SAVE BAR
+            MODAL: PHOTO DETAILS & TAGGING
         ═══════════════════════════════════════════════ */}
-        <div className="fixed bottom-6 inset-x-0 z-50 flex flex-col items-center pointer-events-none px-4 space-y-2">
-          {/* Floating Save Action Banner */}
-          {(hasUnsavedChanges || activeTab === 'homepage') && (
-            <div className="pointer-events-auto bg-[#1e382f] text-white px-6 py-3 rounded-full shadow-2xl border-2 border-[#d85c27] flex items-center gap-4 animate-slideUp backdrop-blur-md">
-              <div className="flex items-center gap-2">
-                <span
-                  className={`w-2.5 h-2.5 rounded-full ${
-                    hasUnsavedChanges ? 'bg-[#d85c27] animate-ping' : 'bg-emerald-400'
-                  }`}
-                />
-                <span className="text-[13px] font-extrabold">
-                  {hasUnsavedChanges ? 'You have unsaved changes' : 'Homepage Live Editor'}
-                </span>
+        {isPhotoModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fadeIn">
+            <div className="bg-white rounded-[28px] w-full max-w-[520px] shadow-2xl p-6 sm:p-7 space-y-5">
+              
+              <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-[#d85c27]/10 text-[#d85c27] flex items-center justify-center">
+                    <Tag className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-[17px] font-black text-[#1e382f]">
+                      {photoModalData.isNew ? 'Name & Tag Photo' : 'Edit Photo Tag & Name'}
+                    </h3>
+                    <p className="text-[11.5px] text-gray-500">
+                      Organize where this photo appears in your library
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsPhotoModalOpen(false)}
+                  className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold flex items-center justify-center"
+                >
+                  ✕
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={handleSaveAllGlobal}
-                className="bg-[#d85c27] hover:bg-[#c24f1c] text-white text-[13px] font-black px-5 py-2 rounded-full flex items-center gap-1.5 shadow-md transition-transform hover:scale-105"
-              >
-                <Save className="w-4 h-4" />
-                <span>Save All Changes</span>
-              </button>
-            </div>
-          )}
 
-          {/* Persistent / Floating Toast Notification */}
-          {toastMessage && (
-            <div className="pointer-events-auto bg-[#1e382f] text-white px-6 py-3 rounded-full shadow-2xl border border-emerald-500/50 flex items-center gap-2.5 animate-fadeIn backdrop-blur-md">
-              <Check className="w-4 h-4 text-emerald-400" />
-              <span className="text-[13px] font-bold">{toastMessage}</span>
+              <form onSubmit={handleSavePhotoModal} className="space-y-4">
+                
+                {/* Photo Preview & Size Banner */}
+                <div className="flex items-center gap-3.5 bg-[#fcf8f3] p-3 rounded-2xl border border-[#ebdcd0]">
+                  <div className="w-16 h-16 rounded-xl overflow-hidden bg-white shrink-0 border border-[#ebdcd0]">
+                    <img
+                      src={photoModalData.path}
+                      alt="Preview"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-[11px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-md inline-block mb-1">
+                      ⚡ Ready & Optimized
+                    </span>
+                    {photoModalData.originalSize && photoModalData.compressedSize ? (
+                      <p className="text-[11.5px] text-gray-600">
+                        {Math.round(photoModalData.originalSize / 1024)} KB → {Math.round(photoModalData.compressedSize / 1024)} KB (WebP)
+                      </p>
+                    ) : (
+                      <p className="text-[11.5px] text-gray-600">High-res WebP image</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Photo Title */}
+                <div>
+                  <label className="block text-[12px] font-bold text-[#333] mb-1">
+                    Photo Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={photoModalData.name}
+                    onChange={(e) => setPhotoModalData({ ...photoModalData, name: e.target.value })}
+                    required
+                    placeholder="e.g. Chettinad Spicy Chicken Bowl"
+                    className="w-full border rounded-xl px-3.5 py-2.5 text-[13.5px] font-medium focus:outline-none focus:border-[#d85c27]"
+                  />
+                </div>
+
+                {/* Category Tag Selector */}
+                <div>
+                  <label className="block text-[12px] font-bold text-[#333] mb-1.5">
+                    Category Tag *
+                  </label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {AVAILABLE_TAGS.map((tag) => (
+                      <button
+                        key={tag}
+                        type="button"
+                        onClick={() => setPhotoModalData({ ...photoModalData, category: tag })}
+                        className={`px-3 py-2 rounded-xl text-[12px] font-bold border transition-all text-left truncate ${
+                          photoModalData.category === tag
+                            ? 'bg-[#1e382f] text-white border-[#1e382f] shadow-xs'
+                            : 'bg-white text-gray-700 border-gray-200 hover:border-gray-400'
+                        }`}
+                      >
+                        {tag}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-100">
+                  <button
+                    type="button"
+                    onClick={() => setIsPhotoModalOpen(false)}
+                    className="px-4 py-2 rounded-xl text-[13px] font-bold text-gray-600 hover:bg-gray-100"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="bg-[#d85c27] text-white font-extrabold px-5 py-2 rounded-xl text-[13px] hover:bg-[#c24f1c] shadow-sm flex items-center gap-1.5"
+                  >
+                    <Check className="w-4 h-4" />
+                    <span>Save Photo</span>
+                  </button>
+                </div>
+
+              </form>
             </div>
-          )}
-        </div>
+          </div>
+        )}
+
+        {/* ═══════════════════════════════════════════════
+            SPOTLIGHT INTERACTIVE TOUR OVERLAY & CARD
+        ═══════════════════════════════════════════════ */}
+        {isTourActive && (
+          <div className="fixed inset-0 z-50 pointer-events-none animate-fadeIn">
+            
+            {/* SVG Dark Backdrop with Cutout Spotlight Mask */}
+            <svg className="absolute inset-0 w-full h-full pointer-events-auto">
+              <defs>
+                <mask id="tour-mask">
+                  <rect x="0" y="0" width="100%" height="100%" fill="white" />
+                  {spotlightRect && (
+                    <rect
+                      x={spotlightRect.left - window.scrollX - 8}
+                      y={spotlightRect.top - window.scrollY - 8}
+                      width={spotlightRect.width + 16}
+                      height={spotlightRect.height + 16}
+                      rx="18"
+                      fill="black"
+                    />
+                  )}
+                </mask>
+              </defs>
+              <rect
+                x="0"
+                y="0"
+                width="100%"
+                height="100%"
+                fill="rgba(0, 0, 0, 0.65)"
+                mask="url(#tour-mask)"
+                onClick={stopSpotlightTour}
+              />
+            </svg>
+
+            {/* Glowing Pulse Ring around Spotlighted Item */}
+            {spotlightRect && (
+              <div
+                className="absolute pointer-events-none rounded-2xl ring-4 ring-[#d85c27] ring-offset-2 ring-offset-transparent animate-pulse"
+                style={{
+                  top: `${spotlightRect.top - 8}px`,
+                  left: `${spotlightRect.left - 8}px`,
+                  width: `${spotlightRect.width + 16}px`,
+                  height: `${spotlightRect.height + 16}px`,
+                  transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                }}
+              />
+            )}
+
+            {/* Floating Popover Tooltip Card: Always Elevated Above or Higher */}
+            {(() => {
+              const cardWidth = 350;
+              const cardHeight = 195;
+              const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
+
+              let cardTop: number;
+              let cardLeft: number;
+
+              if (spotlightRect) {
+                // Check space above
+                const spaceAbove = spotlightRect.top - window.scrollY;
+                if (spaceAbove > cardHeight + 30) {
+                  // Position above the element
+                  cardTop = spotlightRect.top - cardHeight - 16;
+                } else {
+                  // Position below, but kept high
+                  cardTop = spotlightRect.top + spotlightRect.height + 12;
+                }
+                cardLeft = spotlightRect.left + (spotlightRect.width / 2) - (cardWidth / 2);
+              } else {
+                // Fallback: elevated center
+                cardTop = window.scrollY + 100;
+                cardLeft = (windowWidth / 2) - (cardWidth / 2);
+              }
+
+              // Keep within screen bounds
+              if (cardTop < window.scrollY + 75) {
+                cardTop = window.scrollY + 75;
+              }
+
+              if (cardLeft < 16) cardLeft = 16;
+              if (cardLeft + cardWidth > windowWidth - 16) {
+                cardLeft = windowWidth - cardWidth - 16;
+              }
+
+              return (
+                <div
+                  className="absolute pointer-events-auto bg-white rounded-3xl p-5 shadow-2xl border-2 border-[#ebdcd0] space-y-3 z-50 animate-fadeInUp"
+                  style={{
+                    top: `${cardTop}px`,
+                    left: `${cardLeft}px`,
+                    width: `${cardWidth}px`,
+                    transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                  }}
+                >
+                  {/* Step Header */}
+                  <div className="flex items-center justify-between text-[11.5px] font-black text-[#1e382f]">
+                    <span className="flex items-center gap-1.5 text-[#d85c27]">
+                      <Compass className="w-3.5 h-3.5" />
+                      Step {currentTourIndex + 1} of {SPOTLIGHT_STEPS.length}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={stopSpotlightTour}
+                      className="text-gray-400 hover:text-gray-700 font-bold p-1"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  {/* Title & Description */}
+                  <div>
+                    <h4 className="font-black text-[15.5px] text-[#1e382f] leading-snug">
+                      {currentSpotlight.title}
+                    </h4>
+                    <p className="text-[12.5px] text-[#555] mt-1 leading-relaxed">
+                      {currentSpotlight.description}
+                    </p>
+                  </div>
+
+                  {/* Tip */}
+                  {currentSpotlight.tip && (
+                    <div className="bg-[#fcf8f3] border border-[#ebdcd0] rounded-xl p-2.5 text-[11.5px] font-semibold text-[#1e382f] flex items-start gap-1.5">
+                      <Lightbulb className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+                      <span>{currentSpotlight.tip}</span>
+                    </div>
+                  )}
+
+                  {/* Footer Buttons */}
+                  <div className="flex items-center justify-between pt-1.5 border-t border-gray-100">
+                    <button
+                      type="button"
+                      onClick={stopSpotlightTour}
+                      className="text-[12px] font-bold text-gray-500 hover:text-gray-800"
+                    >
+                      Skip
+                    </button>
+
+                    <div className="flex items-center gap-1.5">
+                      {currentTourIndex > 0 && (
+                        <button
+                          type="button"
+                          onClick={handlePrevTourStep}
+                          className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold px-3 py-1.5 rounded-xl text-[12px] flex items-center gap-1 transition-colors"
+                        >
+                          <ArrowLeft className="w-3 h-3" /> Back
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={handleNextTourStep}
+                        className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-4 py-1.5 rounded-xl text-[12px] shadow-xs flex items-center gap-1 transition-all"
+                      >
+                        <span>{currentTourIndex === SPOTLIGHT_STEPS.length - 1 ? 'Finish' : 'Next'}</span>
+                        {currentTourIndex < SPOTLIGHT_STEPS.length - 1 && <ArrowRight className="w-3 h-3 text-white" />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+          </div>
+        )}
+
+        {/* ── Toast Notification ── */}
+        {toastMessage && (
+          <div className="fixed bottom-6 right-6 z-50 animate-fadeInUp">
+            <div className="bg-[#1e382f] text-white px-5 py-3 rounded-2xl shadow-2xl border border-white/20 flex items-center gap-2.5 text-[13.5px] font-bold">
+              <CheckCircle2 className="w-4 h-4 text-[#d85c27]" />
+              <span>{toastMessage}</span>
+            </div>
+          </div>
+        )}
 
       </div>
     </div>
