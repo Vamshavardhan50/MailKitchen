@@ -481,8 +481,11 @@ export const StudioPage: React.FC = () => {
   const saveAllToLocal = (newCats: SanityCategoryWithItems[]) => {
     setCategories(newCats);
     localStorage.setItem('maati_admin_menu', JSON.stringify(newCats));
-    window.dispatchEvent(new Event('maati_menu_updated'));
-    showToast('Menu updated live!');
+    // Dispatch with detail so useSanityMenu always re-reads localStorage even when Sanity is configured
+    window.dispatchEvent(new CustomEvent('maati_menu_updated', { detail: { forceLocal: true } }));
+    // Also trigger storage event for cross-tab sync
+    window.dispatchEvent(new StorageEvent('storage', { key: 'maati_admin_menu', newValue: JSON.stringify(newCats) }));
+    showToast('Menu updated live! ✅');
   };
 
   const showSuccessToast = () => {
@@ -2683,9 +2686,9 @@ export const StudioPage: React.FC = () => {
                   </div>
 
                   <div className="flex items-center gap-4">
-                    <div className="w-18 h-18 rounded-2xl overflow-hidden bg-[#fae8d8] shrink-0 border border-[#ebdcd0]">
+                    <div className="w-20 h-20 rounded-2xl overflow-hidden bg-[#fae8d8] shrink-0 border border-[#ebdcd0] flex-none">
                       {formImg ? (
-                        <img src={formImg} alt="Preview" className="w-full h-full object-cover" />
+                        <img src={formImg} alt="Preview" className="w-full h-full object-cover" style={{ maxHeight: '80px', maxWidth: '80px' }} />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-400 font-bold p-2 text-center">
                           No Photo

@@ -332,9 +332,14 @@ export function useSanityMenu() {
   useEffect(() => {
     let isMounted = true;
 
-    const handleLocalSync = () => {
+    // Always re-read from localStorage when admin panel triggers a save
+    const handleLocalSync = (e?: Event) => {
+      const isForced = e instanceof CustomEvent && e.detail?.forceLocal;
       if (isMounted) {
-        setCategories(getLocalFallbackCategories());
+        const freshData = getLocalFallbackCategories();
+        setCategories(freshData);
+        // If admin forced an update, override Sanity data too
+        if (isForced) setIsFromSanity(false);
       }
     };
 
@@ -342,6 +347,21 @@ export function useSanityMenu() {
     window.addEventListener('storage', handleLocalSync);
 
     async function fetchMenu() {
+      // Check if admin has saved custom data - if so, prioritize it
+      const adminSaved = localStorage.getItem('maati_admin_menu');
+      if (adminSaved) {
+        try {
+          const parsed = JSON.parse(adminSaved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            if (isMounted) {
+              setCategories(parsed);
+              setLoading(false);
+            }
+            return; // Use admin data, skip Sanity
+          }
+        } catch {}
+      }
+
       if (!isSanityConfigured) {
         setLoading(false);
         return;
@@ -390,9 +410,11 @@ export function useFeaturedMenu() {
   useEffect(() => {
     let isMounted = true;
 
-    const handleLocalSync = () => {
+    const handleLocalSync = (e?: Event) => {
+      const isForced = e instanceof CustomEvent && e.detail?.forceLocal;
       if (isMounted) {
         setItems(getLocalFallbackFeatured());
+        if (isForced) setIsFromSanity(false);
       }
     };
 
@@ -400,6 +422,22 @@ export function useFeaturedMenu() {
     window.addEventListener('storage', handleLocalSync);
 
     async function fetchFeatured() {
+      // Prioritize admin data if it exists
+      const adminSaved = localStorage.getItem('maati_admin_menu');
+      if (adminSaved) {
+        try {
+          const parsed: SanityCategoryWithItems[] = JSON.parse(adminSaved);
+          const featured = parsed
+            .flatMap((c) => c.items.filter((it) => it.featured && it.available !== false))
+            .sort((a, b) => (a.featuredOrder || 999) - (b.featuredOrder || 999));
+          if (featured.length > 0 && isMounted) {
+            setItems(featured);
+            setLoading(false);
+            return; // Use admin data
+          }
+        } catch {}
+      }
+
       if (!isSanityConfigured) {
         setLoading(false);
         return;
