@@ -3113,11 +3113,11 @@ export const StudioPage: React.FC = () => {
               />
             )}
 
-            {/* Floating Popover Tooltip Card: Always Elevated Above or Higher */}
+            {/* Floating Popover Tooltip Card: Always Elevated Above or Higher & Fully Mobile Responsive */}
             {(() => {
-              const cardWidth = 350;
-              const cardHeight = 195;
               const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
+              const cardWidth = Math.min(350, windowWidth - 32);
+              const cardHeight = 210;
 
               let cardTop: number;
               let cardLeft: number;
@@ -3125,7 +3125,7 @@ export const StudioPage: React.FC = () => {
               if (spotlightRect) {
                 // Check space above
                 const spaceAbove = spotlightRect.top - window.scrollY;
-                if (spaceAbove > cardHeight + 30) {
+                if (spaceAbove > cardHeight + 25) {
                   // Position above the element
                   cardTop = spotlightRect.top - cardHeight - 16;
                 } else {
@@ -3135,7 +3135,7 @@ export const StudioPage: React.FC = () => {
                 cardLeft = spotlightRect.left + (spotlightRect.width / 2) - (cardWidth / 2);
               } else {
                 // Fallback: elevated center
-                cardTop = window.scrollY + 100;
+                cardTop = window.scrollY + 95;
                 cardLeft = (windowWidth / 2) - (cardWidth / 2);
               }
 
@@ -3151,7 +3151,7 @@ export const StudioPage: React.FC = () => {
 
               return (
                 <div
-                  className="absolute pointer-events-auto bg-white rounded-3xl p-5 shadow-2xl border-2 border-[#ebdcd0] space-y-3 z-50 animate-fadeInUp"
+                  className="absolute pointer-events-auto bg-white rounded-3xl p-4 sm:p-5 shadow-2xl border-2 border-[#ebdcd0] space-y-2.5 sm:space-y-3 z-50 animate-fadeInUp max-w-[calc(100vw-32px)]"
                   style={{
                     top: `${cardTop}px`,
                     left: `${cardLeft}px`,

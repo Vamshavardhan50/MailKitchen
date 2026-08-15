@@ -35,14 +35,12 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => 
     ...COCKTAILS.map((d) => ({ id: d.id, title: `${d.titleDe} / ${d.titleEn}`, desc: d.descDe || d.descEn, price: d.price, img: d.img }))
   ];
 
-  // Handle ESC key press to close modal
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen) {
         onClose();
       }
     };
-
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
@@ -91,26 +89,25 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => 
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center pt-24 px-4 bg-black/70 backdrop-blur-md animate-fadeIn"
+      className="fixed inset-0 z-50 flex items-start justify-center pt-20 sm:pt-24 px-3 sm:px-4 bg-black/75 backdrop-blur-md animate-fadeIn"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="bg-white rounded-[24px] w-full max-w-[650px] overflow-hidden shadow-2xl border border-gray-100 flex flex-col">
+      <div className="bg-white rounded-2xl sm:rounded-[24px] w-full max-w-[650px] overflow-hidden shadow-2xl border border-gray-100 flex flex-col max-h-[85vh]">
 
         {/* Search Bar Input */}
-        <div className="p-4 border-b border-gray-100 flex items-center gap-3 bg-[#f5f0e8]">
+        <div className="p-3.5 sm:p-4 border-b border-gray-100 flex items-center gap-2.5 sm:gap-3 bg-[#f5f0e8]">
           <SearchIcon className="w-5 h-5 text-[#d85c27] shrink-0" />
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search menu items (e.g. Butter Chicken, Lassi, Naan)..."
+            placeholder="Search menu items (e.g. Butter Chicken, Lassi)..."
             autoFocus
-            className="w-full bg-transparent text-[16px] font-medium text-[#1a1a1a] focus:outline-none"
+            className="w-full bg-transparent text-[15px] sm:text-[16px] font-medium text-[#1a1a1a] focus:outline-none placeholder:text-gray-400"
           />
 
-          {/* ESC keyboard shortcut pill */}
           <kbd
             onClick={onClose}
             className="hidden sm:inline-flex items-center px-2 py-0.5 text-[11px] font-bold text-gray-500 bg-gray-200/80 rounded border border-gray-300 shadow-sm cursor-pointer hover:bg-gray-300 transition-colors"
@@ -121,7 +118,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => 
 
           <button
             onClick={onClose}
-            className="p-2 rounded-full hover:bg-gray-200/60 text-gray-600 transition-colors"
+            className="p-1.5 sm:p-2 rounded-full hover:bg-gray-200/60 text-gray-600 transition-colors shrink-0"
             aria-label="Close search"
           >
             <X className="w-5 h-5" />
@@ -129,13 +126,13 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => 
         </div>
 
         {/* Results List */}
-        <div className="max-h-[420px] overflow-y-auto p-4 space-y-3">
+        <div className="max-h-[420px] overflow-y-auto p-3 sm:p-4 space-y-2.5">
           {query.trim() === '' ? (
-            <div className="py-8 text-center text-gray-400 text-[14px]">
-              Type above to search our June 2026 MAATI Menu (Press <strong className="text-gray-600">ESC</strong> to exit)
+            <div className="py-8 text-center text-gray-400 text-[13.5px]">
+              Type above to search our June 2026 MAATI Menu
             </div>
           ) : results.length === 0 ? (
-            <div className="py-8 text-center text-gray-400 text-[14px]">
+            <div className="py-8 text-center text-gray-400 text-[13.5px]">
               No menu items found for "{query}"
             </div>
           ) : (
@@ -143,20 +140,22 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => 
               <div
                 key={item.id}
                 onClick={() => handleItemClick(item.id)}
-                className="flex items-center gap-4 p-3 rounded-xl hover:bg-[#fdf5f0] hover:border-[#d85c27]/30 transition-all border border-gray-100 cursor-pointer group"
+                className="flex items-center gap-3 sm:gap-4 p-2.5 sm:p-3 rounded-xl hover:bg-[#fdf5f0] hover:border-[#d85c27]/30 transition-all border border-gray-100 cursor-pointer group"
               >
                 {item.img && (
                   <img
                     src={item.img}
                     alt={item.title}
-                    className="w-14 h-14 rounded-lg object-cover bg-gray-100 shrink-0 group-hover:scale-105 transition-transform"
+                    className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg object-cover bg-gray-100 shrink-0 group-hover:scale-105 transition-transform"
                   />
                 )}
-                <div className="flex-1">
-                  <h4 className="font-bold text-[15px] text-[#1a1a1a] group-hover:text-[#d85c27] transition-colors">{item.title}</h4>
-                  {item.desc && <p className="text-[12px] text-gray-500 line-clamp-1">{item.desc}</p>}
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-bold text-[14px] sm:text-[15px] text-[#1a1a1a] group-hover:text-[#d85c27] transition-colors truncate">
+                    {item.title}
+                  </h4>
+                  {item.desc && <p className="text-[11.5px] sm:text-[12px] text-gray-500 line-clamp-1">{item.desc}</p>}
                 </div>
-                <span className="font-black text-[#d85c27] text-[15px]">{item.price}</span>
+                <span className="font-black text-[#d85c27] text-[13.5px] sm:text-[15px] shrink-0">{item.price}</span>
               </div>
             ))
           )}
