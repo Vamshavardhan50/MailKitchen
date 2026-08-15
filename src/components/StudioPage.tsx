@@ -1619,28 +1619,30 @@ export const StudioPage: React.FC = () => {
                     key={cat._id}
                     className="bg-[#fffdfa] rounded-[22px] border border-[#ebdcd0] shadow-xs overflow-hidden transition-all"
                   >
-                    {/* Category Header Bar */}
-                    <div className="p-4 sm:p-5 flex items-center justify-between gap-4 bg-white/70 border-b border-[#ebdcd0]">
-                      <div className="flex items-center gap-3 min-w-0">
+                    {/* Category Header Bar (Responsive & Overflow-Safe) */}
+                    <div className="p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4 bg-white/70 border-b border-[#ebdcd0]">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
                         <button
                           type="button"
                           onClick={() => toggleCategory(cat._id)}
-                          className="p-1 rounded-lg hover:bg-gray-100 text-gray-500"
+                          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 shrink-0 transition-colors"
                         >
                           {isCollapsed ? <ChevronDown className="w-5 h-5" /> : <ChevronUp className="w-5 h-5" />}
                         </button>
                         <span className="w-7 h-7 rounded-lg bg-[#1e382f] text-white font-black text-[12px] flex items-center justify-center shrink-0">
                           {idx + 1}
                         </span>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
                             <h3 className="font-black text-[16px] text-[#1e382f] truncate">
-                              {cat.name}
+                              {cat.name || cat.nameDe || 'Category'}
                             </h3>
-                            <span className="text-[11px] font-bold text-gray-400">
-                              / {cat.nameDe}
-                            </span>
-                            <span className="bg-[#fae8d8] text-[#d85c27] text-[10.5px] font-extrabold px-2 py-0.5 rounded-full">
+                            {cat.name && cat.nameDe && cat.name !== cat.nameDe && (
+                              <span className="text-[11px] font-bold text-gray-400 truncate">
+                                / {cat.nameDe}
+                              </span>
+                            )}
+                            <span className="bg-[#fae8d8] text-[#d85c27] text-[10.5px] font-extrabold px-2.5 py-0.5 rounded-full whitespace-nowrap shrink-0">
                               {cat.items?.length || 0} dishes
                             </span>
                           </div>
@@ -1652,7 +1654,7 @@ export const StudioPage: React.FC = () => {
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-1.5 shrink-0">
+                      <div className="flex items-center gap-1.5 shrink-0 self-end md:self-center pl-10 md:pl-0">
                         <button
                           type="button"
                           disabled={idx === 0}
@@ -1674,7 +1676,7 @@ export const StudioPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => handleOpenAddDishToCategory(cat._id)}
-                          className="bg-[#1e382f] text-white font-bold px-3 py-1.5 rounded-xl text-[12px] hover:bg-[#142620] transition-colors flex items-center gap-1"
+                          className="bg-[#1e382f] text-white font-bold px-3 py-1.5 rounded-xl text-[12px] hover:bg-[#142620] transition-colors flex items-center gap-1 shrink-0"
                         >
                           <Plus className="w-3.5 h-3.5" /> Add Dish
                         </button>
