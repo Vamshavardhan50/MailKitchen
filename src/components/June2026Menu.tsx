@@ -242,44 +242,43 @@ export const June2026Menu: React.FC<June2026MenuProps> = ({ lang = 'en' }) => {
       {/* ── LIGHTBOX FULLSCREEN IMAGE MODAL ── */}
       {selectedPreviewImage && (
         <div 
-          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-fadeIn"
+          className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-2 sm:p-4 md:p-6 animate-fadeIn"
           onClick={() => setSelectedPreviewImage(null)}
         >
-          <div 
-            className="relative max-w-4xl w-full max-h-[92vh] bg-white rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl flex flex-col"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="p-3.5 sm:p-4 bg-[#1e382f] text-white flex items-center justify-between">
-              <span className="font-extrabold text-[13px] sm:text-[14px] truncate">
-                {isDe ? 'MAATI Speisekarte - Vollansicht' : 'MAATI Restaurant Menu - High Resolution'}
-              </span>
-              <div className="flex items-center gap-2 shrink-0">
-                <a
-                  href={selectedPreviewImage}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors"
-                  title="Open image in new tab"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                </a>
-                <button
-                  type="button"
-                  onClick={() => setSelectedPreviewImage(null)}
-                  className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
+          {/* Top Floating Controls Bar */}
+          <div className="fixed top-4 right-4 sm:top-6 sm:right-6 z-50 flex items-center gap-3">
+            <a
+              href={selectedPreviewImage}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="px-4 py-2 rounded-full bg-white/15 hover:bg-white/25 text-white font-bold text-[13px] flex items-center gap-1.5 transition-all shadow-lg backdrop-blur-md border border-white/20"
+              title="Open full resolution in new tab"
+            >
+              <ExternalLink className="w-4 h-4 text-[#d85c27]" />
+              <span className="hidden sm:inline">Open Original</span>
+            </a>
+            <button
+              type="button"
+              onClick={() => setSelectedPreviewImage(null)}
+              className="w-10 h-10 rounded-full bg-white/15 hover:bg-rose-600 text-white flex items-center justify-center transition-all shadow-lg backdrop-blur-md border border-white/20"
+              aria-label="Close Preview"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
 
-            <div className="overflow-auto max-h-[calc(92vh-60px)] p-2 sm:p-4 bg-[#f5f0e8] flex items-center justify-center">
-              <img
-                src={selectedPreviewImage}
-                alt="MAATI Menu Preview"
-                className="max-w-full h-auto rounded-lg shadow-md"
-              />
-            </div>
+          {/* Full Screen Scrollable Image Container */}
+          <div 
+            className="w-full h-full max-h-[96vh] max-w-[96vw] overflow-auto flex items-center justify-center p-1 sm:p-2 cursor-zoom-out"
+            onClick={() => setSelectedPreviewImage(null)}
+          >
+            <img
+              src={selectedPreviewImage}
+              alt="MAATI Menu Full Preview"
+              onClick={(e) => e.stopPropagation()}
+              className="max-h-[92vh] max-w-[92vw] w-auto h-auto object-contain rounded-xl sm:rounded-2xl shadow-2xl transition-transform duration-200"
+            />
           </div>
         </div>
       )}
