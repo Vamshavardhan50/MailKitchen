@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Calendar, Clock, Users, User, Mail, Phone, MessageSquare, CheckCircle2 } from 'lucide-react';
 import { DICTIONARY } from '../data/content';
+import { useContactContent } from '../lib/sanityService';
 
 interface ReservationSectionProps {
   lang: 'de' | 'en';
@@ -11,6 +12,7 @@ interface ReservationSectionProps {
 
 export const ReservationSection: React.FC<ReservationSectionProps> = ({ lang, isOpen, onClose, onOpen }) => {
   const text = DICTIONARY[lang];
+  const { content: contactContent } = useContactContent();
   const [guests, setGuests] = useState('2');
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
@@ -83,7 +85,7 @@ export const ReservationSection: React.FC<ReservationSectionProps> = ({ lang, is
             {/* Modal Body: Embedded Official TheFork Widget */}
             <div className="p-2 sm:p-4 bg-white flex-1 min-h-[650px] overflow-hidden">
               <iframe
-                src="https://widget.thefork.com/7beffe40-786f-496c-b196-48b939750c77"
+                src={`https://widget.thefork.com/${contactContent.theforkWidgetId || '7beffe40-786f-496c-b196-48b939750c77'}`}
                 allow="payment *"
                 title="TheFork Reservation Widget"
                 style={{

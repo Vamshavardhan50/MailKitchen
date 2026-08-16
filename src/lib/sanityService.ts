@@ -787,3 +787,133 @@ export function useSiteSettings() {
 
   return { settings, loading };
 }
+
+// ─────────────────────────────────────────────
+// EventsContent Interface + Hook
+// ─────────────────────────────────────────────
+export interface EventsContent {
+  headlineEn?: string;
+  headlineDe?: string;
+  descEn?: string;
+  descDe?: string;
+  bullet1En?: string;
+  bullet1De?: string;
+  bullet2En?: string;
+  bullet2De?: string;
+  bullet3En?: string;
+  bullet3De?: string;
+  ctaBtnEn?: string;
+  ctaBtnDe?: string;
+  eventImage?: string;
+}
+
+const DEFAULT_EVENTS: EventsContent = {
+  headlineEn: 'Host Your Own Event',
+  headlineDe: 'Veranstalten Sie Ihr Event bei uns',
+  descEn: 'Looking for a unique venue? MAATI offers private dining and catering services for birthdays, corporate gatherings, and celebrations. Let us bring the spice to your special day.',
+  descDe: 'Suchen Sie nach einer einzigartigen Location? MAATI bietet Private Dining und Catering-Services für Geburtstage, Firmenfeiern und besondere Anlässe. Wir bringen die Gewürze zu Ihrem besonderen Tag.',
+  bullet1En: 'Customizable Menus',
+  bullet1De: 'Individuelle Menüs',
+  bullet2En: 'Private or Semi-Private Spaces',
+  bullet2De: 'Private & Halbprivate Bereiche',
+  bullet3En: 'Full Catering Service Available',
+  bullet3De: 'Kompletter Catering-Service',
+  ctaBtnEn: 'Inquire for Private Events',
+  ctaBtnDe: 'Event Anfragen',
+  eventImage: '/assets/show2-CM6MShfY.jpeg',
+};
+
+export function useEventsContent() {
+  const [content, setContent] = useState<EventsContent>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('maati_admin_events');
+      if (saved) {
+        try { return { ...DEFAULT_EVENTS, ...JSON.parse(saved) }; } catch {}
+      }
+    }
+    return DEFAULT_EVENTS;
+  });
+
+  useEffect(() => {
+    let isMounted = true;
+    const sync = () => {
+      if (!isMounted) return;
+      const saved = localStorage.getItem('maati_admin_events');
+      if (saved) {
+        try { setContent((prev) => ({ ...prev, ...JSON.parse(saved) })); } catch {}
+      }
+    };
+    window.addEventListener('maati_events_updated', sync);
+    window.addEventListener('storage', sync);
+    return () => {
+      isMounted = false;
+      window.removeEventListener('maati_events_updated', sync);
+      window.removeEventListener('storage', sync);
+    };
+  }, []);
+
+  return { content };
+}
+
+// ─────────────────────────────────────────────
+// ContactContent Interface + Hook
+// ─────────────────────────────────────────────
+export interface ContactContent {
+  headlineEn?: string;
+  headlineDe?: string;
+  descEn?: string;
+  descDe?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  openingHoursEn?: string;
+  openingHoursDe?: string;
+  theforkWidgetId?: string;
+  googleMapsUrl?: string;
+}
+
+const DEFAULT_CONTACT: ContactContent = {
+  headlineEn: 'Get in Touch',
+  headlineDe: 'Kontaktieren Sie uns',
+  descEn: 'Have a question? Want to make a reservation? We\'d love to hear from you.',
+  descDe: 'Haben Sie eine Frage? Möchten Sie reservieren? Wir freuen uns von Ihnen zu hören.',
+  phone: '+49 030 51891367',
+  email: 'hello@maatikitchen.com',
+  address: 'Zimmerstraße 56, 10117 Berlin',
+  openingHoursEn: 'Mon – Fri: 11:30 – 15:00',
+  openingHoursDe: 'Mo – Fr: 11:30 – 15:00 Uhr',
+  theforkWidgetId: '7beffe40-786f-496c-b196-48b939750c77',
+  googleMapsUrl: 'https://maps.google.com/?q=MAATI+Kitchen+Zimmerstrasse+56+Berlin',
+};
+
+export function useContactContent() {
+  const [content, setContent] = useState<ContactContent>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('maati_admin_contact');
+      if (saved) {
+        try { return { ...DEFAULT_CONTACT, ...JSON.parse(saved) }; } catch {}
+      }
+    }
+    return DEFAULT_CONTACT;
+  });
+
+  useEffect(() => {
+    let isMounted = true;
+    const sync = () => {
+      if (!isMounted) return;
+      const saved = localStorage.getItem('maati_admin_contact');
+      if (saved) {
+        try { setContent((prev) => ({ ...prev, ...JSON.parse(saved) })); } catch {}
+      }
+    };
+    window.addEventListener('maati_contact_updated', sync);
+    window.addEventListener('storage', sync);
+    return () => {
+      isMounted = false;
+      window.removeEventListener('maati_contact_updated', sync);
+      window.removeEventListener('storage', sync);
+    };
+  }, []);
+
+  return { content };
+}

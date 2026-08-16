@@ -29,7 +29,9 @@ import {
   Compass,
   ArrowRight,
   ArrowLeft,
-  Lightbulb
+  Lightbulb,
+  Calendar,
+  Phone
 } from 'lucide-react';
 import {
   SanityMenuItem,
@@ -38,7 +40,12 @@ import {
   useSanityMenu,
   useHomepageContent,
   useSiteSettings,
+  useEventsContent,
+  useContactContent,
+  SiteSettings,
   HomepageContent,
+  EventsContent,
+  ContactContent,
   MaatiWayStep
 } from '../lib/sanityService';
 import {
@@ -64,7 +71,7 @@ interface TourStep {
   title: string;
   description: string;
   tip?: string;
-  tab?: 'items' | 'categories' | 'homepage' | 'gallery' | 'settings';
+  tab?: 'items' | 'categories' | 'homepage' | 'gallery' | 'settings' | 'events' | 'contact';
 }
 
 const SPOTLIGHT_STEPS: TourStep[] = [
@@ -127,8 +134,10 @@ export const StudioPage: React.FC = () => {
   const { categories: initialCategories } = useSanityMenu();
   const { content: initialHomepage } = useHomepageContent();
   const { settings: initialSettings } = useSiteSettings();
+  const { content: initialEvents } = useEventsContent();
+  const { content: initialContact } = useContactContent();
 
-  const [activeTab, setActiveTab] = useState<'items' | 'categories' | 'homepage' | 'gallery' | 'settings'>('items');
+  const [activeTab, setActiveTab] = useState<'items' | 'categories' | 'homepage' | 'gallery' | 'settings' | 'events' | 'contact'>('items');
   const [categories, setCategories] = useState<SanityCategoryWithItems[]>([]);
   const [selectedCatId, setSelectedCatId] = useState<string>('all');
   
@@ -136,6 +145,10 @@ export const StudioPage: React.FC = () => {
   const [siteSettings, setSiteSettings] = useState(initialSettings);
   // Homepage state
   const [homepageContent, _setHomepageContent] = useState<HomepageContent>(initialHomepage);
+  // Events page state
+  const [eventsContent, _setEventsContent] = useState<EventsContent>(initialEvents);
+  // Contact page state
+  const [contactContent, _setContactContent] = useState<ContactContent>(initialContact);
 
   // Auto-track changes
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -242,6 +255,7 @@ export const StudioPage: React.FC = () => {
     experience: true,
     catering: true,
     footerCta: true,
+    lunch: true,
   });
 
   const toggleSection = (section: string) => {
@@ -458,6 +472,16 @@ export const StudioPage: React.FC = () => {
       try {
         _setHomepageContent(JSON.parse(savedHome));
       } catch {}
+    }
+
+    const savedEvents = localStorage.getItem('maati_admin_events');
+    if (savedEvents) {
+      try { _setEventsContent(JSON.parse(savedEvents)); } catch {}
+    }
+
+    const savedContact = localStorage.getItem('maati_admin_contact');
+    if (savedContact) {
+      try { _setContactContent(JSON.parse(savedContact)); } catch {}
     }
   }, [initialCategories, initialSettings, initialHomepage]);
 
@@ -860,7 +884,9 @@ export const StudioPage: React.FC = () => {
   const handleSaveSettings = (e: React.FormEvent) => {
     e.preventDefault();
     localStorage.setItem('maati_admin_settings', JSON.stringify(siteSettings));
-    showToast('Restaurant information saved!');
+    window.dispatchEvent(new CustomEvent('maati_settings_updated', { detail: { forceLocal: true } }));
+    window.dispatchEvent(new StorageEvent('storage', { key: 'maati_admin_settings' }));
+    showToast('Restaurant information saved! ✅');
   };
 
   // Save Homepage
@@ -868,6 +894,24 @@ export const StudioPage: React.FC = () => {
     e.preventDefault();
     localStorage.setItem('maati_admin_homepage', JSON.stringify(homepageContent));
     showSuccessToast();
+  };
+
+  // Save Events Page Content
+  const handleSaveEvents = (e: React.FormEvent) => {
+    e.preventDefault();
+    localStorage.setItem('maati_admin_events', JSON.stringify(eventsContent));
+    window.dispatchEvent(new CustomEvent('maati_events_updated', { detail: { forceLocal: true } }));
+    window.dispatchEvent(new StorageEvent('storage', { key: 'maati_admin_events' }));
+    showToast('Events page updated live! ✅');
+  };
+
+  // Save Contact Us Page Content
+  const handleSaveContact = (e: React.FormEvent) => {
+    e.preventDefault();
+    localStorage.setItem('maati_admin_contact', JSON.stringify(contactContent));
+    window.dispatchEvent(new CustomEvent('maati_contact_updated', { detail: { forceLocal: true } }));
+    window.dispatchEvent(new StorageEvent('storage', { key: 'maati_admin_contact' }));
+    showToast('Contact information updated live! ✅');
   };
 
   // Flattened items for filter
@@ -1281,6 +1325,30 @@ export const StudioPage: React.FC = () => {
           >
             <ImageIcon className="w-4 h-4 text-[#d85c27]" />
             <span>Photo Library ({galleryAssets.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('events')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-extrabold text-[13.5px] whitespace-nowrap transition-all ${
+              activeTab === 'events'
+                ? 'bg-[#1e382f] text-white shadow-sm'
+                : 'text-[#1e382f] hover:bg-[#1e382f]/5'
+            }`}
+          >
+            <Calendar className="w-4 h-4 text-[#d85c27]" />
+            <span>Events Page</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('contact')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-extrabold text-[13.5px] whitespace-nowrap transition-all ${
+              activeTab === 'contact'
+                ? 'bg-[#1e382f] text-white shadow-sm'
+                : 'text-[#1e382f] hover:bg-[#1e382f]/5'
+            }`}
+          >
+            <Phone className="w-4 h-4 text-[#d85c27]" />
+            <span>Contact Us</span>
           </button>
 
           <button
@@ -1910,7 +1978,50 @@ export const StudioPage: React.FC = () => {
               )}
             </div>
 
-            {/* ── 2. The MAATI Way Steps ── */}
+            {/* ── 2. House Favorites (Lunch Section) ── */}
+            <div className="bg-[#fffdfa] rounded-[22px] border border-[#ebdcd0] shadow-xs overflow-hidden">
+              <button
+                type="button"
+                onClick={() => toggleSection('lunch')}
+                className="w-full p-5 flex items-center justify-between text-left bg-white/70 border-b border-[#ebdcd0]"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="w-7 h-7 rounded-lg bg-[#d85c27] text-white font-black text-[12px] flex items-center justify-center">2</span>
+                  <div>
+                    <h3 className="text-[16px] font-black text-[#1e382f]">Treat Your Tastebuds (House Favorites)</h3>
+                    <p className="text-[12px] text-gray-500">Headline & description above the featured dishes on Homepage</p>
+                  </div>
+                </div>
+                {openSections.lunch ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+              </button>
+
+              {openSections.lunch && (
+                <div className="p-5 sm:p-6 space-y-4 animate-fadeIn">
+                  <div>
+                    <label className="block text-[12px] font-bold text-[#333] mb-1">Section Headline</label>
+                    <input
+                      type="text"
+                      value={adminContentLang === 'en' ? (homepageContent.lunchTitleEn || '') : (homepageContent.lunchTitleDe || '')}
+                      onChange={(e) => setHomepageContent(adminContentLang === 'en' ? { ...homepageContent, lunchTitleEn: e.target.value } : { ...homepageContent, lunchTitleDe: e.target.value })}
+                      className="w-full border rounded-xl px-3.5 py-2 text-[13.5px] focus:outline-none focus:border-[#d85c27]"
+                      placeholder={adminContentLang === 'en' ? 'e.g. Treat Your Tastebuds' : 'e.g. Verwöhnen Sie Ihren Gaumen'}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[12px] font-bold text-[#333] mb-1">Section Description</label>
+                    <textarea
+                      rows={2}
+                      value={adminContentLang === 'en' ? (homepageContent.lunchDescEn || '') : (homepageContent.lunchDescDe || '')}
+                      onChange={(e) => setHomepageContent(adminContentLang === 'en' ? { ...homepageContent, lunchDescEn: e.target.value } : { ...homepageContent, lunchDescDe: e.target.value })}
+                      className="w-full border rounded-xl px-3.5 py-2 text-[13.5px] focus:outline-none focus:border-[#d85c27] resize-none"
+                      placeholder={adminContentLang === 'en' ? 'e.g. Discover our most-loved signature combinations...' : 'e.g. Entdecken Sie unsere beliebtesten Signatur-Kombinationen...'}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* ── 3. The MAATI Way Steps ── */}
             <div className="bg-[#fffdfa] rounded-[22px] border border-[#ebdcd0] shadow-xs overflow-hidden">
               <button
                 type="button"
@@ -1918,7 +2029,7 @@ export const StudioPage: React.FC = () => {
                 className="w-full p-5 flex items-center justify-between text-left bg-white/70 border-b border-[#ebdcd0]"
               >
                 <div className="flex items-center gap-3">
-                  <span className="w-7 h-7 rounded-lg bg-[#d85c27] text-white font-black text-[12px] flex items-center justify-center">2</span>
+                  <span className="w-7 h-7 rounded-lg bg-[#d85c27] text-white font-black text-[12px] flex items-center justify-center">3</span>
                   <div>
                     <h3 className="text-[16px] font-black text-[#1e382f]">The MAATI Way (Build Your Bowl Steps)</h3>
                     <p className="text-[12px] text-gray-500">Step cards showing Base, Proteins & Curries, Chutneys</p>
@@ -2031,7 +2142,7 @@ export const StudioPage: React.FC = () => {
               )}
             </div>
 
-            {/* ── 3. Dining Experience ── */}
+            {/* ── 4. Dining Experience ── */}
             <div className="bg-[#fffdfa] rounded-[22px] border border-[#ebdcd0] shadow-xs overflow-hidden">
               <button
                 type="button"
@@ -2039,7 +2150,7 @@ export const StudioPage: React.FC = () => {
                 className="w-full p-5 flex items-center justify-between text-left bg-white/70 border-b border-[#ebdcd0]"
               >
                 <div className="flex items-center gap-3">
-                  <span className="w-7 h-7 rounded-lg bg-[#d85c27] text-white font-black text-[12px] flex items-center justify-center">3</span>
+                  <span className="w-7 h-7 rounded-lg bg-[#d85c27] text-white font-black text-[12px] flex items-center justify-center">4</span>
                   <div>
                     <h3 className="text-[16px] font-black text-[#1e382f]">Dining Experience & Ambience</h3>
                     <p className="text-[12px] text-gray-500">Atmosphere story and 2 restaurant interior photos</p>
@@ -2136,7 +2247,7 @@ export const StudioPage: React.FC = () => {
               )}
             </div>
 
-            {/* ── 4. Catering Section ── */}
+            {/* ── 5. Catering Section ── */}
             <div className="bg-[#fffdfa] rounded-[22px] border border-[#ebdcd0] shadow-xs overflow-hidden">
               <button
                 type="button"
@@ -2144,7 +2255,7 @@ export const StudioPage: React.FC = () => {
                 className="w-full p-5 flex items-center justify-between text-left bg-white/70 border-b border-[#ebdcd0]"
               >
                 <div className="flex items-center gap-3">
-                  <span className="w-7 h-7 rounded-lg bg-[#d85c27] text-white font-black text-[12px] flex items-center justify-center">4</span>
+                  <span className="w-7 h-7 rounded-lg bg-[#d85c27] text-white font-black text-[12px] flex items-center justify-center">5</span>
                   <div>
                     <h3 className="text-[16px] font-black text-[#1e382f]">MAATI Catering Section</h3>
                     <p className="text-[12px] text-gray-500">Corporate catering information, 4 key highlights & photo</p>
@@ -2204,49 +2315,6 @@ export const StudioPage: React.FC = () => {
                         {renderGalleryPicker(homepageContent.cateringImage || '', (url) => setHomepageContent({ ...homepageContent, cateringImage: url }), () => setActiveGallerySection(null))}
                       </div>
                     )}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* ── 5. House Favorites (Lunch Section) ── */}
-            <div className="bg-[#fffdfa] rounded-[22px] border border-[#ebdcd0] shadow-xs overflow-hidden">
-              <button
-                type="button"
-                onClick={() => toggleSection('lunch')}
-                className="w-full p-5 flex items-center justify-between text-left bg-white/70 border-b border-[#ebdcd0]"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="w-7 h-7 rounded-lg bg-[#d85c27] text-white font-black text-[12px] flex items-center justify-center">5</span>
-                  <div>
-                    <h3 className="text-[16px] font-black text-[#1e382f]">House Favorites Section</h3>
-                    <p className="text-[12px] text-gray-500">Headline & description above the featured dishes row</p>
-                  </div>
-                </div>
-                {openSections.lunch ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
-              </button>
-
-              {openSections.lunch && (
-                <div className="p-5 sm:p-6 space-y-4 animate-fadeIn">
-                  <div>
-                    <label className="block text-[12px] font-bold text-[#333] mb-1">Section Headline</label>
-                    <input
-                      type="text"
-                      value={adminContentLang === 'en' ? (homepageContent.lunchTitleEn || '') : (homepageContent.lunchTitleDe || '')}
-                      onChange={(e) => setHomepageContent(adminContentLang === 'en' ? { ...homepageContent, lunchTitleEn: e.target.value } : { ...homepageContent, lunchTitleDe: e.target.value })}
-                      className="w-full border rounded-xl px-3.5 py-2 text-[13.5px] focus:outline-none focus:border-[#d85c27]"
-                      placeholder={adminContentLang === 'en' ? 'e.g. Treat Your Tastebuds' : 'e.g. Verwöhnen Sie Ihren Gaumen'}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[12px] font-bold text-[#333] mb-1">Section Description</label>
-                    <textarea
-                      rows={2}
-                      value={adminContentLang === 'en' ? (homepageContent.lunchDescEn || '') : (homepageContent.lunchDescDe || '')}
-                      onChange={(e) => setHomepageContent(adminContentLang === 'en' ? { ...homepageContent, lunchDescEn: e.target.value } : { ...homepageContent, lunchDescDe: e.target.value })}
-                      className="w-full border rounded-xl px-3.5 py-2 text-[13.5px] focus:outline-none focus:border-[#d85c27] resize-none"
-                      placeholder={adminContentLang === 'en' ? 'e.g. Discover our most-loved signature combinations...' : 'e.g. Entdecken Sie unsere beliebtesten Signatur-Kombinationen...'}
-                    />
                   </div>
                 </div>
               )}
@@ -2612,6 +2680,316 @@ export const StudioPage: React.FC = () => {
                 className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-6 py-3 rounded-full text-[14px] shadow-sm hover:shadow-md transition-all flex items-center gap-2"
               >
                 <Save className="w-4 h-4" /> Save Information
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* ═══════════════════════════════════════════════
+            TAB 6: EVENTS PAGE CONTENT
+        ═══════════════════════════════════════════════ */}
+        {activeTab === 'events' && (
+          <form onSubmit={handleSaveEvents} className="bg-[#fffdfa] rounded-[24px] p-6 sm:p-8 border border-[#ebdcd0] shadow-sm space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-5">
+              <div>
+                <h2 className="text-[20px] font-black text-[#1e382f] flex items-center gap-2.5">
+                  <Calendar className="w-5 h-5 text-[#d85c27]" />
+                  <span>Events & Private Dining Content</span>
+                </h2>
+                <p className="text-[13px] text-[#666] mt-0.5">
+                  Edit headline, description, bullet points, CTA button, and hero photo for the Events page.
+                </p>
+              </div>
+
+              {/* Language Switcher */}
+              <div className="flex items-center gap-1.5 bg-[#fcf8f3] p-1.5 rounded-xl border border-[#ebdcd0] shrink-0">
+                <span className="text-[11px] font-bold text-gray-500 uppercase px-2">Language:</span>
+                <button
+                  type="button"
+                  onClick={() => setAdminContentLang('en')}
+                  className={`px-3 py-1 text-[12px] font-extrabold rounded-lg transition-all ${
+                    adminContentLang === 'en' ? 'bg-[#1e382f] text-white shadow-xs' : 'text-[#1e382f] hover:bg-gray-200/60'
+                  }`}
+                >
+                  English (EN)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAdminContentLang('de')}
+                  className={`px-3 py-1 text-[12px] font-extrabold rounded-lg transition-all ${
+                    adminContentLang === 'de' ? 'bg-[#1e382f] text-white shadow-xs' : 'text-[#1e382f] hover:bg-gray-200/60'
+                  }`}
+                >
+                  Deutsch (DE)
+                </button>
+              </div>
+            </div>
+
+            {/* Headline */}
+            <div>
+              <label className="block text-[12px] font-bold text-[#333] mb-1">Page Headline ({adminContentLang.toUpperCase()})</label>
+              <input
+                type="text"
+                value={adminContentLang === 'en' ? (eventsContent.headlineEn || '') : (eventsContent.headlineDe || '')}
+                onChange={(e) => _setEventsContent(adminContentLang === 'en' ? { ...eventsContent, headlineEn: e.target.value } : { ...eventsContent, headlineDe: e.target.value })}
+                placeholder={adminContentLang === 'en' ? 'Host Your Own Event' : 'Veranstalten Sie Ihr Event bei uns'}
+                className="w-full border rounded-xl px-3.5 py-2.5 text-[14px] focus:outline-none focus:border-[#d85c27]"
+              />
+            </div>
+
+            {/* Description */}
+            <div>
+              <label className="block text-[12px] font-bold text-[#333] mb-1">Description Tagline ({adminContentLang.toUpperCase()})</label>
+              <textarea
+                rows={3}
+                value={adminContentLang === 'en' ? (eventsContent.descEn || '') : (eventsContent.descDe || '')}
+                onChange={(e) => _setEventsContent(adminContentLang === 'en' ? { ...eventsContent, descEn: e.target.value } : { ...eventsContent, descDe: e.target.value })}
+                placeholder={adminContentLang === 'en' ? 'Looking for a unique venue? MAATI offers private dining...' : 'Suchen Sie nach einer einzigartigen Location?...'}
+                className="w-full border rounded-xl px-3.5 py-2.5 text-[13.5px] focus:outline-none focus:border-[#d85c27] resize-none"
+              />
+            </div>
+
+            {/* 3 Checkpoint Bullets */}
+            <div className="space-y-3 pt-2 border-t border-gray-100">
+              <h3 className="text-[14px] font-bold text-[#1e382f]">Checklist Points</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-500 mb-1">Bullet Point 1</label>
+                  <input
+                    type="text"
+                    value={adminContentLang === 'en' ? (eventsContent.bullet1En || '') : (eventsContent.bullet1De || '')}
+                    onChange={(e) => _setEventsContent(adminContentLang === 'en' ? { ...eventsContent, bullet1En: e.target.value } : { ...eventsContent, bullet1De: e.target.value })}
+                    placeholder={adminContentLang === 'en' ? 'Customizable Menus' : 'Individuelle Menüs'}
+                    className="w-full border rounded-xl px-3 py-2 text-[13px] focus:outline-none focus:border-[#d85c27]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-500 mb-1">Bullet Point 2</label>
+                  <input
+                    type="text"
+                    value={adminContentLang === 'en' ? (eventsContent.bullet2En || '') : (eventsContent.bullet2De || '')}
+                    onChange={(e) => _setEventsContent(adminContentLang === 'en' ? { ...eventsContent, bullet2En: e.target.value } : { ...eventsContent, bullet2De: e.target.value })}
+                    placeholder={adminContentLang === 'en' ? 'Private or Semi-Private Spaces' : 'Private & Halbprivate Bereiche'}
+                    className="w-full border rounded-xl px-3 py-2 text-[13px] focus:outline-none focus:border-[#d85c27]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-500 mb-1">Bullet Point 3</label>
+                  <input
+                    type="text"
+                    value={adminContentLang === 'en' ? (eventsContent.bullet3En || '') : (eventsContent.bullet3De || '')}
+                    onChange={(e) => _setEventsContent(adminContentLang === 'en' ? { ...eventsContent, bullet3En: e.target.value } : { ...eventsContent, bullet3De: e.target.value })}
+                    placeholder={adminContentLang === 'en' ? 'Full Catering Service Available' : 'Kompletter Catering-Service'}
+                    className="w-full border rounded-xl px-3 py-2 text-[13px] focus:outline-none focus:border-[#d85c27]"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Button Label & Image */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2 border-t border-gray-100">
+              <div>
+                <label className="block text-[12px] font-bold text-[#333] mb-1">CTA Button Label</label>
+                <input
+                  type="text"
+                  value={adminContentLang === 'en' ? (eventsContent.ctaBtnEn || '') : (eventsContent.ctaBtnDe || '')}
+                  onChange={(e) => _setEventsContent(adminContentLang === 'en' ? { ...eventsContent, ctaBtnEn: e.target.value } : { ...eventsContent, ctaBtnDe: e.target.value })}
+                  placeholder={adminContentLang === 'en' ? 'Inquire for Private Events' : 'Event Anfragen'}
+                  className="w-full border rounded-xl px-3.5 py-2.5 text-[13.5px] focus:outline-none focus:border-[#d85c27]"
+                />
+              </div>
+
+              {/* Event Image Picker */}
+              <div className="bg-[#fcf8f3] border border-[#ebdcd0] rounded-2xl p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-[12px] font-black text-[#1e382f] flex items-center gap-1.5">
+                    <ImageIcon className="w-3.5 h-3.5 text-[#d85c27]" />
+                    <span>Event Feature Photo</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setActiveGallerySection(activeGallerySection === 'events' ? null : 'events')}
+                    className="text-[11px] font-bold text-[#d85c27] bg-white px-2.5 py-1 rounded-lg border border-[#ebdcd0]"
+                  >
+                    {activeGallerySection === 'events' ? 'Hide' : 'Browse Photos'}
+                  </button>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-16 h-16 rounded-xl overflow-hidden bg-white shrink-0 border border-[#ebdcd0]">
+                    {eventsContent.eventImage ? (
+                      <img src={eventsContent.eventImage} alt="Event" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-[9px] text-gray-400 font-bold">No Img</div>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleOptimizedImageUpload((url) => _setEventsContent({ ...eventsContent, eventImage: url }))}
+                    className="bg-[#1e382f] text-white text-[12px] font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-sm"
+                  >
+                    <Upload className="w-3.5 h-3.5 text-[#d85c27]" /> Upload Photo
+                  </button>
+                </div>
+                {activeGallerySection === 'events' && (
+                  <div className="pt-2">
+                    {renderGalleryPicker(
+                      eventsContent.eventImage || '',
+                      (url) => _setEventsContent({ ...eventsContent, eventImage: url }),
+                      () => setActiveGallerySection(null)
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-gray-100">
+              <button
+                type="submit"
+                className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-7 py-3 rounded-full text-[14px] shadow-sm hover:shadow-md transition-all flex items-center gap-2"
+              >
+                <Save className="w-4 h-4" /> Save Events Page Content
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* ═══════════════════════════════════════════════
+            TAB 7: CONTACT US CONTENT
+        ═══════════════════════════════════════════════ */}
+        {activeTab === 'contact' && (
+          <form onSubmit={handleSaveContact} className="bg-[#fffdfa] rounded-[24px] p-6 sm:p-8 border border-[#ebdcd0] shadow-sm space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-5">
+              <div>
+                <h2 className="text-[20px] font-black text-[#1e382f] flex items-center gap-2.5">
+                  <Phone className="w-5 h-5 text-[#d85c27]" />
+                  <span>Contact Us & Table Reservation</span>
+                </h2>
+                <p className="text-[13px] text-[#666] mt-0.5">
+                  Configure contact details, address, opening hours, and TheFork reservation widget.
+                </p>
+              </div>
+
+              {/* Language Switcher */}
+              <div className="flex items-center gap-1.5 bg-[#fcf8f3] p-1.5 rounded-xl border border-[#ebdcd0] shrink-0">
+                <span className="text-[11px] font-bold text-gray-500 uppercase px-2">Language:</span>
+                <button
+                  type="button"
+                  onClick={() => setAdminContentLang('en')}
+                  className={`px-3 py-1 text-[12px] font-extrabold rounded-lg transition-all ${
+                    adminContentLang === 'en' ? 'bg-[#1e382f] text-white shadow-xs' : 'text-[#1e382f] hover:bg-gray-200/60'
+                  }`}
+                >
+                  English (EN)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAdminContentLang('de')}
+                  className={`px-3 py-1 text-[12px] font-extrabold rounded-lg transition-all ${
+                    adminContentLang === 'de' ? 'bg-[#1e382f] text-white shadow-xs' : 'text-[#1e382f] hover:bg-gray-200/60'
+                  }`}
+                >
+                  Deutsch (DE)
+                </button>
+              </div>
+            </div>
+
+            {/* Headline & Description */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div>
+                <label className="block text-[12px] font-bold text-[#333] mb-1">Headline ({adminContentLang.toUpperCase()})</label>
+                <input
+                  type="text"
+                  value={adminContentLang === 'en' ? (contactContent.headlineEn || '') : (contactContent.headlineDe || '')}
+                  onChange={(e) => _setContactContent(adminContentLang === 'en' ? { ...contactContent, headlineEn: e.target.value } : { ...contactContent, headlineDe: e.target.value })}
+                  placeholder={adminContentLang === 'en' ? 'Get in Touch' : 'Kontaktieren Sie uns'}
+                  className="w-full border rounded-xl px-3.5 py-2.5 text-[14px] focus:outline-none focus:border-[#d85c27]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[12px] font-bold text-[#333] mb-1">Opening Hours ({adminContentLang.toUpperCase()})</label>
+                <input
+                  type="text"
+                  value={adminContentLang === 'en' ? (contactContent.openingHoursEn || '') : (contactContent.openingHoursDe || '')}
+                  onChange={(e) => _setContactContent(adminContentLang === 'en' ? { ...contactContent, openingHoursEn: e.target.value } : { ...contactContent, openingHoursDe: e.target.value })}
+                  placeholder={adminContentLang === 'en' ? 'Mon – Fri: 11:30 – 15:00' : 'Mo – Fr: 11:30 – 15:00 Uhr'}
+                  className="w-full border rounded-xl px-3.5 py-2.5 text-[14px] focus:outline-none focus:border-[#d85c27]"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-[12px] font-bold text-[#333] mb-1">Description Text ({adminContentLang.toUpperCase()})</label>
+                <textarea
+                  rows={2}
+                  value={adminContentLang === 'en' ? (contactContent.descEn || '') : (contactContent.descDe || '')}
+                  onChange={(e) => _setContactContent(adminContentLang === 'en' ? { ...contactContent, descEn: e.target.value } : { ...contactContent, descDe: e.target.value })}
+                  placeholder={adminContentLang === 'en' ? 'Have a question? We would love to hear from you.' : 'Haben Sie eine Frage? Wir freuen uns auf Sie.'}
+                  className="w-full border rounded-xl px-3.5 py-2.5 text-[13.5px] focus:outline-none focus:border-[#d85c27] resize-none"
+                />
+              </div>
+            </div>
+
+            {/* Direct Contact Info */}
+            <div className="pt-2 border-t border-gray-100">
+              <h3 className="text-[14px] font-bold text-[#1e382f] mb-3">Direct Contact Details</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[12px] font-bold text-[#333] mb-1">Phone Number</label>
+                  <input
+                    type="text"
+                    value={contactContent.phone || ''}
+                    onChange={(e) => _setContactContent({ ...contactContent, phone: e.target.value })}
+                    placeholder="+49 030 51891367"
+                    className="w-full border rounded-xl px-3.5 py-2.5 text-[13.5px] focus:outline-none focus:border-[#d85c27]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[12px] font-bold text-[#333] mb-1">Email Address</label>
+                  <input
+                    type="email"
+                    value={contactContent.email || ''}
+                    onChange={(e) => _setContactContent({ ...contactContent, email: e.target.value })}
+                    placeholder="hello@maatikitchen.com"
+                    className="w-full border rounded-xl px-3.5 py-2.5 text-[13.5px] focus:outline-none focus:border-[#d85c27]"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-[12px] font-bold text-[#333] mb-1">Full Street Address</label>
+                  <input
+                    type="text"
+                    value={contactContent.address || ''}
+                    onChange={(e) => _setContactContent({ ...contactContent, address: e.target.value })}
+                    placeholder="Zimmerstraße 56, 10117 Berlin"
+                    className="w-full border rounded-xl px-3.5 py-2.5 text-[13.5px] focus:outline-none focus:border-[#d85c27]"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* TheFork Integration */}
+            <div className="pt-2 border-t border-gray-100">
+              <h3 className="text-[14px] font-bold text-[#1e382f] mb-2 flex items-center gap-2">
+                <span className="w-5 h-5 rounded bg-[#00A680] text-white text-[10px] font-black flex items-center justify-center">TF</span>
+                <span>TheFork Widget ID</span>
+              </h3>
+              <p className="text-[12px] text-gray-500 mb-2">
+                TheFork restaurant UUID embedded in the online reservation popup.
+              </p>
+              <input
+                type="text"
+                value={contactContent.theforkWidgetId || ''}
+                onChange={(e) => _setContactContent({ ...contactContent, theforkWidgetId: e.target.value })}
+                placeholder="7beffe40-786f-496c-b196-48b939750c77"
+                className="w-full font-mono text-[13px] border rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-[#d85c27]"
+              />
+            </div>
+
+            <div className="pt-3 border-t border-gray-100">
+              <button
+                type="submit"
+                className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-7 py-3 rounded-full text-[14px] shadow-sm hover:shadow-md transition-all flex items-center gap-2"
+              >
+                <Save className="w-4 h-4" /> Save Contact Information
               </button>
             </div>
           </form>
