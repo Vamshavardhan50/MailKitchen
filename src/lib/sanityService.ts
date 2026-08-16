@@ -668,7 +668,39 @@ export function useHomepageContent() {
   useEffect(() => {
     let isMounted = true;
 
+    // Re-read from localStorage whenever admin saves homepage changes
+    const handleLocalSync = () => {
+      if (!isMounted) return;
+      const saved = localStorage.getItem('maati_admin_homepage');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed && typeof parsed === 'object') {
+            setContent((prev) => ({ ...prev, ...parsed }));
+          }
+        } catch {}
+      }
+    };
+
+    window.addEventListener('maati_homepage_updated', handleLocalSync);
+    window.addEventListener('storage', handleLocalSync);
+
     async function fetchHomepage() {
+      // Prioritize admin data if it exists
+      const adminSaved = localStorage.getItem('maati_admin_homepage');
+      if (adminSaved) {
+        try {
+          const parsed = JSON.parse(adminSaved);
+          if (parsed && typeof parsed === 'object') {
+            if (isMounted) {
+              setContent((prev) => ({ ...prev, ...parsed }));
+              setLoading(false);
+            }
+            return; // Use admin data, skip Sanity
+          }
+        } catch {}
+      }
+
       if (!isSanityConfigured) {
         setLoading(false);
         return;
@@ -689,6 +721,8 @@ export function useHomepageContent() {
     fetchHomepage();
     return () => {
       isMounted = false;
+      window.removeEventListener('maati_homepage_updated', handleLocalSync);
+      window.removeEventListener('storage', handleLocalSync);
     };
   }, []);
 

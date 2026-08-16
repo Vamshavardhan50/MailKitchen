@@ -490,8 +490,9 @@ export const StudioPage: React.FC = () => {
 
   const showSuccessToast = () => {
     setHasUnsavedChanges(false);
-    window.dispatchEvent(new Event('maati_homepage_updated'));
-    showToast('Homepage changes saved live!');
+    window.dispatchEvent(new CustomEvent('maati_homepage_updated', { detail: { forceLocal: true } }));
+    window.dispatchEvent(new StorageEvent('storage', { key: 'maati_admin_homepage' }));
+    showToast('Homepage changes saved live! ✅');
   };
 
   // Fast Client-Side Image Compression & Auto-Optimizer
@@ -2208,7 +2209,115 @@ export const StudioPage: React.FC = () => {
               )}
             </div>
 
-            {/* Floating Save Button */}
+            {/* ── 5. House Favorites (Lunch Section) ── */}
+            <div className="bg-[#fffdfa] rounded-[22px] border border-[#ebdcd0] shadow-xs overflow-hidden">
+              <button
+                type="button"
+                onClick={() => toggleSection('lunch')}
+                className="w-full p-5 flex items-center justify-between text-left bg-white/70 border-b border-[#ebdcd0]"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="w-7 h-7 rounded-lg bg-[#d85c27] text-white font-black text-[12px] flex items-center justify-center">5</span>
+                  <div>
+                    <h3 className="text-[16px] font-black text-[#1e382f]">House Favorites Section</h3>
+                    <p className="text-[12px] text-gray-500">Headline & description above the featured dishes row</p>
+                  </div>
+                </div>
+                {openSections.lunch ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+              </button>
+
+              {openSections.lunch && (
+                <div className="p-5 sm:p-6 space-y-4 animate-fadeIn">
+                  <div>
+                    <label className="block text-[12px] font-bold text-[#333] mb-1">Section Headline</label>
+                    <input
+                      type="text"
+                      value={adminContentLang === 'en' ? (homepageContent.lunchTitleEn || '') : (homepageContent.lunchTitleDe || '')}
+                      onChange={(e) => setHomepageContent(adminContentLang === 'en' ? { ...homepageContent, lunchTitleEn: e.target.value } : { ...homepageContent, lunchTitleDe: e.target.value })}
+                      className="w-full border rounded-xl px-3.5 py-2 text-[13.5px] focus:outline-none focus:border-[#d85c27]"
+                      placeholder={adminContentLang === 'en' ? 'e.g. Treat Your Tastebuds' : 'e.g. Verwöhnen Sie Ihren Gaumen'}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[12px] font-bold text-[#333] mb-1">Section Description</label>
+                    <textarea
+                      rows={2}
+                      value={adminContentLang === 'en' ? (homepageContent.lunchDescEn || '') : (homepageContent.lunchDescDe || '')}
+                      onChange={(e) => setHomepageContent(adminContentLang === 'en' ? { ...homepageContent, lunchDescEn: e.target.value } : { ...homepageContent, lunchDescDe: e.target.value })}
+                      className="w-full border rounded-xl px-3.5 py-2 text-[13.5px] focus:outline-none focus:border-[#d85c27] resize-none"
+                      placeholder={adminContentLang === 'en' ? 'e.g. Discover our most-loved signature combinations...' : 'e.g. Entdecken Sie unsere beliebtesten Signatur-Kombinationen...'}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* ── 6. Footer CTA Banner ── */}
+            <div className="bg-[#fffdfa] rounded-[22px] border border-[#ebdcd0] shadow-xs overflow-hidden">
+              <button
+                type="button"
+                onClick={() => toggleSection('footerCta')}
+                className="w-full p-5 flex items-center justify-between text-left bg-white/70 border-b border-[#ebdcd0]"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="w-7 h-7 rounded-lg bg-[#d85c27] text-white font-black text-[12px] flex items-center justify-center">6</span>
+                  <div>
+                    <h3 className="text-[16px] font-black text-[#1e382f]">Footer CTA Banner</h3>
+                    <p className="text-[12px] text-gray-500">"Visit us" banner at the bottom of the homepage — headline, tagline & button labels</p>
+                  </div>
+                </div>
+                {openSections.footerCta ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+              </button>
+
+              {openSections.footerCta && (
+                <div className="p-5 sm:p-6 space-y-4 animate-fadeIn">
+                  <div>
+                    <label className="block text-[12px] font-bold text-[#333] mb-1">Headline / CTA Title</label>
+                    <input
+                      type="text"
+                      value={adminContentLang === 'en' ? (homepageContent.ctaTitleEn || '') : (homepageContent.ctaTitleDe || '')}
+                      onChange={(e) => setHomepageContent(adminContentLang === 'en' ? { ...homepageContent, ctaTitleEn: e.target.value } : { ...homepageContent, ctaTitleDe: e.target.value })}
+                      className="w-full border rounded-xl px-3.5 py-2 text-[13.5px] focus:outline-none focus:border-[#d85c27]"
+                      placeholder={adminContentLang === 'en' ? 'e.g. Visit us at Zimmerstr. 56, 10117 Berlin' : 'e.g. Besuchen Sie uns in der Zimmerstr. 56, 10117 Berlin'}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[12px] font-bold text-[#333] mb-1">Subheadline / Description</label>
+                    <textarea
+                      rows={2}
+                      value={adminContentLang === 'en' ? (homepageContent.ctaDescEn || '') : (homepageContent.ctaDescDe || '')}
+                      onChange={(e) => setHomepageContent(adminContentLang === 'en' ? { ...homepageContent, ctaDescEn: e.target.value } : { ...homepageContent, ctaDescDe: e.target.value })}
+                      className="w-full border rounded-xl px-3.5 py-2 text-[13.5px] focus:outline-none focus:border-[#d85c27] resize-none"
+                      placeholder={adminContentLang === 'en' ? 'e.g. Experience modern Indian soul food in a cozy atmosphere.' : 'e.g. Erleben Sie modernes indisches Soul Food in gemütlicher Atmosphäre.'}
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[12px] font-bold text-[#333] mb-1">Button 1 Label (View Menu)</label>
+                      <input
+                        type="text"
+                        value={adminContentLang === 'en' ? (homepageContent.ctaBtnMenuEn || '') : (homepageContent.ctaBtnMenuDe || '')}
+                        onChange={(e) => setHomepageContent(adminContentLang === 'en' ? { ...homepageContent, ctaBtnMenuEn: e.target.value } : { ...homepageContent, ctaBtnMenuDe: e.target.value })}
+                        className="w-full border rounded-xl px-3.5 py-2 text-[13.5px] focus:outline-none focus:border-[#d85c27]"
+                        placeholder={adminContentLang === 'en' ? 'View Menu' : 'Speisekarte'}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[12px] font-bold text-[#333] mb-1">Button 2 Label (Locations)</label>
+                      <input
+                        type="text"
+                        value={adminContentLang === 'en' ? (homepageContent.ctaBtnLocationsEn || '') : (homepageContent.ctaBtnLocationsDe || '')}
+                        onChange={(e) => setHomepageContent(adminContentLang === 'en' ? { ...homepageContent, ctaBtnLocationsEn: e.target.value } : { ...homepageContent, ctaBtnLocationsDe: e.target.value })}
+                        className="w-full border rounded-xl px-3.5 py-2 text-[13.5px] focus:outline-none focus:border-[#d85c27]"
+                        placeholder={adminContentLang === 'en' ? 'Our Locations' : 'Unsere Standorte'}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+
             {hasUnsavedChanges && (
               <div className="fixed bottom-6 inset-x-0 z-40 flex justify-center px-4 animate-bounce">
                 <div className="bg-[#1e382f] text-white rounded-full shadow-2xl px-6 py-3.5 flex items-center gap-4 border border-white/20">
