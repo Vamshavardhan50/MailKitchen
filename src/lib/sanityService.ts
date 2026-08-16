@@ -917,3 +917,77 @@ export function useContactContent() {
 
   return { content };
 }
+
+// ─────────────────────────────────────────────
+// PrintMenuContent Interface + Hook
+// ─────────────────────────────────────────────
+export interface PrintMenuContent {
+  badgeEn?: string;
+  badgeDe?: string;
+  titleEn?: string;
+  titleDe?: string;
+  descEn?: string;
+  descDe?: string;
+  page1TitleEn?: string;
+  page1TitleDe?: string;
+  page1DescEn?: string;
+  page1DescDe?: string;
+  page1Image?: string;
+  page2TitleEn?: string;
+  page2TitleDe?: string;
+  page2DescEn?: string;
+  page2DescDe?: string;
+  page2Image?: string;
+}
+
+const DEFAULT_PRINT_MENU: PrintMenuContent = {
+  badgeEn: 'OFFICIAL PRINT MENU',
+  badgeDe: 'OFFIZIELLE SPEISEKARTE',
+  titleEn: 'View Full Visual Menu',
+  titleDe: 'Vollständige Speisekarte ansehen',
+  descEn: 'Click on any page below to inspect or open the high-resolution restaurant menu cards directly in a new tab.',
+  descDe: 'Klicken Sie auf eine der Seiten, um sie zu vergrößern, oder öffnen Sie die hochauflösenden Menükarten direkt in einem neuen Tab.',
+  page1TitleEn: 'Page 1: Signature Bowls & Naan',
+  page1TitleDe: 'Seite 1: Bowls, Naan & Favoriten',
+  page1DescEn: 'All signature bowls, warm naan pockets, protein choices, dressings, and toppings.',
+  page1DescDe: 'Alle Bowls, Naan-Taschen, Toppings, Proteine und hausgemachten Saucen im Überblick.',
+  page1Image: '/assets/Menue1.png',
+  page2TitleEn: 'Page 2: Lassis, Coffee & Craft Drinks',
+  page2TitleDe: 'Seite 2: Lassis, Kaffee & Drinks',
+  page2DescEn: 'Specialty Indian coffee, masala chai, fresh fruit lassis, cold drinks, and desserts.',
+  page2DescDe: 'Kaffeespezialitäten, Chai, hausgemachte Lassis, Bio-Limonaden und Desserts.',
+  page2Image: '/assets/Menue2.png',
+};
+
+export function usePrintMenuContent() {
+  const [content, setContent] = useState<PrintMenuContent>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('maati_admin_print_menu');
+      if (saved) {
+        try { return { ...DEFAULT_PRINT_MENU, ...JSON.parse(saved) }; } catch {}
+      }
+    }
+    return DEFAULT_PRINT_MENU;
+  });
+
+  useEffect(() => {
+    let isMounted = true;
+    const sync = () => {
+      if (!isMounted) return;
+      const saved = localStorage.getItem('maati_admin_print_menu');
+      if (saved) {
+        try { setContent((prev) => ({ ...prev, ...JSON.parse(saved) })); } catch {}
+      }
+    };
+    window.addEventListener('maati_print_menu_updated', sync);
+    window.addEventListener('storage', sync);
+    return () => {
+      isMounted = false;
+      window.removeEventListener('maati_print_menu_updated', sync);
+      window.removeEventListener('storage', sync);
+    };
+  }, []);
+
+  return { content };
+}
+

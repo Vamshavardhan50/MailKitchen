@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { MenuCard } from './MenuCard';
-import { useSanityMenu } from '../lib/sanityService';
+import { useSanityMenu, usePrintMenuContent } from '../lib/sanityService';
 import { SEO } from './SEO';
 import { Info, Sparkles, ExternalLink, FileText, Eye, X } from 'lucide-react';
 
@@ -12,7 +12,20 @@ interface June2026MenuProps {
 export const June2026Menu: React.FC<June2026MenuProps> = ({ lang = 'en' }) => {
   const isDe = lang === 'de';
   const { categories } = useSanityMenu();
+  const { content: printMenu } = usePrintMenuContent();
   const [selectedPreviewImage, setSelectedPreviewImage] = useState<string | null>(null);
+
+  const printBadge = (isDe ? printMenu.badgeDe : printMenu.badgeEn) || (isDe ? 'OFFIZIELLE SPEISEKARTE' : 'OFFICIAL PRINT MENU');
+  const printTitle = (isDe ? printMenu.titleDe : printMenu.titleEn) || (isDe ? 'Vollständige Speisekarte ansehen' : 'View Full Visual Menu');
+  const printDesc = (isDe ? printMenu.descDe : printMenu.descEn) || (isDe ? 'Klicken Sie auf eine der Seiten, um sie zu vergrößern, oder öffnen Sie die hochauflösenden Menükarten direkt in einem neuen Tab.' : 'Click on any page below to inspect or open the high-resolution restaurant menu cards directly in a new tab.');
+
+  const page1Title = (isDe ? printMenu.page1TitleDe : printMenu.page1TitleEn) || (isDe ? 'Seite 1: Bowls, Naan & Favoriten' : 'Page 1: Signature Bowls & Naan');
+  const page1Desc = (isDe ? printMenu.page1DescDe : printMenu.page1DescEn) || (isDe ? 'Alle Bowls, Naan-Taschen, Toppings, Proteine und hausgemachten Saucen im Überblick.' : 'All signature bowls, warm naan pockets, protein choices, dressings, and toppings.');
+  const page1Img = printMenu.page1Image || '/assets/Menue1.png';
+
+  const page2Title = (isDe ? printMenu.page2TitleDe : printMenu.page2TitleEn) || (isDe ? 'Seite 2: Lassis, Kaffee & Drinks' : 'Page 2: Lassis, Coffee & Craft Drinks');
+  const page2Desc = (isDe ? printMenu.page2DescDe : printMenu.page2DescEn) || (isDe ? 'Kaffeespezialitäten, Chai, hausgemachte Lassis, Bio-Limonaden und Desserts.' : 'Specialty Indian coffee, masala chai, fresh fruit lassis, cold drinks, and desserts.');
+  const page2Img = printMenu.page2Image || '/assets/Menue2.png';
 
   return (
     <div className="bg-[#f5f0e8] min-h-screen pt-24 sm:pt-28 pb-20 px-4 sm:px-8 md:px-16 lg:px-24">
@@ -106,15 +119,13 @@ export const June2026Menu: React.FC<June2026MenuProps> = ({ lang = 'en' }) => {
           <div className="pb-5 sm:pb-6 border-b border-gray-100">
             <span className="text-[#d85c27] font-black text-[11px] sm:text-[12px] uppercase tracking-[0.2em] flex items-center gap-1.5 mb-1">
               <FileText className="w-4 h-4" />
-              {isDe ? 'OFFIZIELLE SPEISEKARTE' : 'OFFICIAL PRINT MENU'}
+              {printBadge}
             </span>
             <h3 className="text-[22px] sm:text-[32px] md:text-[36px] font-black text-[#1e382f] leading-tight">
-              {isDe ? 'Vollständige Speisekarte ansehen' : 'View Full Visual Menu'}
+              {printTitle}
             </h3>
             <p className="text-[#666] text-[13px] sm:text-[14px] mt-1 max-w-[600px]">
-              {isDe
-                ? 'Klicken Sie auf eine der Seiten, um sie zu vergrößern, oder öffnen Sie die hochauflösenden Menükarten direkt in einem neuen Tab.'
-                : 'Click on any page below to inspect or open the high-resolution restaurant menu cards directly in a new tab.'}
+              {printDesc}
             </p>
           </div>
 
@@ -124,11 +135,11 @@ export const June2026Menu: React.FC<June2026MenuProps> = ({ lang = 'en' }) => {
             <div className="bg-[#fcfaf7] border border-[#ebdcd0] rounded-[24px] overflow-hidden flex flex-col group transition-all duration-300 hover:shadow-lg">
               <div 
                 className="relative cursor-pointer overflow-hidden bg-[#1e382f]/5 aspect-[4/3] flex items-center justify-center"
-                onClick={() => setSelectedPreviewImage('/assets/Menue1.png')}
+                onClick={() => setSelectedPreviewImage(page1Img)}
               >
                 <img
-                  src="/assets/Menue1.png"
-                  alt={isDe ? 'MAATI Speisekarte Seite 1' : 'MAATI Menu Page 1'}
+                  src={page1Img}
+                  alt={page1Title}
                   className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
                   loading="lazy"
                 />
@@ -143,18 +154,16 @@ export const June2026Menu: React.FC<June2026MenuProps> = ({ lang = 'en' }) => {
               <div className="p-5 sm:p-6 flex flex-col justify-between flex-1 gap-4">
                 <div>
                   <h4 className="font-black text-[17px] sm:text-[18px] text-[#1e382f]">
-                    {isDe ? 'Seite 1: Bowls, Naan & Favoriten' : 'Page 1: Signature Bowls & Naan'}
+                    {page1Title}
                   </h4>
                   <p className="text-[#777] text-[12.5px] sm:text-[13px] mt-1">
-                    {isDe
-                      ? 'Alle Bowls, Naan-Taschen, Toppings, Proteine und hausgemachten Saucen im Überblick.'
-                      : 'All signature bowls, warm naan pockets, protein choices, dressings, and toppings.'}
+                    {page1Desc}
                   </p>
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 pt-2">
                   <a
-                    href="/assets/Menue1.png"
+                    href={page1Img}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex-1 text-center bg-[#1e382f] hover:bg-[#142620] text-white font-extrabold px-4 py-2.5 rounded-xl text-[12.5px] sm:text-[13px] transition-colors flex items-center justify-center gap-1.5 shadow-xs"
@@ -164,7 +173,7 @@ export const June2026Menu: React.FC<June2026MenuProps> = ({ lang = 'en' }) => {
                   </a>
                   <button
                     type="button"
-                    onClick={() => setSelectedPreviewImage('/assets/Menue1.png')}
+                    onClick={() => setSelectedPreviewImage(page1Img)}
                     className="bg-white hover:bg-gray-100 text-[#1e382f] border border-[#ebdcd0] font-extrabold px-4 py-2.5 rounded-xl text-[12.5px] sm:text-[13px] transition-colors flex items-center justify-center gap-1.5 shadow-xs"
                   >
                     <Eye className="w-4 h-4" />
@@ -178,11 +187,11 @@ export const June2026Menu: React.FC<June2026MenuProps> = ({ lang = 'en' }) => {
             <div className="bg-[#fcfaf7] border border-[#ebdcd0] rounded-[24px] overflow-hidden flex flex-col group transition-all duration-300 hover:shadow-lg">
               <div 
                 className="relative cursor-pointer overflow-hidden bg-[#1e382f]/5 aspect-[4/3] flex items-center justify-center"
-                onClick={() => setSelectedPreviewImage('/assets/Menue2.png')}
+                onClick={() => setSelectedPreviewImage(page2Img)}
               >
                 <img
-                  src="/assets/Menue2.png"
-                  alt={isDe ? 'MAATI Speisekarte Seite 2' : 'MAATI Menu Page 2'}
+                  src={page2Img}
+                  alt={page2Title}
                   className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
                   loading="lazy"
                 />
@@ -197,18 +206,16 @@ export const June2026Menu: React.FC<June2026MenuProps> = ({ lang = 'en' }) => {
               <div className="p-5 sm:p-6 flex flex-col justify-between flex-1 gap-4">
                 <div>
                   <h4 className="font-black text-[17px] sm:text-[18px] text-[#1e382f]">
-                    {isDe ? 'Seite 2: Lassis, Kaffee & Drinks' : 'Page 2: Lassis, Coffee & Craft Drinks'}
+                    {page2Title}
                   </h4>
                   <p className="text-[#777] text-[12.5px] sm:text-[13px] mt-1">
-                    {isDe
-                      ? 'Kaffeespezialitäten, Chai, hausgemachte Lassis, Bio-Limonaden und Desserts.'
-                      : 'Specialty Indian coffee, masala chai, fresh fruit lassis, cold drinks, and desserts.'}
+                    {page2Desc}
                   </p>
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 pt-2">
                   <a
-                    href="/assets/Menue2.png"
+                    href={page2Img}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex-1 text-center bg-[#1e382f] hover:bg-[#142620] text-white font-extrabold px-4 py-2.5 rounded-xl text-[12.5px] sm:text-[13px] transition-colors flex items-center justify-center gap-1.5 shadow-xs"
@@ -218,7 +225,7 @@ export const June2026Menu: React.FC<June2026MenuProps> = ({ lang = 'en' }) => {
                   </a>
                   <button
                     type="button"
-                    onClick={() => setSelectedPreviewImage('/assets/Menue2.png')}
+                    onClick={() => setSelectedPreviewImage(page2Img)}
                     className="bg-white hover:bg-gray-100 text-[#1e382f] border border-[#ebdcd0] font-extrabold px-4 py-2.5 rounded-xl text-[12.5px] sm:text-[13px] transition-colors flex items-center justify-center gap-1.5 shadow-xs"
                   >
                     <Eye className="w-4 h-4" />

@@ -23,6 +23,7 @@ import {
   X,
   Flame,
   PlusCircle,
+  FileText,
   Tag,
   CheckCircle2,
   AlertCircle,
@@ -42,10 +43,12 @@ import {
   useSiteSettings,
   useEventsContent,
   useContactContent,
+  usePrintMenuContent,
   SiteSettings,
   HomepageContent,
   EventsContent,
   ContactContent,
+  PrintMenuContent,
   MaatiWayStep
 } from '../lib/sanityService';
 import {
@@ -71,7 +74,7 @@ interface TourStep {
   title: string;
   description: string;
   tip?: string;
-  tab?: 'items' | 'categories' | 'homepage' | 'gallery' | 'settings' | 'events' | 'contact';
+  tab?: 'items' | 'categories' | 'homepage' | 'gallery' | 'settings' | 'events' | 'contact' | 'printMenu';
 }
 
 const SPOTLIGHT_STEPS: TourStep[] = [
@@ -136,8 +139,9 @@ export const StudioPage: React.FC = () => {
   const { settings: initialSettings } = useSiteSettings();
   const { content: initialEvents } = useEventsContent();
   const { content: initialContact } = useContactContent();
+  const { content: initialPrintMenu } = usePrintMenuContent();
 
-  const [activeTab, setActiveTab] = useState<'items' | 'categories' | 'homepage' | 'gallery' | 'settings' | 'events' | 'contact'>('items');
+  const [activeTab, setActiveTab] = useState<'items' | 'categories' | 'homepage' | 'gallery' | 'settings' | 'events' | 'contact' | 'printMenu'>('items');
   const [categories, setCategories] = useState<SanityCategoryWithItems[]>([]);
   const [selectedCatId, setSelectedCatId] = useState<string>('all');
   
@@ -149,6 +153,8 @@ export const StudioPage: React.FC = () => {
   const [eventsContent, _setEventsContent] = useState<EventsContent>(initialEvents);
   // Contact page state
   const [contactContent, _setContactContent] = useState<ContactContent>(initialContact);
+  // Print / Visual Menu state
+  const [printMenuContent, _setPrintMenuContent] = useState<PrintMenuContent>(initialPrintMenu);
 
   // Auto-track changes
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -482,6 +488,11 @@ export const StudioPage: React.FC = () => {
     const savedContact = localStorage.getItem('maati_admin_contact');
     if (savedContact) {
       try { _setContactContent(JSON.parse(savedContact)); } catch {}
+    }
+
+    const savedPrintMenu = localStorage.getItem('maati_admin_print_menu');
+    if (savedPrintMenu) {
+      try { _setPrintMenuContent(JSON.parse(savedPrintMenu)); } catch {}
     }
   }, [initialCategories, initialSettings, initialHomepage]);
 
@@ -912,6 +923,15 @@ export const StudioPage: React.FC = () => {
     window.dispatchEvent(new CustomEvent('maati_contact_updated', { detail: { forceLocal: true } }));
     window.dispatchEvent(new StorageEvent('storage', { key: 'maati_admin_contact' }));
     showToast('Contact information updated live! ✅');
+  };
+
+  // Save Print / Visual Menu Content
+  const handleSavePrintMenu = (e: React.FormEvent) => {
+    e.preventDefault();
+    localStorage.setItem('maati_admin_print_menu', JSON.stringify(printMenuContent));
+    window.dispatchEvent(new CustomEvent('maati_print_menu_updated', { detail: { forceLocal: true } }));
+    window.dispatchEvent(new StorageEvent('storage', { key: 'maati_admin_print_menu' }));
+    showToast('Visual Menu preview updated live! ✅');
   };
 
   // Flattened items for filter
@@ -1349,6 +1369,18 @@ export const StudioPage: React.FC = () => {
           >
             <Phone className="w-4 h-4 text-[#d85c27]" />
             <span>Contact Us</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('printMenu')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-extrabold text-[13.5px] whitespace-nowrap transition-all ${
+              activeTab === 'printMenu'
+                ? 'bg-[#1e382f] text-white shadow-sm'
+                : 'text-[#1e382f] hover:bg-[#1e382f]/5'
+            }`}
+          >
+            <FileText className="w-4 h-4 text-[#d85c27]" />
+            <span>Visual Menu Cards</span>
           </button>
 
           <button
@@ -2990,6 +3022,246 @@ export const StudioPage: React.FC = () => {
                 className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-7 py-3 rounded-full text-[14px] shadow-sm hover:shadow-md transition-all flex items-center gap-2"
               >
                 <Save className="w-4 h-4" /> Save Contact Information
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* ═══════════════════════════════════════════════
+            TAB 8: PRINT / VISUAL MENU CARDS
+        ═══════════════════════════════════════════════ */}
+        {activeTab === 'printMenu' && (
+          <form onSubmit={handleSavePrintMenu} className="bg-[#fffdfa] rounded-[24px] p-6 sm:p-8 border border-[#ebdcd0] shadow-sm space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-5">
+              <div>
+                <h2 className="text-[20px] font-black text-[#1e382f] flex items-center gap-2.5">
+                  <FileText className="w-5 h-5 text-[#d85c27]" />
+                  <span>Visual Print Menu Preview Cards</span>
+                </h2>
+                <p className="text-[13px] text-[#666] mt-0.5">
+                  Update the high-resolution menu card graphics, titles, descriptions, and download links shown at the bottom of the Menu page.
+                </p>
+              </div>
+
+              {/* Language Switcher */}
+              <div className="flex items-center gap-1.5 bg-[#fcf8f3] p-1.5 rounded-xl border border-[#ebdcd0] shrink-0">
+                <span className="text-[11px] font-bold text-gray-500 uppercase px-2">Language:</span>
+                <button
+                  type="button"
+                  onClick={() => setAdminContentLang('en')}
+                  className={`px-3 py-1 text-[12px] font-extrabold rounded-lg transition-all ${
+                    adminContentLang === 'en' ? 'bg-[#1e382f] text-white shadow-xs' : 'text-[#1e382f] hover:bg-gray-200/60'
+                  }`}
+                >
+                  English (EN)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAdminContentLang('de')}
+                  className={`px-3 py-1 text-[12px] font-extrabold rounded-lg transition-all ${
+                    adminContentLang === 'de' ? 'bg-[#1e382f] text-white shadow-xs' : 'text-[#1e382f] hover:bg-gray-200/60'
+                  }`}
+                >
+                  Deutsch (DE)
+                </button>
+              </div>
+            </div>
+
+            {/* Section Header */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[12px] font-bold text-[#333] mb-1">Badge Title ({adminContentLang.toUpperCase()})</label>
+                <input
+                  type="text"
+                  value={adminContentLang === 'en' ? (printMenuContent.badgeEn || '') : (printMenuContent.badgeDe || '')}
+                  onChange={(e) => _setPrintMenuContent(adminContentLang === 'en' ? { ...printMenuContent, badgeEn: e.target.value } : { ...printMenuContent, badgeDe: e.target.value })}
+                  placeholder={adminContentLang === 'en' ? 'OFFICIAL PRINT MENU' : 'OFFIZIELLE SPEISEKARTE'}
+                  className="w-full border rounded-xl px-3.5 py-2.5 text-[14px] focus:outline-none focus:border-[#d85c27]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[12px] font-bold text-[#333] mb-1">Section Title ({adminContentLang.toUpperCase()})</label>
+                <input
+                  type="text"
+                  value={adminContentLang === 'en' ? (printMenuContent.titleEn || '') : (printMenuContent.titleDe || '')}
+                  onChange={(e) => _setPrintMenuContent(adminContentLang === 'en' ? { ...printMenuContent, titleEn: e.target.value } : { ...printMenuContent, titleDe: e.target.value })}
+                  placeholder={adminContentLang === 'en' ? 'View Full Visual Menu' : 'Vollständige Speisekarte ansehen'}
+                  className="w-full border rounded-xl px-3.5 py-2.5 text-[14px] focus:outline-none focus:border-[#d85c27]"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-[12px] font-bold text-[#333] mb-1">Section Description ({adminContentLang.toUpperCase()})</label>
+                <textarea
+                  rows={2}
+                  value={adminContentLang === 'en' ? (printMenuContent.descEn || '') : (printMenuContent.descDe || '')}
+                  onChange={(e) => _setPrintMenuContent(adminContentLang === 'en' ? { ...printMenuContent, descEn: e.target.value } : { ...printMenuContent, descDe: e.target.value })}
+                  placeholder={adminContentLang === 'en' ? 'Click on any page below to inspect or open...' : 'Klicken Sie auf eine der Seiten, um sie zu vergrößern...'}
+                  className="w-full border rounded-xl px-3.5 py-2.5 text-[13.5px] focus:outline-none focus:border-[#d85c27] resize-none"
+                />
+              </div>
+            </div>
+
+            {/* Menu Cards Editor (Page 1 & Page 2) */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-2 border-t border-gray-100">
+              
+              {/* ── Page 1: Bowls & Naan ── */}
+              <div className="bg-[#fcf8f3] border border-[#ebdcd0] rounded-2xl p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-extrabold text-[15px] text-[#1e382f] flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-lg bg-[#1e382f] text-white text-[11px] flex items-center justify-center font-black">1</span>
+                    <span>Menu Page 1 (Food / Bowls)</span>
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setActiveGallerySection(activeGallerySection === 'print1' ? null : 'print1')}
+                    className="text-[11px] font-bold text-[#d85c27] bg-white px-2.5 py-1 rounded-lg border border-[#ebdcd0]"
+                  >
+                    {activeGallerySection === 'print1' ? 'Hide Photos' : 'Browse Photos'}
+                  </button>
+                </div>
+
+                <div>
+                  <label className="block text-[11.5px] font-bold text-gray-700 mb-1">Card Title ({adminContentLang.toUpperCase()})</label>
+                  <input
+                    type="text"
+                    value={adminContentLang === 'en' ? (printMenuContent.page1TitleEn || '') : (printMenuContent.page1TitleDe || '')}
+                    onChange={(e) => _setPrintMenuContent(adminContentLang === 'en' ? { ...printMenuContent, page1TitleEn: e.target.value } : { ...printMenuContent, page1TitleDe: e.target.value })}
+                    placeholder={adminContentLang === 'en' ? 'Page 1: Signature Bowls & Naan' : 'Seite 1: Bowls, Naan & Favoriten'}
+                    className="w-full bg-white border rounded-xl px-3 py-2 text-[13px] focus:outline-none focus:border-[#d85c27]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11.5px] font-bold text-gray-700 mb-1">Card Description ({adminContentLang.toUpperCase()})</label>
+                  <textarea
+                    rows={2}
+                    value={adminContentLang === 'en' ? (printMenuContent.page1DescEn || '') : (printMenuContent.page1DescDe || '')}
+                    onChange={(e) => _setPrintMenuContent(adminContentLang === 'en' ? { ...printMenuContent, page1DescEn: e.target.value } : { ...printMenuContent, page1DescDe: e.target.value })}
+                    placeholder={adminContentLang === 'en' ? 'All signature bowls, warm naan pockets...' : 'Alle Bowls, Naan-Taschen, Toppings...'}
+                    className="w-full bg-white border rounded-xl px-3 py-2 text-[13px] focus:outline-none focus:border-[#d85c27] resize-none"
+                  />
+                </div>
+
+                {/* Page 1 Image & Upload */}
+                <div className="space-y-2 pt-1">
+                  <label className="block text-[11.5px] font-bold text-gray-700">Menu Page 1 Image</label>
+                  <div className="flex items-center gap-3">
+                    <div className="w-24 h-16 rounded-xl overflow-hidden bg-white shrink-0 border border-[#ebdcd0] shadow-xs">
+                      {printMenuContent.page1Image ? (
+                        <img src={printMenuContent.page1Image} alt="Page 1" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-[9px] text-gray-400 font-bold">No Img</div>
+                      )}
+                    </div>
+                    <div className="flex-1 space-y-1.5">
+                      <button
+                        type="button"
+                        onClick={() => handleOptimizedImageUpload((url) => _setPrintMenuContent({ ...printMenuContent, page1Image: url }))}
+                        className="bg-[#1e382f] text-white text-[12px] font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-sm hover:bg-[#142620] transition-colors"
+                      >
+                        <Upload className="w-3.5 h-3.5 text-[#d85c27]" />
+                        <span>Upload New Graphic</span>
+                      </button>
+                      <p className="text-[10.5px] text-gray-500">Auto-compressed PNG, JPEG, or WebP</p>
+                    </div>
+                  </div>
+
+                  {activeGallerySection === 'print1' && (
+                    <div className="pt-2">
+                      {renderGalleryPicker(
+                        printMenuContent.page1Image || '',
+                        (url) => _setPrintMenuContent({ ...printMenuContent, page1Image: url }),
+                        () => setActiveGallerySection(null)
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* ── Page 2: Drinks & Desserts ── */}
+              <div className="bg-[#fcf8f3] border border-[#ebdcd0] rounded-2xl p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-extrabold text-[15px] text-[#1e382f] flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-lg bg-[#1e382f] text-white text-[11px] flex items-center justify-center font-black">2</span>
+                    <span>Menu Page 2 (Drinks & Desserts)</span>
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setActiveGallerySection(activeGallerySection === 'print2' ? null : 'print2')}
+                    className="text-[11px] font-bold text-[#d85c27] bg-white px-2.5 py-1 rounded-lg border border-[#ebdcd0]"
+                  >
+                    {activeGallerySection === 'print2' ? 'Hide Photos' : 'Browse Photos'}
+                  </button>
+                </div>
+
+                <div>
+                  <label className="block text-[11.5px] font-bold text-gray-700 mb-1">Card Title ({adminContentLang.toUpperCase()})</label>
+                  <input
+                    type="text"
+                    value={adminContentLang === 'en' ? (printMenuContent.page2TitleEn || '') : (printMenuContent.page2TitleDe || '')}
+                    onChange={(e) => _setPrintMenuContent(adminContentLang === 'en' ? { ...printMenuContent, page2TitleEn: e.target.value } : { ...printMenuContent, page2TitleDe: e.target.value })}
+                    placeholder={adminContentLang === 'en' ? 'Page 2: Lassis, Coffee & Craft Drinks' : 'Seite 2: Lassis, Kaffee & Drinks'}
+                    className="w-full bg-white border rounded-xl px-3 py-2 text-[13px] focus:outline-none focus:border-[#d85c27]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11.5px] font-bold text-gray-700 mb-1">Card Description ({adminContentLang.toUpperCase()})</label>
+                  <textarea
+                    rows={2}
+                    value={adminContentLang === 'en' ? (printMenuContent.page2DescEn || '') : (printMenuContent.page2DescDe || '')}
+                    onChange={(e) => _setPrintMenuContent(adminContentLang === 'en' ? { ...printMenuContent, page2DescEn: e.target.value } : { ...printMenuContent, page2DescDe: e.target.value })}
+                    placeholder={adminContentLang === 'en' ? 'Specialty Indian coffee, masala chai...' : 'Kaffeespezialitäten, Chai, hausgemachte Lassis...'}
+                    className="w-full bg-white border rounded-xl px-3 py-2 text-[13px] focus:outline-none focus:border-[#d85c27]"
+                  />
+                </div>
+
+                {/* Page 2 Image & Upload */}
+                <div className="space-y-2 pt-1">
+                  <label className="block text-[11.5px] font-bold text-gray-700">Menu Page 2 Image</label>
+                  <div className="flex items-center gap-3">
+                    <div className="w-24 h-16 rounded-xl overflow-hidden bg-white shrink-0 border border-[#ebdcd0] shadow-xs">
+                      {printMenuContent.page2Image ? (
+                        <img src={printMenuContent.page2Image} alt="Page 2" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-[9px] text-gray-400 font-bold">No Img</div>
+                      )}
+                    </div>
+                    <div className="flex-1 space-y-1.5">
+                      <button
+                        type="button"
+                        onClick={() => handleOptimizedImageUpload((url) => _setPrintMenuContent({ ...printMenuContent, page2Image: url }))}
+                        className="bg-[#1e382f] text-white text-[12px] font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-sm hover:bg-[#142620] transition-colors"
+                      >
+                        <Upload className="w-3.5 h-3.5 text-[#d85c27]" />
+                        <span>Upload New Graphic</span>
+                      </button>
+                      <p className="text-[10.5px] text-gray-500">Auto-compressed PNG, JPEG, or WebP</p>
+                    </div>
+                  </div>
+
+                  {activeGallerySection === 'print2' && (
+                    <div className="pt-2">
+                      {renderGalleryPicker(
+                        printMenuContent.page2Image || '',
+                        (url) => _setPrintMenuContent({ ...printMenuContent, page2Image: url }),
+                        () => setActiveGallerySection(null)
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+            </div>
+
+            <div className="pt-3 border-t border-gray-100">
+              <button
+                type="submit"
+                className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-7 py-3 rounded-full text-[14px] shadow-sm hover:shadow-md transition-all flex items-center gap-2"
+              >
+                <Save className="w-4 h-4" /> Save Visual Menu Cards
               </button>
             </div>
           </form>
