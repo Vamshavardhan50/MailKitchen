@@ -2531,16 +2531,7 @@ export const StudioPage: React.FC = () => {
                   className="w-full border rounded-xl px-3.5 py-2.5 text-[14px] focus:outline-none focus:border-[#d85c27]"
                 />
               </div>
-              <div>
-                <label className="block text-[12px] font-bold text-[#333] mb-1">Email Address</label>
-                <input
-                  type="email"
-                  value={siteSettings.email || ''}
-                  onChange={(e) => setSiteSettings({ ...siteSettings, email: e.target.value })}
-                  className="w-full border rounded-xl px-3.5 py-2.5 text-[14px] focus:outline-none focus:border-[#d85c27]"
-                />
-              </div>
-              <div>
+              <div className="md:col-span-2">
                 <label className="block text-[12px] font-bold text-[#333] mb-1">Street Address</label>
                 <input
                   type="text"
@@ -2548,6 +2539,70 @@ export const StudioPage: React.FC = () => {
                   onChange={(e) => setSiteSettings({ ...siteSettings, address: e.target.value })}
                   className="w-full border rounded-xl px-3.5 py-2.5 text-[14px] focus:outline-none focus:border-[#d85c27]"
                 />
+              </div>
+            </div>
+
+
+            {/* Social Media URLs */}
+            <div className="pt-2 border-t border-gray-100">
+              <h3 className="text-[15px] font-black text-[#1e382f] mb-4 flex items-center gap-2">
+                <span className="w-6 h-6 rounded-lg bg-[#d85c27] text-white text-[11px] font-black flex items-center justify-center">@</span>
+                Social Media Links
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[12px] font-bold text-[#333] mb-1 flex items-center gap-1.5">
+                    <span className="w-5 h-5 rounded-md flex items-center justify-center text-white text-[9px]"
+                      style={{ background: 'linear-gradient(135deg, #f09433, #dc2743, #bc1888)' }}>IG</span>
+                    Instagram URL
+                  </label>
+                  <input
+                    type="url"
+                    value={siteSettings.instagram || ''}
+                    onChange={(e) => setSiteSettings({ ...siteSettings, instagram: e.target.value })}
+                    placeholder="https://instagram.com/maatikitchen"
+                    className="w-full border rounded-xl px-3.5 py-2.5 text-[13.5px] focus:outline-none focus:border-[#d85c27]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[12px] font-bold text-[#333] mb-1 flex items-center gap-1.5">
+                    <span className="w-5 h-5 rounded-md bg-[#1877F2] flex items-center justify-center text-white text-[9px]">FB</span>
+                    Facebook URL
+                  </label>
+                  <input
+                    type="url"
+                    value={siteSettings.facebook || ''}
+                    onChange={(e) => setSiteSettings({ ...siteSettings, facebook: e.target.value })}
+                    placeholder="https://facebook.com/maatikitchen"
+                    className="w-full border rounded-xl px-3.5 py-2.5 text-[13.5px] focus:outline-none focus:border-[#d85c27]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[12px] font-bold text-[#333] mb-1 flex items-center gap-1.5">
+                    <span className="w-5 h-5 rounded-md bg-[#010101] flex items-center justify-center text-white text-[9px]">TK</span>
+                    TikTok URL
+                  </label>
+                  <input
+                    type="url"
+                    value={siteSettings.tiktok || ''}
+                    onChange={(e) => setSiteSettings({ ...siteSettings, tiktok: e.target.value })}
+                    placeholder="https://tiktok.com/@maatikitchen"
+                    className="w-full border rounded-xl px-3.5 py-2.5 text-[13.5px] focus:outline-none focus:border-[#d85c27]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[12px] font-bold text-[#333] mb-1 flex items-center gap-1.5">
+                    <span className="w-5 h-5 rounded-md bg-[#d85c27] flex items-center justify-center text-white text-[9px]">✉</span>
+                    Business Email
+                  </label>
+                  <input
+                    type="email"
+                    value={siteSettings.email || ''}
+                    onChange={(e) => setSiteSettings({ ...siteSettings, email: e.target.value })}
+                    placeholder="hello@maatikitchen.com"
+                    className="w-full border rounded-xl px-3.5 py-2.5 text-[13.5px] focus:outline-none focus:border-[#d85c27]"
+                  />
+                </div>
               </div>
             </div>
 
@@ -2561,6 +2616,7 @@ export const StudioPage: React.FC = () => {
             </div>
           </form>
         )}
+
 
         {/* ═══════════════════════════════════════════════
             MODAL: ADD / EDIT DISH

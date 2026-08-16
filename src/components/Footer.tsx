@@ -1,6 +1,14 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { MapPin, Phone, Mail, Facebook, Instagram } from 'lucide-react';
+import { useSiteSettings } from '../lib/sanityService';
+
+// TikTok icon (not in lucide)
+const TikTokIcon = () => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+    <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.95a8.27 8.27 0 0 0 4.84 1.55V7.04a4.85 4.85 0 0 1-1.07-.35z"/>
+  </svg>
+);
 
 interface FooterProps {
   lang?: 'de' | 'en';
@@ -9,6 +17,7 @@ interface FooterProps {
 
 export const Footer: React.FC<FooterProps> = ({ lang = 'en' }) => {
   const isDe = lang === 'de';
+  const { settings } = useSiteSettings();
 
   return (
     <footer className="bg-white text-[#1a1a1a] py-12 sm:py-16 md:py-20 px-5 sm:px-8 md:px-16 lg:px-24 border-t border-gray-100">
@@ -34,21 +43,21 @@ export const Footer: React.FC<FooterProps> = ({ lang = 'en' }) => {
             <div className="flex items-start gap-3">
               <MapPin className="w-4 h-4 text-[#d85c27] shrink-0 mt-0.5" />
               <span className="font-semibold uppercase tracking-wider text-[11px] leading-snug text-[#444]">
-                ZIMMERSTR. 56, 10117<br />Berlin
+                {settings.address || 'ZIMMERSTR. 56, 10117'}<br />Berlin
               </span>
             </div>
 
             <div className="flex items-center gap-3">
               <Phone className="w-4 h-4 text-[#d85c27] shrink-0" />
-              <a href="tel:+491729498262" className="hover:text-[#d85c27] transition-colors">
-                +49 1729498262
+              <a href={`tel:${settings.phone || '+491729498262'}`} className="hover:text-[#d85c27] transition-colors">
+                {settings.phone || '+49 1729498262'}
               </a>
             </div>
 
             <div className="flex items-center gap-3">
               <Mail className="w-4 h-4 text-[#d85c27] shrink-0" />
-              <a href="mailto:hello@maatikitchen.com" className="hover:text-[#d85c27] transition-colors">
-                hello@maatikitchen.com
+              <a href={`mailto:${settings.email || 'hello@maatikitchen.com'}`} className="hover:text-[#d85c27] transition-colors">
+                {settings.email || 'hello@maatikitchen.com'}
               </a>
             </div>
           </div>
@@ -58,32 +67,51 @@ export const Footer: React.FC<FooterProps> = ({ lang = 'en' }) => {
             <p>© 2026 MAATI Kitchen Berlin. All rights reserved.</p>
           </div>
 
-          {/* Social Icons */}
-          <div className="flex items-center gap-4 text-[#333]">
+          {/* Social Icons — Colored Brand Icons */}
+          <div className="flex items-center gap-3">
+            {/* Instagram — gradient pink/orange */}
             <a
-              href="https://facebook.com"
+              href={settings.instagram || 'https://instagram.com/maatikitchen'}
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-[#d85c27] transition-colors p-1"
-              aria-label="Facebook"
-            >
-              <Facebook className="w-4 h-4" />
-            </a>
-            <a
-              href="https://instagram.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-[#d85c27] transition-colors p-1"
               aria-label="Instagram"
+              className="w-9 h-9 rounded-xl flex items-center justify-center transition-transform hover:scale-110 shadow-sm"
+              style={{ background: 'linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)' }}
             >
-              <Instagram className="w-4 h-4" />
+              <Instagram className="w-4 h-4 text-white" />
             </a>
+
+            {/* Facebook — brand blue */}
             <a
-              href="mailto:hello@maatikitchen.com"
-              className="hover:text-[#d85c27] transition-colors p-1"
-              aria-label="Email"
+              href={settings.facebook || 'https://facebook.com'}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Facebook"
+              className="w-9 h-9 rounded-xl flex items-center justify-center bg-[#1877F2] hover:bg-[#1465d8] transition-transform hover:scale-110 shadow-sm"
             >
-              <Mail className="w-4 h-4" />
+              <Facebook className="w-4 h-4 text-white" />
+            </a>
+
+            {/* TikTok — brand dark */}
+            {(settings.tiktok) && (
+              <a
+                href={settings.tiktok}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="TikTok"
+                className="w-9 h-9 rounded-xl flex items-center justify-center bg-[#010101] hover:bg-[#333] transition-transform hover:scale-110 shadow-sm"
+              >
+                <TikTokIcon />
+              </a>
+            )}
+
+            {/* Email — brand orange */}
+            <a
+              href={`mailto:${settings.email || 'hello@maatikitchen.com'}`}
+              aria-label="Email"
+              className="w-9 h-9 rounded-xl flex items-center justify-center bg-[#d85c27] hover:bg-[#c24f1c] transition-transform hover:scale-110 shadow-sm"
+            >
+              <Mail className="w-4 h-4 text-white" />
             </a>
           </div>
         </div>

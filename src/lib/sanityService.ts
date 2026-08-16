@@ -165,6 +165,7 @@ export interface SiteSettings {
   openingHoursDe?: string;
   instagram?: string;
   facebook?: string;
+  tiktok?: string;
   googleMapsUrl?: string;
 }
 
