@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { sanityClient, isSanityConfigured, urlFor } from './sanity';
+import { createClient } from '@sanity/client';
+import { sanityClient, isSanityConfigured, urlFor, SANITY_PROJECT_ID, SANITY_DATASET, SANITY_API_VERSION } from './sanity';
 import {
   getMenuCategoriesQuery,
   getMenuItemsQuery,
@@ -826,113 +827,137 @@ export function usePrintMenuContent() {
 }
 
 // ─────────────────────────────────────────────
-// Secure Server-Side Cloud Sync Functions
-// (Calls /api/sync on the VPS server - Zero Tokens in Frontend)
+// Admin Direct Write Client
+// Uses VITE_SANITY_WRITE_TOKEN — only present in admin builds
 // ─────────────────────────────────────────────
 
-async function postToServerSync(payload: any): Promise<{ success: boolean; message: string }> {
+const metaEnvWrite = (import.meta as any).env || {};
+const WRITE_TOKEN = metaEnvWrite.VITE_SANITY_WRITE_TOKEN || '';
+
+const adminWriteClient = WRITE_TOKEN
+  ? createClient({
+      projectId: SANITY_PROJECT_ID,
+      dataset: SANITY_DATASET,
+      apiVersion: SANITY_API_VERSION,
+      useCdn: false,
+      token: WRITE_TOKEN,
+    })
+  : null;
+
+async function writeSanityDoc(docId: string, docType: string, fields: Record<string, any>): Promise<{ success: boolean; message: string }> {
+  if (!adminWriteClient) {
+    return { success: false, message: 'Admin write token not configured. Add VITE_SANITY_WRITE_TOKEN to .env and rebuild.' };
+  }
   try {
-    const res = await fetch('/api/sync', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
+    await adminWriteClient.createOrReplace({
+      _id: docId,
+      _type: docType,
+      ...fields,
     });
-
-    const contentType = res.headers.get('content-type') || '';
-    if (!contentType.includes('application/json')) {
-      return {
-        success: false,
-        message: `API endpoint /api/sync returned HTML (${res.status}). Ensure server.mjs is running and Nginx is proxying /api/ to http://127.0.0.1:5000.`,
-      };
-    }
-
-    const data = await res.json();
-    if (!res.ok) {
-      return {
-        success: false,
-        message: data.error || `Server responded with error status ${res.status}`,
-      };
-    }
-
-    return {
-      success: true,
-      message: data.message || 'Synced to Sanity Cloud successfully',
-    };
+    return { success: true, message: `Published to Sanity Cloud (${docId})` };
   } catch (err: any) {
-    return {
-      success: false,
-      message: `Network/Server error: ${err?.message || 'Server unreachable'}`,
-    };
+    console.error(`[MAATI Admin] Sanity write error for ${docId}:`, err);
+    return { success: false, message: err?.message || 'Sanity write failed' };
   }
 }
 
 export async function saveSettingsToSanity(settings: SiteSettings): Promise<{ success: boolean; message: string }> {
-  return postToServerSync({ settings });
+  return writeSanityDoc('siteSettings', 'siteSettings', settings);
 }
 
 export async function saveHomepageToSanity(homepage: HomepageContent): Promise<{ success: boolean; message: string }> {
-  return postToServerSync({ homepage });
+  return writeSanityDoc('homepage', 'homepage', homepage);
 }
 
 export async function saveEventsToSanity(events: EventsContent): Promise<{ success: boolean; message: string }> {
-  return postToServerSync({ events });
+  return writeSanityDoc('eventsPage', 'eventsPage', events);
 }
 
 export async function saveContactToSanity(contact: ContactContent): Promise<{ success: boolean; message: string }> {
-  return postToServerSync({ contact });
+  return writeSanityDoc('contactPage', 'contactPage', contact);
 }
 
 export async function savePrintMenuToSanity(printMenu: PrintMenuContent): Promise<{ success: boolean; message: string }> {
-  return postToServerSync({ printMenu });
+  return writeSanityDoc('printMenu', 'printMenu', printMenu);
 }
 
 export async function saveMenuCategoriesToSanity(menu: SanityCategoryWithItems[]): Promise<{ success: boolean; message: string }> {
-  return postToServerSync({ menu });
+  return writeSanityDoc('menuCategoriesData', 'menuCategoriesData', { categories: menu });
 }
 
 export async function saveGalleryToSanity(gallery: any[]): Promise<{ success: boolean; message: string }> {
-  return postToServerSync({ gallery });
+  return writeSanityDoc('galleryData', 'galleryData', { items: gallery });
 }
 
 /**
- * Uploads all locally edited admin data to Sanity Cloud via secure server endpoint.
+ * Uploads all locally edited admin data directly to Sanity Cloud.
  */
 export async function syncAllLocalToSanity(): Promise<{ success: boolean; message: string }> {
+  if (!adminWriteClient) {
+    return { success: false, message: 'Admin write token not configured. Add VITE_SANITY_WRITE_TOKEN to .env and rebuild.' };
+  }
+
   try {
-    const payload: any = {};
+    const results: string[] = [];
+    const errors: string[] = [];
 
     const localSettings = localStorage.getItem('maati_admin_settings');
-    if (localSettings) payload.settings = JSON.parse(localSettings);
+    if (localSettings) {
+      const r = await saveSettingsToSanity(JSON.parse(localSettings));
+      r.success ? results.push('settings') : errors.push(`settings: ${r.message}`);
+    }
 
     const localHomepage = localStorage.getItem('maati_admin_homepage');
-    if (localHomepage) payload.homepage = JSON.parse(localHomepage);
+    if (localHomepage) {
+      const r = await saveHomepageToSanity(JSON.parse(localHomepage));
+      r.success ? results.push('homepage') : errors.push(`homepage: ${r.message}`);
+    }
 
     const localEvents = localStorage.getItem('maati_admin_events');
-    if (localEvents) payload.events = JSON.parse(localEvents);
+    if (localEvents) {
+      const r = await saveEventsToSanity(JSON.parse(localEvents));
+      r.success ? results.push('events') : errors.push(`events: ${r.message}`);
+    }
 
     const localContact = localStorage.getItem('maati_admin_contact');
-    if (localContact) payload.contact = JSON.parse(localContact);
+    if (localContact) {
+      const r = await saveContactToSanity(JSON.parse(localContact));
+      r.success ? results.push('contact') : errors.push(`contact: ${r.message}`);
+    }
 
     const localPrint = localStorage.getItem('maati_admin_print_menu');
-    if (localPrint) payload.printMenu = JSON.parse(localPrint);
+    if (localPrint) {
+      const r = await savePrintMenuToSanity(JSON.parse(localPrint));
+      r.success ? results.push('printMenu') : errors.push(`printMenu: ${r.message}`);
+    }
 
     const localMenu = localStorage.getItem('maati_admin_menu');
-    if (localMenu) payload.menu = JSON.parse(localMenu);
+    if (localMenu) {
+      const r = await saveMenuCategoriesToSanity(JSON.parse(localMenu));
+      r.success ? results.push('menu') : errors.push(`menu: ${r.message}`);
+    }
 
     const localGallery = localStorage.getItem('maati_admin_gallery_v2');
-    if (localGallery) payload.gallery = JSON.parse(localGallery);
+    if (localGallery) {
+      const r = await saveGalleryToSanity(JSON.parse(localGallery));
+      r.success ? results.push('gallery') : errors.push(`gallery: ${r.message}`);
+    }
 
-    return await postToServerSync(payload);
+    if (errors.length === 0) {
+      return { success: true, message: `Published ${results.join(', ')} to Sanity Cloud! 🚀` };
+    } else if (results.length > 0) {
+      return { success: false, message: `Partial sync. OK: ${results.join(', ')}. Failed: ${errors.join('; ')}` };
+    } else {
+      return { success: false, message: `Sync failed: ${errors.join('; ')}` };
+    }
   } catch (err: any) {
     console.error('syncAllLocalToSanity error:', err);
-    return {
-      success: false,
-      message: `Sync failed: ${err.message || 'Server unreachable'}`,
-    };
+    return { success: false, message: `Sync failed: ${err.message || 'Unknown error'}` };
   }
 }
+
+
+
 
 
 
