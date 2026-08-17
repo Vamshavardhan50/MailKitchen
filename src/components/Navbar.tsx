@@ -121,7 +121,7 @@ export const Navbar: React.FC<NavbarProps> = ({ lang, setLang, onOpenReservation
 
       {/* Mobile Dropdown Drawer */}
       {mobileOpen && (
-        <div className="lg:hidden absolute top-[72px] left-0 right-0 bg-[#1e382f]/98 backdrop-blur-md border-t border-white/10 shadow-2xl z-50 animate-fadeIn">
+        <div className="lg:hidden absolute top-[72px] left-0 right-0 bg-[#1e382f] border-t border-white/10 shadow-2xl z-50 animate-fadeIn">
           <nav className="flex flex-col px-6 py-5 gap-4 font-bold text-white text-[15.5px]">
             <Link
               to="/about"

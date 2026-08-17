@@ -925,6 +925,7 @@ export const StudioPage: React.FC = () => {
     localStorage.setItem('maati_admin_homepage', JSON.stringify(homepageContent));
     const syncRes = await saveHomepageToSanity(homepageContent);
     if (syncRes.success) {
+      setHasUnsavedChanges(false);
       showToast('Homepage content saved & published to Sanity Cloud! 🚀');
     } else {
       showToast(`Saved locally, but Cloud Sync failed: ${syncRes.message} ⚠️`);
