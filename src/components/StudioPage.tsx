@@ -906,51 +906,71 @@ export const StudioPage: React.FC = () => {
   };
 
   // Save Settings
-  const handleSaveSettings = (e: React.FormEvent) => {
+  const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
     localStorage.setItem('maati_admin_settings', JSON.stringify(siteSettings));
     window.dispatchEvent(new CustomEvent('maati_settings_updated', { detail: { forceLocal: true } }));
     window.dispatchEvent(new StorageEvent('storage', { key: 'maati_admin_settings' }));
-    saveSettingsToSanity(siteSettings).catch((err) => console.warn('Sanity settings sync error:', err));
-    showToast('Restaurant information saved & synced! ✅');
+    const syncRes = await saveSettingsToSanity(siteSettings);
+    if (syncRes.success) {
+      showToast('Restaurant information saved & published to Sanity Cloud! 🚀');
+    } else {
+      showToast(`Saved locally, but Cloud Sync failed: ${syncRes.message} ⚠️`);
+    }
   };
 
   // Save Homepage
-  const handleSaveHomepage = (e: React.FormEvent) => {
+  const handleSaveHomepage = async (e: React.FormEvent) => {
     e.preventDefault();
     localStorage.setItem('maati_admin_homepage', JSON.stringify(homepageContent));
-    saveHomepageToSanity(homepageContent).catch((err) => console.warn('Sanity homepage sync error:', err));
-    showSuccessToast();
+    const syncRes = await saveHomepageToSanity(homepageContent);
+    if (syncRes.success) {
+      showToast('Homepage content saved & published to Sanity Cloud! 🚀');
+    } else {
+      showToast(`Saved locally, but Cloud Sync failed: ${syncRes.message} ⚠️`);
+    }
   };
 
   // Save Events Page Content
-  const handleSaveEvents = (e: React.FormEvent) => {
+  const handleSaveEvents = async (e: React.FormEvent) => {
     e.preventDefault();
     localStorage.setItem('maati_admin_events', JSON.stringify(eventsContent));
     window.dispatchEvent(new CustomEvent('maati_events_updated', { detail: { forceLocal: true } }));
     window.dispatchEvent(new StorageEvent('storage', { key: 'maati_admin_events' }));
-    saveEventsToSanity(eventsContent).catch((err) => console.warn('Sanity events sync error:', err));
-    showToast('Events page updated & synced! ✅');
+    const syncRes = await saveEventsToSanity(eventsContent);
+    if (syncRes.success) {
+      showToast('Events page saved & published to Sanity Cloud! 🚀');
+    } else {
+      showToast(`Saved locally, but Cloud Sync failed: ${syncRes.message} ⚠️`);
+    }
   };
 
   // Save Contact Us Page Content
-  const handleSaveContact = (e: React.FormEvent) => {
+  const handleSaveContact = async (e: React.FormEvent) => {
     e.preventDefault();
     localStorage.setItem('maati_admin_contact', JSON.stringify(contactContent));
     window.dispatchEvent(new CustomEvent('maati_contact_updated', { detail: { forceLocal: true } }));
     window.dispatchEvent(new StorageEvent('storage', { key: 'maati_admin_contact' }));
-    saveContactToSanity(contactContent).catch((err) => console.warn('Sanity contact sync error:', err));
-    showToast('Contact information updated & synced! ✅');
+    const syncRes = await saveContactToSanity(contactContent);
+    if (syncRes.success) {
+      showToast('Contact information saved & published to Sanity Cloud! 🚀');
+    } else {
+      showToast(`Saved locally, but Cloud Sync failed: ${syncRes.message} ⚠️`);
+    }
   };
 
   // Save Print / Visual Menu Content
-  const handleSavePrintMenu = (e: React.FormEvent) => {
+  const handleSavePrintMenu = async (e: React.FormEvent) => {
     e.preventDefault();
     localStorage.setItem('maati_admin_print_menu', JSON.stringify(printMenuContent));
     window.dispatchEvent(new CustomEvent('maati_print_menu_updated', { detail: { forceLocal: true } }));
     window.dispatchEvent(new StorageEvent('storage', { key: 'maati_admin_print_menu' }));
-    savePrintMenuToSanity(printMenuContent).catch((err) => console.warn('Sanity print menu sync error:', err));
-    showToast('Visual Menu preview updated & synced! ✅');
+    const syncRes = await savePrintMenuToSanity(printMenuContent);
+    if (syncRes.success) {
+      showToast('Visual Menu preview saved & published to Sanity Cloud! 🚀');
+    } else {
+      showToast(`Saved locally, but Cloud Sync failed: ${syncRes.message} ⚠️`);
+    }
   };
 
   // 1-Click Sync All Local Data to Sanity Cloud

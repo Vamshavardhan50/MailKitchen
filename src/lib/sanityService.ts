@@ -200,18 +200,8 @@ function mapLocalToSanityItem(item: LocalMenuItem, defaultFoodType?: FoodType): 
   };
 }
 
-// ── Fallback Category Data Generator ──
+// ── Fallback Category Data Generator (Used only when Sanity is completely unreachable) ──
 function getLocalFallbackCategories(): SanityCategoryWithItems[] {
-  if (typeof window !== 'undefined') {
-    const saved = localStorage.getItem('maati_admin_menu');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      } catch {}
-    }
-  }
-
   return [
     {
       _id: 'cat-breakfast',
@@ -298,21 +288,8 @@ function getLocalFallbackCategories(): SanityCategoryWithItems[] {
   ];
 }
 
-// ── Fallback Featured Items (for Homepage) ──
+// ── Fallback Featured Items (Used only when Sanity is completely unreachable) ──
 function getLocalFallbackFeatured(): SanityMenuItem[] {
-  if (typeof window !== 'undefined') {
-    const saved = localStorage.getItem('maati_admin_menu');
-    if (saved) {
-      try {
-        const parsed: SanityCategoryWithItems[] = JSON.parse(saved);
-        const featured = parsed
-          .flatMap((c) => c.items.filter((it) => it.featured && it.available !== false))
-          .sort((a, b) => (a.featuredOrder || 999) - (b.featuredOrder || 999));
-        if (featured.length > 0) return featured;
-      } catch {}
-    }
-  }
-
   return [
     mapLocalToSanityItem(HAUSSPEZIALITAETEN_ITEMS[0]), // Chettinad
     mapLocalToSanityItem(HAUSSPEZIALITAETEN_ITEMS[1]), // Delhi
@@ -853,95 +830,70 @@ export function usePrintMenuContent() {
 // (Calls /api/sync on the VPS server - Zero Tokens in Frontend)
 // ─────────────────────────────────────────────
 
-export async function saveSettingsToSanity(settings: SiteSettings): Promise<boolean> {
+async function postToServerSync(payload: any): Promise<{ success: boolean; message: string }> {
   try {
     const res = await fetch('/api/sync', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ settings }),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
     });
-    return res.ok;
-  } catch {
-    return false;
+
+    const contentType = res.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      return {
+        success: false,
+        message: `API endpoint /api/sync returned HTML (${res.status}). Ensure server.mjs is running and Nginx is proxying /api/ to http://127.0.0.1:5000.`,
+      };
+    }
+
+    const data = await res.json();
+    if (!res.ok) {
+      return {
+        success: false,
+        message: data.error || `Server responded with error status ${res.status}`,
+      };
+    }
+
+    return {
+      success: true,
+      message: data.message || 'Synced to Sanity Cloud successfully',
+    };
+  } catch (err: any) {
+    return {
+      success: false,
+      message: `Network/Server error: ${err?.message || 'Server unreachable'}`,
+    };
   }
 }
 
-export async function saveHomepageToSanity(homepage: HomepageContent): Promise<boolean> {
-  try {
-    const res = await fetch('/api/sync', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ homepage }),
-    });
-    return res.ok;
-  } catch {
-    return false;
-  }
+export async function saveSettingsToSanity(settings: SiteSettings): Promise<{ success: boolean; message: string }> {
+  return postToServerSync({ settings });
 }
 
-export async function saveEventsToSanity(events: EventsContent): Promise<boolean> {
-  try {
-    const res = await fetch('/api/sync', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ events }),
-    });
-    return res.ok;
-  } catch {
-    return false;
-  }
+export async function saveHomepageToSanity(homepage: HomepageContent): Promise<{ success: boolean; message: string }> {
+  return postToServerSync({ homepage });
 }
 
-export async function saveContactToSanity(contact: ContactContent): Promise<boolean> {
-  try {
-    const res = await fetch('/api/sync', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contact }),
-    });
-    return res.ok;
-  } catch {
-    return false;
-  }
+export async function saveEventsToSanity(events: EventsContent): Promise<{ success: boolean; message: string }> {
+  return postToServerSync({ events });
 }
 
-export async function savePrintMenuToSanity(printMenu: PrintMenuContent): Promise<boolean> {
-  try {
-    const res = await fetch('/api/sync', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ printMenu }),
-    });
-    return res.ok;
-  } catch {
-    return false;
-  }
+export async function saveContactToSanity(contact: ContactContent): Promise<{ success: boolean; message: string }> {
+  return postToServerSync({ contact });
 }
 
-export async function saveMenuCategoriesToSanity(menu: SanityCategoryWithItems[]): Promise<boolean> {
-  try {
-    const res = await fetch('/api/sync', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ menu }),
-    });
-    return res.ok;
-  } catch {
-    return false;
-  }
+export async function savePrintMenuToSanity(printMenu: PrintMenuContent): Promise<{ success: boolean; message: string }> {
+  return postToServerSync({ printMenu });
 }
 
-export async function saveGalleryToSanity(gallery: any[]): Promise<boolean> {
-  try {
-    const res = await fetch('/api/sync', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ gallery }),
-    });
-    return res.ok;
-  } catch {
-    return false;
-  }
+export async function saveMenuCategoriesToSanity(menu: SanityCategoryWithItems[]): Promise<{ success: boolean; message: string }> {
+  return postToServerSync({ menu });
+}
+
+export async function saveGalleryToSanity(gallery: any[]): Promise<{ success: boolean; message: string }> {
+  return postToServerSync({ gallery });
 }
 
 /**
@@ -972,24 +924,7 @@ export async function syncAllLocalToSanity(): Promise<{ success: boolean; messag
     const localGallery = localStorage.getItem('maati_admin_gallery_v2');
     if (localGallery) payload.gallery = JSON.parse(localGallery);
 
-    const res = await fetch('/api/sync', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    });
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || `Server responded with status ${res.status}`);
-    }
-
-    const data = await res.json();
-    return {
-      success: true,
-      message: data.message || 'Successfully published all changes to Sanity Cloud!',
-    };
+    return await postToServerSync(payload);
   } catch (err: any) {
     console.error('syncAllLocalToSanity error:', err);
     return {

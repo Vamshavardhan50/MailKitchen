@@ -3,6 +3,30 @@ import { createClient } from '@sanity/client';
 import fs from 'fs';
 import path from 'path';
 
+// Automatically load local .env file if present
+function loadEnv() {
+  const envPath = path.resolve(process.cwd(), '.env');
+  if (fs.existsSync(envPath)) {
+    try {
+      const content = fs.readFileSync(envPath, 'utf8');
+      content.split('\n').forEach((line) => {
+        const trimmed = line.trim();
+        if (trimmed && !trimmed.startsWith('#') && trimmed.includes('=')) {
+          const idx = trimmed.indexOf('=');
+          const key = trimmed.substring(0, idx).trim();
+          const val = trimmed.substring(idx + 1).trim().replace(/^["'](.*)["']$/, '$1');
+          if (!process.env[key]) {
+            process.env[key] = val;
+          }
+        }
+      });
+    } catch (e) {
+      console.warn('[MAATI API Server] Note: Could not read .env file:', e.message);
+    }
+  }
+}
+loadEnv();
+
 // Load server-side environment variables
 const SANITY_PROJECT_ID = process.env.SANITY_PROJECT_ID || process.env.VITE_SANITY_PROJECT_ID || 'ohmgd0hu';
 const SANITY_DATASET = process.env.SANITY_DATASET || process.env.VITE_SANITY_DATASET || 'production';
