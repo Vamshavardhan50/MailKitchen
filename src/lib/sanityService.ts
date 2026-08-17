@@ -369,6 +369,16 @@ export function useSanityMenu() {
       }
 
       try {
+        // 1. First check if consolidated menuCategoriesData exists in Sanity
+        const customMenu = await sanityClient.fetch<any>(`*[_type == "menuCategoriesData" || _id == "menuCategoriesData"][0].categories`);
+        if (isMounted && customMenu && Array.isArray(customMenu) && customMenu.length > 0) {
+          setCategories(customMenu);
+          setIsFromSanity(true);
+          setLoading(false);
+          return;
+        }
+
+        // 2. Otherwise fetch from standard categories query
         const data = await sanityClient.fetch<SanityCategoryWithItems[]>(getMenuByCategoryQuery);
         if (isMounted && data && Array.isArray(data) && data.length > 0) {
           const normalized = data.map((cat) => ({
@@ -445,6 +455,21 @@ export function useFeaturedMenu() {
       }
 
       try {
+        // 1. First check if consolidated menuCategoriesData exists
+        const customMenu = await sanityClient.fetch<any>(`*[_type == "menuCategoriesData" || _id == "menuCategoriesData"][0].categories`);
+        if (isMounted && customMenu && Array.isArray(customMenu) && customMenu.length > 0) {
+          const featured = customMenu
+            .flatMap((c: any) => (c.items || []).filter((it: any) => it.featured && it.available !== false))
+            .sort((a: any, b: any) => (a.featuredOrder || 999) - (b.featuredOrder || 999));
+          if (featured.length > 0) {
+            setItems(featured);
+            setIsFromSanity(true);
+            setLoading(false);
+            return;
+          }
+        }
+
+        // 2. Otherwise fetch from standard query
         const data = await sanityClient.fetch<SanityMenuItem[]>(getFeaturedMenuItemsQuery);
         if (isMounted && data && Array.isArray(data) && data.length > 0) {
           const normalized = data.map((item) => ({
@@ -468,6 +493,7 @@ export function useFeaturedMenu() {
       window.removeEventListener('maati_menu_updated', handleLocalSync);
       window.removeEventListener('storage', handleLocalSync);
     };
+
   }, []);
 
   return { items, loading, isFromSanity };
@@ -708,7 +734,7 @@ export function useHomepageContent() {
       }
 
       try {
-        const data = await sanityClient.fetch<HomepageContent>(getHomepageQuery);
+        const data = await sanityClient.fetch<HomepageContent>(`*[_type == "homepage" || _id == "homepage"][0]`);
         if (isMounted && data && typeof data === 'object') {
           setContent((prev) => ({ ...prev, ...data }));
         }
@@ -749,11 +775,13 @@ export function useSiteSettings() {
       taglineDe: 'Indisches Soul Food — Berlin Mitte',
       phone: '+49 030 51891367',
       email: 'hello@maatikitchen.com',
-      address: 'Dircksenstraße 105, 10178 Berlin',
-      openingHoursEn: 'Mon – Fri: 11:30 – 15:00',
-      openingHoursDe: 'Mo – Fr: 11:30 – 15:00 Uhr',
+      address: 'Zimmerstraße 56, 10117 Berlin',
+      openingHoursEn: 'Mon – Fri: 11:30 – 21:30\nSat: 12:00 – 21:00\nSun: Closed',
+      openingHoursDe: 'Mo – Fr: 11:30 – 21:30\nSa: 12:00 – 21:00\nSo: Geschlossen',
       instagram: 'https://instagram.com/maatikitchen',
-      googleMapsUrl: 'https://maps.google.com/?q=MAATI+Kitchen+Berlin',
+      facebook: 'https://facebook.com',
+      tiktok: 'https://tiktok.com/@maatikitchen',
+      googleMapsUrl: 'https://maps.google.com/?q=MAATI+Kitchen+Zimmerstrasse+56+Berlin',
     };
   });
   const [loading, setLoading] = useState<boolean>(true);
@@ -798,7 +826,7 @@ export function useSiteSettings() {
       }
 
       try {
-        const data = await sanityClient.fetch<SiteSettings>(getSiteSettingsQuery);
+        const data = await sanityClient.fetch<SiteSettings>(`*[_type == "siteSettings" || _id == "siteSettings"][0]`);
         if (isMounted && data && typeof data === 'object') {
           setSettings((prev) => ({ ...prev, ...data }));
         }
@@ -808,6 +836,7 @@ export function useSiteSettings() {
         if (isMounted) setLoading(false);
       }
     }
+
 
     fetchSettings();
     return () => {
