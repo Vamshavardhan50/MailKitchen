@@ -1,7 +1,7 @@
 import { createClient } from '@sanity/client';
 import imageUrlBuilder from '@sanity/image-url';
 
-// Environment credentials with bulletproof fallback for Vite & VPS builds
+// Public Sanity configuration for read queries
 const metaEnv = (import.meta as any).env || {};
 
 export const SANITY_PROJECT_ID =
@@ -18,38 +18,29 @@ export const SANITY_API_VERSION =
   metaEnv.VITE_SANITY_API_VERSION ||
   '2024-01-01';
 
-export const SANITY_TOKEN =
-  metaEnv.VITE_SANITY_TOKEN ||
-  metaEnv.SANITY_API_TOKEN ||
-  'skkZ2RXyMQXYgJ7zNaYWGkv0yVoisUfslQHD6NnTHyI9V0Yn0LnysidiRl3Rn9HQnymZn7uRKBMlyfsGN7XHXwi4Ejsxnjm5xt7HznmJoTqrkXdHDBDOKIaWnRxdJQA3sCwdgcDhRySCslFVZu1eEWrXx1XhyJu5BYL0TODoTB4gHBg7J3DC';
-
 export const isSanityConfigured = Boolean(
   SANITY_PROJECT_ID &&
   SANITY_PROJECT_ID !== 'your_sanity_project_id' &&
   SANITY_PROJECT_ID !== 'demo_project_id' &&
   SANITY_PROJECT_ID !== 'mock-project-id' &&
-  SANITY_PROJECT_ID !== 'fallback-project'
+  SANITY_PROJECT_ID !== 'fallback-project' &&
+  SANITY_PROJECT_ID !== 'maati-local'
 );
 
 export const sanityConfig = {
   projectId: SANITY_PROJECT_ID,
   dataset: SANITY_DATASET,
   apiVersion: SANITY_API_VERSION,
-  useCdn: false, // always fresh live data
-  token: SANITY_TOKEN || undefined,
+  useCdn: false, // direct fresh data
 };
 
-// Read client (used everywhere for fetching data)
+// Read-only client used across the website for fetching published content
 export const sanityClient = createClient(sanityConfig);
 
-// Write client — used by admin panel to save to Sanity cloud
-export const sanityWriteClient = createClient({
-  ...sanityConfig,
-  useCdn: false,
-  token: SANITY_TOKEN,
-});
-
-export const canWriteToSanity = true;
+// Safe environment logging (No secrets)
+if (typeof window !== 'undefined') {
+  console.log(`[MAATI CMS] Connected to Sanity Project: ${SANITY_PROJECT_ID} (${SANITY_DATASET})`);
+}
 
 // Image builder for Sanity hosted assets
 const builder = imageUrlBuilder(sanityClient);
@@ -62,4 +53,5 @@ export function urlFor(source: any) {
     return { url: () => '' };
   }
 }
+
 

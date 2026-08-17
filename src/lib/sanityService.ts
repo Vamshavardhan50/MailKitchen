@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { sanityClient, sanityWriteClient, canWriteToSanity, isSanityConfigured, urlFor } from './sanity';
+import { sanityClient, isSanityConfigured, urlFor } from './sanity';
 import {
   getMenuCategoriesQuery,
   getMenuItemsQuery,
@@ -323,54 +323,38 @@ function getLocalFallbackFeatured(): SanityMenuItem[] {
 }
 
 // ─────────────────────────────────────────────
-// React Hook: useSanityMenu
+// React Hook: useSanityMenu (Public Menu Hook)
 // ─────────────────────────────────────────────
 export function useSanityMenu() {
   const [categories, setCategories] = useState<SanityCategoryWithItems[]>(getLocalFallbackCategories);
   const [loading, setLoading] = useState<boolean>(true);
   const [isFromSanity, setIsFromSanity] = useState<boolean>(false);
 
+
+
   useEffect(() => {
     let isMounted = true;
 
-    // Always re-read from localStorage when admin panel triggers a save
-    const handleLocalSync = (e?: Event) => {
-      const isForced = e instanceof CustomEvent && e.detail?.forceLocal;
-      if (isMounted) {
-        const freshData = getLocalFallbackCategories();
-        setCategories(freshData);
-        // If admin forced an update, override Sanity data too
-        if (isForced) setIsFromSanity(false);
+    // Reactively update if admin dispatches event in current session
+    const handleSync = (e?: Event) => {
+      if (!isMounted) return;
+      if (e instanceof CustomEvent && e.detail?.categories) {
+        setCategories(e.detail.categories);
       }
     };
-
-    window.addEventListener('maati_menu_updated', handleLocalSync);
-    window.addEventListener('storage', handleLocalSync);
+    window.addEventListener('maati_menu_updated', handleSync);
 
     async function fetchMenu() {
-      // Check if admin has saved custom data - if so, prioritize it
-      const adminSaved = localStorage.getItem('maati_admin_menu');
-      if (adminSaved) {
-        try {
-          const parsed = JSON.parse(adminSaved);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            if (isMounted) {
-              setCategories(parsed);
-              setLoading(false);
-            }
-            return; // Use admin data, skip Sanity
-          }
-        } catch {}
-      }
-
       if (!isSanityConfigured) {
         setLoading(false);
         return;
       }
 
       try {
-        // 1. First check if consolidated menuCategoriesData exists in Sanity
-        const customMenu = await sanityClient.fetch<any>(`*[_type == "menuCategoriesData" || _id == "menuCategoriesData"][0].categories`);
+        // 1. First check if consolidated menuCategoriesData exists in Sanity Cloud
+        const customMenu = await sanityClient.fetch<any>(
+          `*[_type == "menuCategoriesData" && !(_id in path("drafts.**"))][0].categories`
+        );
         if (isMounted && customMenu && Array.isArray(customMenu) && customMenu.length > 0) {
           setCategories(customMenu);
           setIsFromSanity(true);
@@ -402,8 +386,7 @@ export function useSanityMenu() {
     fetchMenu();
     return () => {
       isMounted = false;
-      window.removeEventListener('maati_menu_updated', handleLocalSync);
-      window.removeEventListener('storage', handleLocalSync);
+      window.removeEventListener('maati_menu_updated', handleSync);
     };
   }, []);
 
@@ -411,7 +394,7 @@ export function useSanityMenu() {
 }
 
 // ─────────────────────────────────────────────
-// React Hook: useFeaturedMenu
+// React Hook: useFeaturedMenu (Public Featured Dishes Hook)
 // ─────────────────────────────────────────────
 export function useFeaturedMenu() {
   const [items, setItems] = useState<SanityMenuItem[]>(getLocalFallbackFeatured);
@@ -421,34 +404,7 @@ export function useFeaturedMenu() {
   useEffect(() => {
     let isMounted = true;
 
-    const handleLocalSync = (e?: Event) => {
-      const isForced = e instanceof CustomEvent && e.detail?.forceLocal;
-      if (isMounted) {
-        setItems(getLocalFallbackFeatured());
-        if (isForced) setIsFromSanity(false);
-      }
-    };
-
-    window.addEventListener('maati_menu_updated', handleLocalSync);
-    window.addEventListener('storage', handleLocalSync);
-
     async function fetchFeatured() {
-      // Prioritize admin data if it exists
-      const adminSaved = localStorage.getItem('maati_admin_menu');
-      if (adminSaved) {
-        try {
-          const parsed: SanityCategoryWithItems[] = JSON.parse(adminSaved);
-          const featured = parsed
-            .flatMap((c) => c.items.filter((it) => it.featured && it.available !== false))
-            .sort((a, b) => (a.featuredOrder || 999) - (b.featuredOrder || 999));
-          if (featured.length > 0 && isMounted) {
-            setItems(featured);
-            setLoading(false);
-            return; // Use admin data
-          }
-        } catch {}
-      }
-
       if (!isSanityConfigured) {
         setLoading(false);
         return;
@@ -456,7 +412,9 @@ export function useFeaturedMenu() {
 
       try {
         // 1. First check if consolidated menuCategoriesData exists
-        const customMenu = await sanityClient.fetch<any>(`*[_type == "menuCategoriesData" || _id == "menuCategoriesData"][0].categories`);
+        const customMenu = await sanityClient.fetch<any>(
+          `*[_type == "menuCategoriesData" && !(_id in path("drafts.**"))][0].categories`
+        );
         if (isMounted && customMenu && Array.isArray(customMenu) && customMenu.length > 0) {
           const featured = customMenu
             .flatMap((c: any) => (c.items || []).filter((it: any) => it.featured && it.available !== false))
@@ -490,251 +448,106 @@ export function useFeaturedMenu() {
     fetchFeatured();
     return () => {
       isMounted = false;
-      window.removeEventListener('maati_menu_updated', handleLocalSync);
-      window.removeEventListener('storage', handleLocalSync);
     };
-
   }, []);
 
   return { items, loading, isFromSanity };
 }
 
 // ─────────────────────────────────────────────
-// React Hook: useHomepageContent
+// React Hook: useHomepageContent (Public Homepage Hook)
 // ─────────────────────────────────────────────
+const DEFAULT_HOMEPAGE: HomepageContent = {
+  heroBadgeEn: 'FAST CASUAL • INDIAN SOUL',
+  heroBadgeDe: 'FAST CASUAL • INDIAN SOUL',
+  heroTitle1En: 'Craft Your Own',
+  heroTitle1De: 'Kreieren Sie Ihre eigene',
+  heroTitle2En: 'Flavor Journey',
+  heroTitle2De: 'Geschmacksreise',
+  heroDescEn: 'Fresh, vibrant Indian ingredients in customizable Bowls, Salads, and Wraps. Authentic spices, Modern style.',
+  heroDescDe: 'Frische, lebendige indische Zutaten in anpassbaren Bowls, Salaten und Wraps. Authentische Gewürze, moderner Stil.',
+  heroBtnMenuEn: 'View Menu',
+  heroBtnMenuDe: 'Speisekarte',
+  heroBtnResEn: 'Reservations',
+  heroBtnResDe: 'Reservieren',
+  heroPill1En: 'FRESH INGREDIENTS',
+  heroPill1De: 'FRISCHE ZUTATEN',
+  heroPill2En: 'AUTHENTIC SPICES',
+  heroPill2De: 'AUTHENTISCHE GEWÜRZE',
+  heroPill3En: 'READY IN MINUTES',
+  heroPill3De: 'SCHNELL SERVIERT',
+  heroImage: '/assets/hero-flatlay.jpg',
+  lunchTitleEn: 'Treat Your Tastebuds',
+  lunchTitleDe: 'Verwöhnen Sie Ihren Gaumen',
+  lunchDescEn: 'Discover our most-loved signature combinations, crafted for perfect balance.',
+  lunchDescDe: 'Entdecken Sie unsere beliebtesten Signatur-Kombinationen für perfekte Ausgewogenheit.',
+  maatiWayBadgeEn: 'CUSTOMIZED TO YOUR TASTE',
+  maatiWayBadgeDe: 'INDIVIDUELL NACH IHREM GESCHMACK',
+  maatiWayTitleEn: 'The MAATI Way',
+  maatiWayTitleDe: 'Der MAATI Weg',
+  experienceEyebrowEn: 'EXPERIENCE',
+  experienceEyebrowDe: 'ERLEBNIS',
+  experienceTitleEn: 'Breakfast, Lunch and Events at MAATI',
+  experienceTitleDe: 'Frühstück, Mittagessen und Events bei MAATI',
+  experienceDescEn: 'A warm, modern space designed for quick breakfast & lunches and cozy events alike.',
+  experienceDescDe: 'Ein warmer, moderner Raum für ein schnelles Frühstück, Mittagessen und gemütliche Events.',
+  experienceImg1: '/assets/show5-BiQql1jr.jpeg',
+  experienceImg2: '/assets/show2-CM6MShfY.jpeg',
+  cateringBadgeEn: 'MAATI CATERING',
+  cateringBadgeDe: 'MAATI CATERING',
+  cateringTitleEn: 'Bold Flavours That Fuel Your Team',
+  cateringTitleDe: 'Kräftige Aromen, die Ihr Team begeistern',
+  cateringDescEn: 'From team lunches to full corporate events — we bring freshly crafted bowls, warm naan pockets, and signature drinks directly to your office.',
+  cateringDescDe: 'Von Team-Lunches bis hin zu großen Firmenfeiern — wir bringen frisch zubereitete Bowls, warme Naan-Taschen und Signature Drinks direkt in Ihr Büro.',
+  cateringP2En: 'Customized for your team, effortlessly delivered. Full setup available on request.',
+  cateringP2De: 'Individuell zusammengestellt, unkompliziert geliefert. Auf Wunsch mit individuellem Setup vor Ort.',
+  cateringBullet1En: 'Perfect for 10 to 200+ people',
+  cateringBullet1De: 'Perfekt für 10 bis 200+ Personen',
+  cateringBullet2En: '100% Vegan & Veggie friendly',
+  cateringBullet2De: '100% Vegan & Veggie-freundlich',
+  cateringBullet3En: 'On-time Berlin delivery',
+  cateringBullet3De: 'Pünktliche Berliner Lieferung',
+  cateringBullet4En: 'Custom corporate invoicing',
+  cateringBullet4De: 'Individuelle Firmenrechnung',
+  cateringBtnEn: 'Get a Quote',
+  cateringBtnDe: 'Catering Anfragen',
+  cateringImage: '/assets/show3-D0blnzja.jpeg',
+  ctaTitleEn: 'Visit us at Zimmerstraße 56, 10117 Berlin - where every bite tells a story.',
+  ctaTitleDe: 'Besuchen Sie uns in der Zimmerstraße 56, 10117 Berlin - wo jeder Bissen eine Geschichte erzählt.',
+  ctaDescEn: 'Experience modern Indian soul food in a cozy, welcoming atmosphere.',
+  ctaDescDe: 'Erleben Sie modernes indisches Soul Food in gemütlicher Atmosphäre.',
+  ctaBtnMenuEn: 'View Menu',
+  ctaBtnMenuDe: 'Speisekarte',
+  ctaBtnLocationsEn: 'Our Locations',
+  ctaBtnLocationsDe: 'Unsere Standorte',
+};
+
 export function useHomepageContent() {
-  const [content, setContent] = useState<HomepageContent>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('maati_admin_homepage');
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch {}
-      }
-    }
-    return {
-      // 1. Hero
-      heroBadgeEn: 'FAST CASUAL • INDIAN SOUL',
-      heroBadgeDe: 'FAST CASUAL • INDIAN SOUL',
-      heroTitle1En: 'Craft Your Own',
-      heroTitle1De: 'Kreieren Sie Ihre eigene',
-      heroTitle2En: 'Flavor Journey',
-      heroTitle2De: 'Geschmacksreise',
-      heroDescEn: 'Fresh, vibrant Indian ingredients in customizable Bowls, Salads, and Wraps. Authentic spices, Modern style.',
-      heroDescDe: 'Frische, lebendige indische Zutaten in anpassbaren Bowls, Salaten und Wraps. Authentische Gewürze, moderner Stil.',
-      heroBtnMenuEn: 'View Menu',
-      heroBtnMenuDe: 'Speisekarte',
-      heroBtnResEn: 'Reservations',
-      heroBtnResDe: 'Reservierungen',
-      heroPill1En: 'FRESH INGREDIENTS',
-      heroPill1De: 'FRISCHE ZUTATEN',
-      heroPill2En: 'AUTHENTIC SPICES',
-      heroPill2De: 'AUTHENTISCHE GEWÜRZE',
-      heroPill3En: 'READY IN MINUTES',
-      heroPill3De: 'SCHNELL SERVIERT',
-      heroImage: '/assets/hero-flatlay.jpg',
-
-      // 2. House Favorites
-      lunchTitleEn: 'Treat Your Tastebuds',
-      lunchTitleDe: 'Verwöhnen Sie Ihren Gaumen',
-      lunchDescEn: 'Discover our most-loved signature combinations, crafted for perfect balance.',
-      lunchDescDe: 'Entdecken Sie unsere beliebtesten Signatur-Kombinationen für perfekte Ausgewogenheit.',
-
-      // 3. The MAATI Way
-      maatiWayBadgeEn: 'CUSTOMIZED TO YOUR TASTE',
-      maatiWayBadgeDe: 'INDIVIDUELL NACH IHREM GESCHMACK',
-      maatiWayTitleEn: 'The MAATI Way',
-      maatiWayTitleDe: 'Der MAATI Weg',
-      maatiWaySteps: [
-        {
-          id: 'step-1',
-          step: 1,
-          title: 'Choose your base (Upto 1)',
-          titleDe: 'Wählen Sie Ihre Basis (Bis zu 1)',
-          items: ['White Rice', 'Red Rice', 'Bulgar Wheat', 'Pearl Barley', 'Salad(Mix)'],
-          itemsDe: ['Weißer Reis', 'Roter Reis', 'Bulgur Weizen', 'Perlgraupen', 'Salatmischung']
-        },
-        {
-          id: 'step-2',
-          step: 2,
-          title: 'Choose your Protein',
-          titleDe: 'Wählen Sie Ihr Protein',
-          items: [
-            'Poached Chicken (+€2)',
-            'Grilled Chicken (+€2) (Spicy)',
-            'Grilled Spicy chicken (+€2.5)',
-            'Butter Garlic Prawns (+€3)',
-            'Grilled Paneer (+€1.5)',
-            'Grilled Tofu (+€1)'
-          ],
-          itemsDe: [
-            'Pochiertes Hähnchen (+€2)',
-            'Gegrilltes Hähnchen (+€2) (Scharf)',
-            'Scharfes gegrilltes Hähnchen (+€2.5)',
-            'Butter-Knoblauch-Garnelen (+€3)',
-            'Gegrillter Paneer (+€1.5)',
-            'Gegrillter Tofu (+€1)'
-          ]
-        },
-        {
-          id: 'step-3',
-          step: 3,
-          title: 'Choose your sides (Upto 2)',
-          titleDe: 'Wählen Sie Ihre Beilagen (Bis zu 2)',
-          items: [
-            'Dark Green Salad leaves',
-            'Mixed salad (Kachumbar)',
-            'Grilled Paprika',
-            'Cherry Tomatoes',
-            'Grilled Beetroot',
-            'Sprout Salad',
-            'Baby Carrots'
-          ],
-          itemsDe: [
-            'Dunkelgrüne Salatblätter',
-            'Gemischter Salat (Kachumbar)',
-            'Gegrillte Paprika',
-            'Kirschtomaten',
-            'Gegrillte Rote Bete',
-            'Sprossensalat',
-            'Baby-Karotten'
-          ]
-        },
-        {
-          id: 'step-4',
-          step: 4,
-          title: 'Choose your Sauce (Pick 1)',
-          titleDe: 'Wählen Sie Ihre Sauce (Wählen Sie 1)',
-          items: [
-            'Tomato Cream Sauce',
-            'Coconut Mustard Sauce',
-            'Fennel Ginger Yoghurt Sauce',
-            'Coconut Tamarind Sauce',
-            'Chettinad Curry Sauce',
-            'Coriander Mint Lemon Chutney'
-          ],
-          itemsDe: [
-            'Tomaten-Sahne-Sauce',
-            'Kokos-Senf-Sauce',
-            'Fenchel-Ingwer-Joghurt-Sauce',
-            'Kokos-Tamarinden-Sauce',
-            'Chettinad-Currysauce',
-            'Koriander-Minze-Zitronen-Chutney'
-          ]
-        },
-        {
-          id: 'step-5',
-          step: 5,
-          title: 'Finishers (Upto 2)',
-          titleDe: 'Toppings & Finishers (Bis zu 2)',
-          items: [
-            'Crushed Papads',
-            'Spicy Crunchy Sev',
-            'Diced Raw Mangoes',
-            'Coriander chutney (Spicy)',
-            'Tamarind chutney',
-            'Chopped Onions & Green Chillies (Extra Spicy)',
-            'Roasted Cashews (+€2)'
-          ],
-          itemsDe: [
-            'Geknackte Papads',
-            'Knuspriges Sev',
-            'Gewürfelte Mangostücke',
-            'Koriander-Chutney (Scharf)',
-            'Tamarinden-Chutney',
-            'Zwiebeln & Grüne Chilis (Extra Scharf)',
-            'Geröstete Cashews (+€2)'
-          ]
-        }
-      ],
-
-      // 4. Experience
-      experienceEyebrowEn: 'EXPERIENCE',
-      experienceEyebrowDe: 'ERLEBNIS',
-      experienceTitleEn: 'Breakfast, Lunch and Events at MAATI',
-      experienceTitleDe: 'Frühstück, Mittagessen und Events bei MAATI',
-      experienceDescEn: 'A warm, modern space designed for quick breakfast & lunches and cozy events alike.',
-      experienceDescDe: 'Ein warmer, moderner Raum für ein schnelles Frühstück, Mittagessen und gemütliche Events.',
-      experienceImg1: '/assets/show5-BiQql1jr.jpeg',
-      experienceImg2: '/assets/show2-CM6MShfY.jpeg',
-
-      // 5. Catering
-      cateringBadgeEn: 'MAATI CATERING',
-      cateringBadgeDe: 'MAATI CATERING',
-      cateringTitleEn: 'Bold Flavours That Fuel Your Team',
-      cateringTitleDe: 'Kräftige Aromen, die Ihr Team begeistern',
-      cateringDescEn: 'From team lunches to full corporate events — we bring freshly crafted bowls, warm naan pockets, and signature drinks directly to your office.',
-      cateringDescDe: 'Von Team-Lunches bis hin zu großen Firmenfeiern — wir bringen frisch zubereitete Bowls, warme Naan-Taschen und Signature Drinks direkt in Ihr Büro.',
-      cateringP2En: 'Customized for your team, effortlessly delivered. Full setup available on request.',
-      cateringP2De: 'Individuell zusammengestellt, unkompliziert geliefert. Auf Wunsch mit individuellem Setup vor Ort.',
-      cateringBullet1En: 'Perfect for 10 to 200+ people',
-      cateringBullet1De: 'Perfekt für 10 bis 200+ Personen',
-      cateringBullet2En: '100% Vegan & Veggie friendly',
-      cateringBullet2De: '100% Vegan & Veggie-freundlich',
-      cateringBullet3En: 'On-time Berlin delivery',
-      cateringBullet3De: 'Pünktliche Berliner Lieferung',
-      cateringBullet4En: 'Custom corporate invoicing',
-      cateringBullet4De: 'Individuelle Firmenrechnung',
-      cateringBtnEn: 'Get a Quote',
-      cateringBtnDe: 'Catering Anfragen',
-      cateringImage: '/assets/show3-D0blnzja.jpeg',
-
-      // 6. Footer CTA
-      ctaTitleEn: 'Visit us at Zimmestr. 56, 10117 Berlin - where every bite tells a story.',
-      ctaTitleDe: 'Besuchen Sie uns in der Zimmerstr. 56, 10117 Berlin - wo jeder Bissen eine Geschichte erzählt.',
-      ctaDescEn: 'Experience modern Indian soul food in a cozy, welcoming atmosphere.',
-      ctaDescDe: 'Erleben Sie modernes indisches Soul Food in gemütlicher Atmosphäre.',
-      ctaBtnMenuEn: 'View Menu',
-      ctaBtnMenuDe: 'Speisekarte',
-      ctaBtnLocationsEn: 'Our Locations',
-      ctaBtnLocationsDe: 'Unsere Standorte',
-    };
-  });
+  const [content, setContent] = useState<HomepageContent>(DEFAULT_HOMEPAGE);
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     let isMounted = true;
 
-    // Re-read from localStorage whenever admin saves homepage changes
-    const handleLocalSync = () => {
+    // Reactively update if admin saves in current session
+    const handleSync = (e?: Event) => {
       if (!isMounted) return;
-      const saved = localStorage.getItem('maati_admin_homepage');
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          if (parsed && typeof parsed === 'object') {
-            setContent((prev) => ({ ...prev, ...parsed }));
-          }
-        } catch {}
+      if (e instanceof CustomEvent && e.detail?.homepage) {
+        setContent(e.detail.homepage);
       }
     };
-
-    window.addEventListener('maati_homepage_updated', handleLocalSync);
-    window.addEventListener('storage', handleLocalSync);
+    window.addEventListener('maati_homepage_updated', handleSync);
 
     async function fetchHomepage() {
-      // Prioritize admin data if it exists
-      const adminSaved = localStorage.getItem('maati_admin_homepage');
-      if (adminSaved) {
-        try {
-          const parsed = JSON.parse(adminSaved);
-          if (parsed && typeof parsed === 'object') {
-            if (isMounted) {
-              setContent((prev) => ({ ...prev, ...parsed }));
-              setLoading(false);
-            }
-            return; // Use admin data, skip Sanity
-          }
-        } catch {}
-      }
-
       if (!isSanityConfigured) {
         setLoading(false);
         return;
       }
 
       try {
-        const data = await sanityClient.fetch<any>(`*[_type == "homepage" || _id == "homepage"][0]`);
+        const data = await sanityClient.fetch<any>(
+          `*[_type == "homepage" && !(_id in path("drafts.**"))][0]`
+        );
         if (isMounted && data && typeof data === 'object') {
           const normalized: HomepageContent = {
             ...data,
@@ -758,7 +571,7 @@ export function useHomepageContent() {
           setContent((prev) => ({ ...prev, ...normalized }));
         }
       } catch (err) {
-        console.warn('Sanity homepage fetch error, using local fallback:', err);
+        console.warn('Sanity homepage fetch error, using fallback:', err);
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -767,9 +580,7 @@ export function useHomepageContent() {
     fetchHomepage();
     return () => {
       isMounted = false;
-
-      window.removeEventListener('maati_homepage_updated', handleLocalSync);
-      window.removeEventListener('storage', handleLocalSync);
+      window.removeEventListener('maati_homepage_updated', handleSync);
     };
   }, []);
 
@@ -777,92 +588,62 @@ export function useHomepageContent() {
 }
 
 // ─────────────────────────────────────────────
-// React Hook: useSiteSettings
+// React Hook: useSiteSettings (Public Site Settings Hook)
 // ─────────────────────────────────────────────
+const DEFAULT_SETTINGS: SiteSettings = {
+  restaurantName: 'MAATI Kitchen',
+  taglineEn: 'Indian Soul Food — Berlin Mitte',
+  taglineDe: 'Indisches Soul Food — Berlin Mitte',
+  phone: '+49 030 51891367',
+  email: 'hello@maatikitchen.com',
+  address: 'Zimmerstraße 56, 10117 Berlin',
+  openingHoursEn: 'Mon – Fri: 11:30 – 21:30\nSat: 12:00 – 21:00\nSun: Closed',
+  openingHoursDe: 'Mo – Fr: 11:30 – 21:30\nSa: 12:00 – 21:00\nSo: Geschlossen',
+  instagram: 'https://instagram.com/maatikitchen',
+  facebook: 'https://facebook.com',
+  tiktok: 'https://tiktok.com/@maatikitchen',
+  googleMapsUrl: 'https://maps.google.com/?q=MAATI+Kitchen+Zimmerstrasse+56+Berlin',
+};
+
 export function useSiteSettings() {
-  const [settings, setSettings] = useState<SiteSettings>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('maati_admin_settings');
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch {}
-      }
-    }
-    return {
-      restaurantName: 'MAATI Kitchen',
-      taglineEn: 'Indian Soul Food — Berlin Mitte',
-      taglineDe: 'Indisches Soul Food — Berlin Mitte',
-      phone: '+49 030 51891367',
-      email: 'hello@maatikitchen.com',
-      address: 'Zimmerstraße 56, 10117 Berlin',
-      openingHoursEn: 'Mon – Fri: 11:30 – 21:30\nSat: 12:00 – 21:00\nSun: Closed',
-      openingHoursDe: 'Mo – Fr: 11:30 – 21:30\nSa: 12:00 – 21:00\nSo: Geschlossen',
-      instagram: 'https://instagram.com/maatikitchen',
-      facebook: 'https://facebook.com',
-      tiktok: 'https://tiktok.com/@maatikitchen',
-      googleMapsUrl: 'https://maps.google.com/?q=MAATI+Kitchen+Zimmerstrasse+56+Berlin',
-    };
-  });
+  const [settings, setSettings] = useState<SiteSettings>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     let isMounted = true;
 
-    // Live-sync from admin panel saves
-    const handleLocalSync = () => {
+    const handleSync = (e?: Event) => {
       if (!isMounted) return;
-      const saved = localStorage.getItem('maati_admin_settings');
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          if (parsed && typeof parsed === 'object') {
-            setSettings((prev) => ({ ...prev, ...parsed }));
-          }
-        } catch {}
+      if (e instanceof CustomEvent && e.detail?.settings) {
+        setSettings(e.detail.settings);
       }
     };
-
-    window.addEventListener('maati_settings_updated', handleLocalSync);
-    window.addEventListener('storage', handleLocalSync);
+    window.addEventListener('maati_settings_updated', handleSync);
 
     async function fetchSettings() {
-      // Prioritize admin-saved settings
-      const adminSaved = localStorage.getItem('maati_admin_settings');
-      if (adminSaved) {
-        try {
-          const parsed = JSON.parse(adminSaved);
-          if (parsed && typeof parsed === 'object' && isMounted) {
-            setSettings((prev) => ({ ...prev, ...parsed }));
-            setLoading(false);
-            return;
-          }
-        } catch {}
-      }
-
       if (!isSanityConfigured) {
         setLoading(false);
         return;
       }
 
       try {
-        const data = await sanityClient.fetch<SiteSettings>(`*[_type == "siteSettings" || _id == "siteSettings"][0]`);
+        const data = await sanityClient.fetch<SiteSettings>(
+          `*[_type == "siteSettings" && !(_id in path("drafts.**"))][0]`
+        );
         if (isMounted && data && typeof data === 'object') {
           setSettings((prev) => ({ ...prev, ...data }));
         }
       } catch (err) {
-        console.warn('Sanity site settings fetch error, using local fallback:', err);
+        console.warn('Sanity site settings fetch error, using fallback:', err);
       } finally {
         if (isMounted) setLoading(false);
       }
     }
 
-
     fetchSettings();
     return () => {
       isMounted = false;
-      window.removeEventListener('maati_settings_updated', handleLocalSync);
-      window.removeEventListener('storage', handleLocalSync);
+      window.removeEventListener('maati_settings_updated', handleSync);
     };
   }, []);
 
@@ -905,34 +686,17 @@ const DEFAULT_EVENTS: EventsContent = {
 };
 
 export function useEventsContent() {
-  const [content, setContent] = useState<EventsContent>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('maati_admin_events');
-      if (saved) {
-        try { return { ...DEFAULT_EVENTS, ...JSON.parse(saved) }; } catch {}
-      }
-    }
-    return DEFAULT_EVENTS;
-  });
+  const [content, setContent] = useState<EventsContent>(DEFAULT_EVENTS);
 
   useEffect(() => {
     let isMounted = true;
-    const sync = () => {
-      if (!isMounted) return;
-      const saved = localStorage.getItem('maati_admin_events');
-      if (saved) {
-        try { setContent((prev) => ({ ...prev, ...JSON.parse(saved) })); } catch {}
-      }
-    };
-    window.addEventListener('maati_events_updated', sync);
-    window.addEventListener('storage', sync);
 
     async function fetchFromSanity() {
-      const saved = localStorage.getItem('maati_admin_events');
-      if (saved) return; // Prioritize local edit in this session
       if (!isSanityConfigured) return;
       try {
-        const data = await sanityClient.fetch<EventsContent>(`*[_type == "eventsContent"][0]`);
+        const data = await sanityClient.fetch<EventsContent>(
+          `*[_type == "eventsContent" && !(_id in path("drafts.**"))][0]`
+        );
         if (isMounted && data && typeof data === 'object') {
           setContent((prev) => ({ ...prev, ...data }));
         }
@@ -944,8 +708,6 @@ export function useEventsContent() {
 
     return () => {
       isMounted = false;
-      window.removeEventListener('maati_events_updated', sync);
-      window.removeEventListener('storage', sync);
     };
   }, []);
 
@@ -988,34 +750,17 @@ const DEFAULT_CONTACT: ContactContent = {
 };
 
 export function useContactContent() {
-  const [content, setContent] = useState<ContactContent>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('maati_admin_contact');
-      if (saved) {
-        try { return { ...DEFAULT_CONTACT, ...JSON.parse(saved) }; } catch {}
-      }
-    }
-    return DEFAULT_CONTACT;
-  });
+  const [content, setContent] = useState<ContactContent>(DEFAULT_CONTACT);
 
   useEffect(() => {
     let isMounted = true;
-    const sync = () => {
-      if (!isMounted) return;
-      const saved = localStorage.getItem('maati_admin_contact');
-      if (saved) {
-        try { setContent((prev) => ({ ...prev, ...JSON.parse(saved) })); } catch {}
-      }
-    };
-    window.addEventListener('maati_contact_updated', sync);
-    window.addEventListener('storage', sync);
 
     async function fetchFromSanity() {
-      const saved = localStorage.getItem('maati_admin_contact');
-      if (saved) return;
       if (!isSanityConfigured) return;
       try {
-        const data = await sanityClient.fetch<ContactContent>(`*[_type == "contactContent"][0]`);
+        const data = await sanityClient.fetch<ContactContent>(
+          `*[_type == "contactContent" && !(_id in path("drafts.**"))][0]`
+        );
         if (isMounted && data && typeof data === 'object') {
           setContent((prev) => ({ ...prev, ...data }));
         }
@@ -1027,8 +772,6 @@ export function useContactContent() {
 
     return () => {
       isMounted = false;
-      window.removeEventListener('maati_contact_updated', sync);
-      window.removeEventListener('storage', sync);
     };
   }, []);
 
@@ -1077,34 +820,17 @@ const DEFAULT_PRINT_MENU: PrintMenuContent = {
 };
 
 export function usePrintMenuContent() {
-  const [content, setContent] = useState<PrintMenuContent>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('maati_admin_print_menu');
-      if (saved) {
-        try { return { ...DEFAULT_PRINT_MENU, ...JSON.parse(saved) }; } catch {}
-      }
-    }
-    return DEFAULT_PRINT_MENU;
-  });
+  const [content, setContent] = useState<PrintMenuContent>(DEFAULT_PRINT_MENU);
 
   useEffect(() => {
     let isMounted = true;
-    const sync = () => {
-      if (!isMounted) return;
-      const saved = localStorage.getItem('maati_admin_print_menu');
-      if (saved) {
-        try { setContent((prev) => ({ ...prev, ...JSON.parse(saved) })); } catch {}
-      }
-    };
-    window.addEventListener('maati_print_menu_updated', sync);
-    window.addEventListener('storage', sync);
 
     async function fetchFromSanity() {
-      const saved = localStorage.getItem('maati_admin_print_menu');
-      if (saved) return;
       if (!isSanityConfigured) return;
       try {
-        const data = await sanityClient.fetch<PrintMenuContent>(`*[_type == "printMenuContent"][0]`);
+        const data = await sanityClient.fetch<PrintMenuContent>(
+          `*[_type == "printMenuContent" && !(_id in path("drafts.**"))][0]`
+        );
         if (isMounted && data && typeof data === 'object') {
           setContent((prev) => ({ ...prev, ...data }));
         }
@@ -1116,8 +842,6 @@ export function usePrintMenuContent() {
 
     return () => {
       isMounted = false;
-      window.removeEventListener('maati_print_menu_updated', sync);
-      window.removeEventListener('storage', sync);
     };
   }, []);
 
@@ -1125,190 +849,155 @@ export function usePrintMenuContent() {
 }
 
 // ─────────────────────────────────────────────
-// Cloud Write & Sync to Sanity Functions
+// Secure Server-Side Cloud Sync Functions
+// (Calls /api/sync on the VPS server - Zero Tokens in Frontend)
 // ─────────────────────────────────────────────
 
 export async function saveSettingsToSanity(settings: SiteSettings): Promise<boolean> {
-  if (!sanityWriteClient) return false;
   try {
-    await sanityWriteClient.createOrReplace({
-      _id: 'siteSettings',
-      _type: 'siteSettings',
-      ...settings,
+    const res = await fetch('/api/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ settings }),
     });
-    return true;
-  } catch (err) {
-    console.error('Error saving siteSettings to Sanity:', err);
+    return res.ok;
+  } catch {
     return false;
   }
 }
 
-export async function saveHomepageToSanity(content: HomepageContent): Promise<boolean> {
-  if (!sanityWriteClient) return false;
+export async function saveHomepageToSanity(homepage: HomepageContent): Promise<boolean> {
   try {
-    await sanityWriteClient.createOrReplace({
-      _id: 'homepage',
-      _type: 'homepage',
-      ...content,
+    const res = await fetch('/api/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ homepage }),
     });
-    return true;
-  } catch (err) {
-    console.error('Error saving homepage to Sanity:', err);
+    return res.ok;
+  } catch {
     return false;
   }
 }
 
-export async function saveEventsToSanity(content: EventsContent): Promise<boolean> {
-  if (!sanityWriteClient) return false;
+export async function saveEventsToSanity(events: EventsContent): Promise<boolean> {
   try {
-    await sanityWriteClient.createOrReplace({
-      _id: 'eventsContent',
-      _type: 'eventsContent',
-      ...content,
+    const res = await fetch('/api/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ events }),
     });
-    return true;
-  } catch (err) {
-    console.error('Error saving eventsContent to Sanity:', err);
+    return res.ok;
+  } catch {
     return false;
   }
 }
 
-export async function saveContactToSanity(content: ContactContent): Promise<boolean> {
-  if (!sanityWriteClient) return false;
+export async function saveContactToSanity(contact: ContactContent): Promise<boolean> {
   try {
-    await sanityWriteClient.createOrReplace({
-      _id: 'contactContent',
-      _type: 'contactContent',
-      ...content,
+    const res = await fetch('/api/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contact }),
     });
-    return true;
-  } catch (err) {
-    console.error('Error saving contactContent to Sanity:', err);
+    return res.ok;
+  } catch {
     return false;
   }
 }
 
-export async function savePrintMenuToSanity(content: PrintMenuContent): Promise<boolean> {
-  if (!sanityWriteClient) return false;
+export async function savePrintMenuToSanity(printMenu: PrintMenuContent): Promise<boolean> {
   try {
-    await sanityWriteClient.createOrReplace({
-      _id: 'printMenuContent',
-      _type: 'printMenuContent',
-      ...content,
+    const res = await fetch('/api/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ printMenu }),
     });
-    return true;
-  } catch (err) {
-    console.error('Error saving printMenuContent to Sanity:', err);
+    return res.ok;
+  } catch {
     return false;
   }
 }
 
-export async function saveMenuCategoriesToSanity(categories: SanityCategoryWithItems[]): Promise<boolean> {
-  if (!sanityWriteClient) return false;
+export async function saveMenuCategoriesToSanity(menu: SanityCategoryWithItems[]): Promise<boolean> {
   try {
-    await sanityWriteClient.createOrReplace({
-      _id: 'menuCategoriesData',
-      _type: 'menuCategoriesData',
-      categories: categories,
-      updatedAt: new Date().toISOString(),
+    const res = await fetch('/api/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ menu }),
     });
-    return true;
-  } catch (err) {
-    console.error('Error saving menuCategoriesData to Sanity:', err);
+    return res.ok;
+  } catch {
     return false;
   }
 }
 
-export async function saveGalleryToSanity(assets: any[]): Promise<boolean> {
-  if (!sanityWriteClient) return false;
+export async function saveGalleryToSanity(gallery: any[]): Promise<boolean> {
   try {
-    await sanityWriteClient.createOrReplace({
-      _id: 'galleryAssetsData',
-      _type: 'galleryAssetsData',
-      assets: assets,
-      updatedAt: new Date().toISOString(),
+    const res = await fetch('/api/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ gallery }),
     });
-    return true;
-  } catch (err) {
-    console.error('Error saving galleryAssetsData to Sanity:', err);
+    return res.ok;
+  } catch {
     return false;
   }
 }
 
 /**
- * Uploads all locally stored admin data to Sanity Cloud in one operation.
+ * Uploads all locally edited admin data to Sanity Cloud via secure server endpoint.
  */
 export async function syncAllLocalToSanity(): Promise<{ success: boolean; message: string }> {
-  if (!sanityWriteClient) {
-    return {
-      success: false,
-      message: 'Sanity Write Token is not configured. Please check VITE_SANITY_TOKEN in .env',
-    };
-  }
-
   try {
-    const results: string[] = [];
+    const payload: any = {};
 
-    // 1. Settings
     const localSettings = localStorage.getItem('maati_admin_settings');
-    if (localSettings) {
-      await saveSettingsToSanity(JSON.parse(localSettings));
-      results.push('Site Settings');
-    }
+    if (localSettings) payload.settings = JSON.parse(localSettings);
 
-    // 2. Homepage
     const localHomepage = localStorage.getItem('maati_admin_homepage');
-    if (localHomepage) {
-      await saveHomepageToSanity(JSON.parse(localHomepage));
-      results.push('Homepage Content');
-    }
+    if (localHomepage) payload.homepage = JSON.parse(localHomepage);
 
-    // 3. Events
     const localEvents = localStorage.getItem('maati_admin_events');
-    if (localEvents) {
-      await saveEventsToSanity(JSON.parse(localEvents));
-      results.push('Events Content');
-    }
+    if (localEvents) payload.events = JSON.parse(localEvents);
 
-    // 4. Contact
     const localContact = localStorage.getItem('maati_admin_contact');
-    if (localContact) {
-      await saveContactToSanity(JSON.parse(localContact));
-      results.push('Contact Content');
-    }
+    if (localContact) payload.contact = JSON.parse(localContact);
 
-    // 5. Print Menu
     const localPrint = localStorage.getItem('maati_admin_print_menu');
-    if (localPrint) {
-      await savePrintMenuToSanity(JSON.parse(localPrint));
-      results.push('Print Menu Content');
-    }
+    if (localPrint) payload.printMenu = JSON.parse(localPrint);
 
-    // 6. Menu Categories & Dishes
     const localMenu = localStorage.getItem('maati_admin_menu');
-    if (localMenu) {
-      await saveMenuCategoriesToSanity(JSON.parse(localMenu));
-      results.push('Menu Dishes & Categories');
-    }
+    if (localMenu) payload.menu = JSON.parse(localMenu);
 
-    // 7. Gallery
     const localGallery = localStorage.getItem('maati_admin_gallery_v2');
-    if (localGallery) {
-      await saveGalleryToSanity(JSON.parse(localGallery));
-      results.push('Gallery Assets');
+    if (localGallery) payload.gallery = JSON.parse(localGallery);
+
+    const res = await fetch('/api/sync', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `Server responded with status ${res.status}`);
     }
 
+    const data = await res.json();
     return {
       success: true,
-      message: `Successfully synced ${results.length} sections to Sanity Cloud! All visitors on any device/server will now see your changes.`,
+      message: data.message || 'Successfully published all changes to Sanity Cloud!',
     };
   } catch (err: any) {
-    console.error('syncAllLocalToSanity failed:', err);
+    console.error('syncAllLocalToSanity error:', err);
     return {
       success: false,
-      message: `Sync failed: ${err?.message || 'Unknown error'}`,
+      message: `Sync failed: ${err.message || 'Server unreachable'}`,
     };
   }
 }
+
 
 

@@ -59,7 +59,7 @@ import {
   saveGalleryToSanity,
   syncAllLocalToSanity
 } from '../lib/sanityService';
-import { canWriteToSanity } from '../lib/sanity';
+
 
 import {
   GalleryAssetItem,
