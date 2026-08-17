@@ -734,9 +734,28 @@ export function useHomepageContent() {
       }
 
       try {
-        const data = await sanityClient.fetch<HomepageContent>(`*[_type == "homepage" || _id == "homepage"][0]`);
+        const data = await sanityClient.fetch<any>(`*[_type == "homepage" || _id == "homepage"][0]`);
         if (isMounted && data && typeof data === 'object') {
-          setContent((prev) => ({ ...prev, ...data }));
+          const normalized: HomepageContent = {
+            ...data,
+            heroBadgeEn: data.heroBadgeEn || data.heroEyebrowEn,
+            heroBadgeDe: data.heroBadgeDe || data.heroEyebrowDe,
+            heroTitle1En: data.heroTitle1En || data.heroTitleEn,
+            heroTitle1De: data.heroTitle1De || data.heroTitleDe,
+            heroTitle2En: data.heroTitle2En || data.heroSubtitleEn,
+            heroTitle2De: data.heroTitle2De || data.heroSubtitleDe,
+            heroDescEn: data.heroDescEn,
+            heroDescDe: data.heroDescDe,
+            lunchTitleEn: data.lunchTitleEn || data.featuredTitleEn,
+            lunchTitleDe: data.lunchTitleDe || data.featuredTitleDe,
+            lunchDescEn: data.lunchDescEn || data.featuredDescEn,
+            lunchDescDe: data.lunchDescDe || data.featuredDescDe,
+            heroImage: data.heroImage ? (typeof data.heroImage === 'string' ? data.heroImage : (urlFor(data.heroImage) as any)?.url?.() || data.heroImage) : data.heroImage,
+            experienceImg1: data.experienceImg1 ? (typeof data.experienceImg1 === 'string' ? data.experienceImg1 : (urlFor(data.experienceImg1) as any)?.url?.() || data.experienceImg1) : data.experienceImg1,
+            experienceImg2: data.experienceImg2 ? (typeof data.experienceImg2 === 'string' ? data.experienceImg2 : (urlFor(data.experienceImg2) as any)?.url?.() || data.experienceImg2) : data.experienceImg2,
+            cateringImage: data.cateringImage ? (typeof data.cateringImage === 'string' ? data.cateringImage : (urlFor(data.cateringImage) as any)?.url?.() || data.cateringImage) : data.cateringImage,
+          };
+          setContent((prev) => ({ ...prev, ...normalized }));
         }
       } catch (err) {
         console.warn('Sanity homepage fetch error, using local fallback:', err);
@@ -748,6 +767,7 @@ export function useHomepageContent() {
     fetchHomepage();
     return () => {
       isMounted = false;
+
       window.removeEventListener('maati_homepage_updated', handleLocalSync);
       window.removeEventListener('storage', handleLocalSync);
     };

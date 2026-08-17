@@ -2,9 +2,9 @@
  * Centralized GROQ Queries for MAATI Kitchen
  */
 
-// 1. Get all active categories sorted by display order
+// 1. Get all active categories sorted by display order (excluding drafts)
 export const getMenuCategoriesQuery = `
-  *[_type == "menuCategory" && active == true] | order(displayOrder asc) {
+  *[_type == "menuCategory" && active != false && !(_id in path("drafts.**"))] | order(displayOrder asc) {
     _id,
     name,
     nameDe,
@@ -16,9 +16,9 @@ export const getMenuCategoriesQuery = `
   }
 `;
 
-// 2. Get all available menu items with dereferenced category
+// 2. Get all available menu items with dereferenced category (excluding drafts)
 export const getMenuItemsQuery = `
-  *[_type == "menuItem" && available == true] | order(displayOrder asc) {
+  *[_type == "menuItem" && available != false && !(_id in path("drafts.**"))] | order(displayOrder asc) {
     _id,
     titleEn,
     titleDe,
@@ -46,9 +46,9 @@ export const getMenuItemsQuery = `
   }
 `;
 
-// 3. Get featured menu items for Homepage (featured == true && available == true)
+// 3. Get featured menu items for Homepage (featured == true && available != false, excluding drafts)
 export const getFeaturedMenuItemsQuery = `
-  *[_type == "menuItem" && featured == true && available == true] | order(displayOrder asc) {
+  *[_type == "menuItem" && featured == true && available != false && !(_id in path("drafts.**"))] | order(featuredOrder asc, displayOrder asc) {
     _id,
     titleEn,
     titleDe,
@@ -61,6 +61,7 @@ export const getFeaturedMenuItemsQuery = `
     foodType,
     image,
     featured,
+    featuredOrder,
     available,
     popular,
     isSpicy,
@@ -76,9 +77,9 @@ export const getFeaturedMenuItemsQuery = `
   }
 `;
 
-// 4. Get active categories with nested available items
+// 4. Get active categories with nested available items (excluding drafts)
 export const getMenuByCategoryQuery = `
-  *[_type == "menuCategory" && active == true] | order(displayOrder asc) {
+  *[_type == "menuCategory" && active != false && !(_id in path("drafts.**"))] | order(displayOrder asc) {
     _id,
     name,
     nameDe,
@@ -86,7 +87,7 @@ export const getMenuByCategoryQuery = `
     description,
     descriptionDe,
     displayOrder,
-    "items": *[_type == "menuItem" && references(^._id) && available == true] | order(displayOrder asc) {
+    "items": *[_type == "menuItem" && references(^._id) && available != false && !(_id in path("drafts.**"))] | order(displayOrder asc) {
       _id,
       titleEn,
       titleDe,
@@ -99,6 +100,7 @@ export const getMenuByCategoryQuery = `
       foodType,
       image,
       featured,
+      featuredOrder,
       available,
       popular,
       isSpicy,
@@ -109,51 +111,13 @@ export const getMenuByCategoryQuery = `
   }
 `;
 
-// 5. Get Homepage Content
+// 5. Get Homepage Content (excluding drafts)
 export const getHomepageQuery = `
-  *[_type == "homepage"][0] {
-    _id,
-    heroEyebrowEn,
-    heroEyebrowDe,
-    heroTitleEn,
-    heroTitleDe,
-    heroSubtitleEn,
-    heroSubtitleDe,
-    heroDescEn,
-    heroDescDe,
-    heroImage,
-    featuredEyebrowEn,
-    featuredEyebrowDe,
-    featuredTitleEn,
-    featuredTitleDe,
-    experienceEyebrowEn,
-    experienceEyebrowDe,
-    experienceTitleEn,
-    experienceTitleDe,
-    experienceDescEn,
-    experienceDescDe,
-    cateringTitleEn,
-    cateringTitleDe,
-    cateringDescEn,
-    cateringDescDe
-  }
+  *[_type == "homepage" && !(_id in path("drafts.**"))][0]
 `;
 
-// 6. Get Global Site Settings
+// 6. Get Global Site Settings (excluding drafts)
 export const getSiteSettingsQuery = `
-  *[_type == "siteSettings"][0] {
-    _id,
-    restaurantName,
-    taglineEn,
-    taglineDe,
-    logo,
-    phone,
-    email,
-    address,
-    openingHoursEn,
-    openingHoursDe,
-    instagram,
-    facebook,
-    googleMapsUrl
-  }
+  *[_type == "siteSettings" && !(_id in path("drafts.**"))][0]
 `;
+
