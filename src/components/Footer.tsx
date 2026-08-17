@@ -10,6 +10,7 @@ const TikTokIcon = () => (
   </svg>
 );
 
+
 interface FooterProps {
   lang?: 'de' | 'en';
   onOpenReservation?: () => void;
@@ -92,18 +93,16 @@ export const Footer: React.FC<FooterProps> = ({ lang = 'en' }) => {
               <Facebook className="w-4 h-4 text-white" />
             </a>
 
-            {/* TikTok — brand dark */}
-            {(settings.tiktok) && (
-              <a
-                href={settings.tiktok}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="TikTok"
-                className="w-9 h-9 rounded-xl flex items-center justify-center bg-[#010101] hover:bg-[#333] transition-transform hover:scale-110 shadow-sm"
-              >
-                <TikTokIcon />
-              </a>
-            )}
+            {/* TikTok — brand dark (always visible) */}
+            <a
+              href={settings.tiktok || 'https://tiktok.com/@maatikitchen'}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="TikTok"
+              className="w-9 h-9 rounded-xl flex items-center justify-center bg-[#010101] hover:bg-[#333] transition-transform hover:scale-110 shadow-sm"
+            >
+              <TikTokIcon />
+            </a>
 
             {/* Email — brand orange */}
             <a
@@ -113,6 +112,7 @@ export const Footer: React.FC<FooterProps> = ({ lang = 'en' }) => {
             >
               <Mail className="w-4 h-4 text-white" />
             </a>
+
           </div>
         </div>
 

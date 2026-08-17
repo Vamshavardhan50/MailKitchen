@@ -1983,6 +1983,21 @@ export const StudioPage: React.FC = () => {
 
               {openSections.hero && (
                 <div className="p-5 sm:p-6 space-y-4 animate-fadeIn">
+                  {/* Hero Orange Pill Badge */}
+                  <div className="bg-[#fcf8f3] border border-[#ebdcd0] rounded-xl p-3.5">
+                    <label className="block text-[12px] font-black text-[#d85c27] mb-1 flex items-center gap-2">
+                      <span className="bg-[#d85c27] text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase">Badge</span>
+                      Top Orange Badge ({adminContentLang.toUpperCase()})
+                    </label>
+                    <input
+                      type="text"
+                      value={adminContentLang === 'en' ? (homepageContent.heroBadgeEn || '') : (homepageContent.heroBadgeDe || '')}
+                      onChange={(e) => setHomepageContent(adminContentLang === 'en' ? { ...homepageContent, heroBadgeEn: e.target.value } : { ...homepageContent, heroBadgeDe: e.target.value })}
+                      placeholder={adminContentLang === 'en' ? 'FAST CASUAL • INDIAN SOUL' : 'FAST CASUAL • INDISCHE KÜCHE'}
+                      className="w-full border rounded-xl px-3.5 py-2 text-[13.5px] font-bold focus:outline-none focus:border-[#d85c27]"
+                    />
+                  </div>
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-[12px] font-bold text-[#333] mb-1">Headline Line 1</label>
@@ -1993,6 +2008,7 @@ export const StudioPage: React.FC = () => {
                         className="w-full border rounded-xl px-3.5 py-2 text-[13.5px] focus:outline-none focus:border-[#d85c27]"
                       />
                     </div>
+
                     <div>
                       <label className="block text-[12px] font-bold text-[#333] mb-1">Headline Line 2 (Highlighted)</label>
                       <input
