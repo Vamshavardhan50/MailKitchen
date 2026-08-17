@@ -761,7 +761,37 @@ export function useSiteSettings() {
   useEffect(() => {
     let isMounted = true;
 
+    // Live-sync from admin panel saves
+    const handleLocalSync = () => {
+      if (!isMounted) return;
+      const saved = localStorage.getItem('maati_admin_settings');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed && typeof parsed === 'object') {
+            setSettings((prev) => ({ ...prev, ...parsed }));
+          }
+        } catch {}
+      }
+    };
+
+    window.addEventListener('maati_settings_updated', handleLocalSync);
+    window.addEventListener('storage', handleLocalSync);
+
     async function fetchSettings() {
+      // Prioritize admin-saved settings
+      const adminSaved = localStorage.getItem('maati_admin_settings');
+      if (adminSaved) {
+        try {
+          const parsed = JSON.parse(adminSaved);
+          if (parsed && typeof parsed === 'object' && isMounted) {
+            setSettings((prev) => ({ ...prev, ...parsed }));
+            setLoading(false);
+            return;
+          }
+        } catch {}
+      }
+
       if (!isSanityConfigured) {
         setLoading(false);
         return;
@@ -782,6 +812,8 @@ export function useSiteSettings() {
     fetchSettings();
     return () => {
       isMounted = false;
+      window.removeEventListener('maati_settings_updated', handleLocalSync);
+      window.removeEventListener('storage', handleLocalSync);
     };
   }, []);
 
@@ -870,6 +902,8 @@ export interface ContactContent {
   openingHoursDe?: string;
   theforkWidgetId?: string;
   googleMapsUrl?: string;
+  locationHeadlineEn?: string;
+  locationHeadlineDe?: string;
 }
 
 const DEFAULT_CONTACT: ContactContent = {
@@ -880,10 +914,12 @@ const DEFAULT_CONTACT: ContactContent = {
   phone: '+49 030 51891367',
   email: 'hello@maatikitchen.com',
   address: 'Zimmerstraße 56, 10117 Berlin',
-  openingHoursEn: 'Mon – Fri: 11:30 – 15:00',
-  openingHoursDe: 'Mo – Fr: 11:30 – 15:00 Uhr',
+  openingHoursEn: 'Mon – Fri: 11:30 – 21:30\nSat: 12:00 – 21:00\nSun: Closed',
+  openingHoursDe: 'Mo – Fr: 11:30 – 21:30\nSa: 12:00 – 21:00\nSo: Geschlossen',
   theforkWidgetId: '7beffe40-786f-496c-b196-48b939750c77',
   googleMapsUrl: 'https://maps.google.com/?q=MAATI+Kitchen+Zimmerstrasse+56+Berlin',
+  locationHeadlineEn: 'MAATI Berlin',
+  locationHeadlineDe: 'MAATI Berlin',
 };
 
 export function useContactContent() {

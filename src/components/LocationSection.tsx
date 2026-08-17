@@ -2,6 +2,7 @@ import React from 'react';
 import { MapPin, Mail, Phone, Clock } from 'lucide-react';
 import { DICTIONARY } from '../data/content';
 import { SEO } from './SEO';
+import { useContactContent, useSiteSettings } from '../lib/sanityService';
 
 interface LocationSectionProps {
   lang: 'de' | 'en';
@@ -11,6 +12,20 @@ interface LocationSectionProps {
 export const LocationSection: React.FC<LocationSectionProps> = ({ lang, onOpenReservation }) => {
   const text = DICTIONARY[lang];
   const isDe = lang === 'de';
+  const { content: contact } = useContactContent();
+  const { settings } = useSiteSettings();
+
+  // Use contact admin data with fallbacks to siteSettings or hardcoded defaults
+  const phone = contact.phone || settings.phone || '+49 172 9498262';
+  const email = contact.email || settings.email || 'hello@maatikitchen.com';
+  const address = contact.address || settings.address || 'Zimmerstraße 56, 10117 Berlin';
+  const openingHours = isDe
+    ? (contact.openingHoursDe || settings.openingHoursDe || 'Mo – Fr: 11:30 – 21:30\nSa: 12:00 – 21:00\nSo: Geschlossen')
+    : (contact.openingHoursEn || settings.openingHoursEn || 'Mon – Fri: 11:30 – 21:30\nSat: 12:00 – 21:00\nSun: Closed');
+  const headline = isDe
+    ? (contact.locationHeadlineDe || 'MAATI Berlin')
+    : (contact.locationHeadlineEn || 'MAATI Berlin');
+
 
   return (
     <section id="location" className="bg-[#f5f0e8] min-h-screen pt-[96px] sm:pt-[120px] md:pt-[150px] pb-16 sm:pb-28 px-4 sm:px-8 md:px-16 lg:px-24">
@@ -32,7 +47,7 @@ export const LocationSection: React.FC<LocationSectionProps> = ({ lang, onOpenRe
           <div className="bg-white rounded-[28px] sm:rounded-[32px] p-6 sm:p-10 md:p-14 shadow-sm border border-gray-100 flex flex-col justify-between space-y-8 sm:space-y-10">
             <div>
               <h1 className="text-[34px] md:text-[44px] font-black text-[#1a1a1a] leading-tight mb-8">
-                MAATI Berlin
+                {headline}
               </h1>
 
               <div className="space-y-7">
@@ -43,9 +58,9 @@ export const LocationSection: React.FC<LocationSectionProps> = ({ lang, onOpenRe
                   </div>
                   <div>
                     <p className="font-bold text-[15px] text-[#1a1a1a] mb-1">{text.location_address}</p>
-                    <p className="text-[#666] text-[14px] leading-relaxed">Zimmerstr. 56<br />10117 Berlin, Germany</p>
+                    <p className="text-[#666] text-[14px] leading-relaxed">{address}</p>
                     <a
-                      href="https://maps.google.com/?q=Zimmerstrasse+56,+10117+Berlin"
+                      href={`https://maps.google.com/?q=${encodeURIComponent(address)}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-[#d85c27] font-bold text-[13px] mt-2 inline-block hover:underline"
@@ -62,8 +77,8 @@ export const LocationSection: React.FC<LocationSectionProps> = ({ lang, onOpenRe
                   </div>
                   <div>
                     <p className="font-bold text-[15px] text-[#1a1a1a] mb-1">{text.location_phone}</p>
-                    <a href="tel:+491729498262" className="text-[#666] text-[14px] hover:text-[#d85c27] transition-colors">
-                      +49 172 9498262
+                    <a href={`tel:${phone.replace(/\s/g, '')}`} className="text-[#666] text-[14px] hover:text-[#d85c27] transition-colors">
+                      {phone}
                     </a>
                   </div>
                 </div>
@@ -75,8 +90,8 @@ export const LocationSection: React.FC<LocationSectionProps> = ({ lang, onOpenRe
                   </div>
                   <div>
                     <p className="font-bold text-[15px] text-[#1a1a1a] mb-1">{text.location_email}</p>
-                    <a href="mailto:hello@maatikitchen.com" className="text-[#666] text-[14px] hover:text-[#d85c27] transition-colors">
-                      hello@maatikitchen.com
+                    <a href={`mailto:${email}`} className="text-[#666] text-[14px] hover:text-[#d85c27] transition-colors">
+                      {email}
                     </a>
                   </div>
                 </div>
@@ -88,10 +103,8 @@ export const LocationSection: React.FC<LocationSectionProps> = ({ lang, onOpenRe
                   </div>
                   <div>
                     <p className="font-bold text-[15px] text-[#1a1a1a] mb-1">{text.location_hours}</p>
-                    <p className="text-[#666] text-[14px]">
-                      {text.location_mon_fri}: 11:30 - 21:30<br />
-                      {text.location_sat}: 12:00 - 21:00<br />
-                      {text.location_sun}: {text.location_closed}
+                    <p className="text-[#666] text-[14px] whitespace-pre-line leading-relaxed">
+                      {openingHours}
                     </p>
                   </div>
                 </div>

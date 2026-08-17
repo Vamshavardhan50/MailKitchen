@@ -2925,10 +2925,45 @@ export const StudioPage: React.FC = () => {
               </div>
             </div>
 
+            {/* Location Page Headline (MAATI Berlin) */}
+            <div className="bg-[#fcf8f3] border border-[#ebdcd0] rounded-2xl p-4 space-y-3">
+              <div>
+                <h3 className="text-[14px] font-black text-[#1e382f] mb-0.5 flex items-center gap-1.5">
+                  <span className="w-5 h-5 rounded-lg bg-[#1e382f] text-white text-[10px] font-black flex items-center justify-center">H</span>
+                  Location Page Headline <span className="text-[11px] font-normal text-gray-500 ml-1">(currently: "MAATI Berlin")</span>
+                </h3>
+                <p className="text-[11.5px] text-gray-500 mb-2">
+                  This is the big heading shown at the top of the Contact Us / Location page.
+                </p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[11.5px] font-bold text-[#333] mb-1">Headline (English)</label>
+                  <input
+                    type="text"
+                    value={contactContent.locationHeadlineEn || ''}
+                    onChange={(e) => _setContactContent({ ...contactContent, locationHeadlineEn: e.target.value })}
+                    placeholder="MAATI Berlin"
+                    className="w-full border rounded-xl px-3.5 py-2.5 text-[14px] font-black focus:outline-none focus:border-[#d85c27]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11.5px] font-bold text-[#333] mb-1">Headline (German)</label>
+                  <input
+                    type="text"
+                    value={contactContent.locationHeadlineDe || ''}
+                    onChange={(e) => _setContactContent({ ...contactContent, locationHeadlineDe: e.target.value })}
+                    placeholder="MAATI Berlin"
+                    className="w-full border rounded-xl px-3.5 py-2.5 text-[14px] font-black focus:outline-none focus:border-[#d85c27]"
+                  />
+                </div>
+              </div>
+            </div>
+
             {/* Headline & Description */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
-                <label className="block text-[12px] font-bold text-[#333] mb-1">Headline ({adminContentLang.toUpperCase()})</label>
+                <label className="block text-[12px] font-bold text-[#333] mb-1">Page Sub-Headline ({adminContentLang.toUpperCase()})</label>
                 <input
                   type="text"
                   value={adminContentLang === 'en' ? (contactContent.headlineEn || '') : (contactContent.headlineDe || '')}
@@ -2939,13 +2974,15 @@ export const StudioPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-[12px] font-bold text-[#333] mb-1">Opening Hours ({adminContentLang.toUpperCase()})</label>
-                <input
-                  type="text"
+                <label className="block text-[12px] font-bold text-[#333] mb-1">
+                  Opening Hours ({adminContentLang.toUpperCase()}) <span className="text-gray-400 font-normal">— one line per day</span>
+                </label>
+                <textarea
+                  rows={3}
                   value={adminContentLang === 'en' ? (contactContent.openingHoursEn || '') : (contactContent.openingHoursDe || '')}
                   onChange={(e) => _setContactContent(adminContentLang === 'en' ? { ...contactContent, openingHoursEn: e.target.value } : { ...contactContent, openingHoursDe: e.target.value })}
-                  placeholder={adminContentLang === 'en' ? 'Mon – Fri: 11:30 – 15:00' : 'Mo – Fr: 11:30 – 15:00 Uhr'}
-                  className="w-full border rounded-xl px-3.5 py-2.5 text-[14px] focus:outline-none focus:border-[#d85c27]"
+                  placeholder={adminContentLang === 'en' ? 'Mon – Fri: 11:30 – 21:30\nSat: 12:00 – 21:00\nSun: Closed' : 'Mo – Fr: 11:30 – 21:30\nSa: 12:00 – 21:00\nSo: Geschlossen'}
+                  className="w-full border rounded-xl px-3.5 py-2.5 text-[14px] focus:outline-none focus:border-[#d85c27] resize-none font-mono"
                 />
               </div>
 
@@ -3026,6 +3063,7 @@ export const StudioPage: React.FC = () => {
             </div>
           </form>
         )}
+
 
         {/* ═══════════════════════════════════════════════
             TAB 8: PRINT / VISUAL MENU CARDS
