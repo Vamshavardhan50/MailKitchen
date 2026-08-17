@@ -870,15 +870,15 @@ export async function saveHomepageToSanity(homepage: HomepageContent): Promise<{
 }
 
 export async function saveEventsToSanity(events: EventsContent): Promise<{ success: boolean; message: string }> {
-  return writeSanityDoc('eventsPage', 'eventsPage', events);
+  return writeSanityDoc('eventsContent', 'eventsContent', events);
 }
 
 export async function saveContactToSanity(contact: ContactContent): Promise<{ success: boolean; message: string }> {
-  return writeSanityDoc('contactPage', 'contactPage', contact);
+  return writeSanityDoc('contactContent', 'contactContent', contact);
 }
 
 export async function savePrintMenuToSanity(printMenu: PrintMenuContent): Promise<{ success: boolean; message: string }> {
-  return writeSanityDoc('printMenu', 'printMenu', printMenu);
+  return writeSanityDoc('printMenuContent', 'printMenuContent', printMenu);
 }
 
 export async function saveMenuCategoriesToSanity(menu: SanityCategoryWithItems[]): Promise<{ success: boolean; message: string }> {
