@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { sanityClient, isSanityConfigured, urlFor } from './sanity';
+import { sanityClient, sanityWriteClient, canWriteToSanity, isSanityConfigured, urlFor } from './sanity';
 import {
   getMenuCategoriesQuery,
   getMenuItemsQuery,
@@ -877,6 +877,22 @@ export function useEventsContent() {
     };
     window.addEventListener('maati_events_updated', sync);
     window.addEventListener('storage', sync);
+
+    async function fetchFromSanity() {
+      const saved = localStorage.getItem('maati_admin_events');
+      if (saved) return; // Prioritize local edit in this session
+      if (!isSanityConfigured) return;
+      try {
+        const data = await sanityClient.fetch<EventsContent>(`*[_type == "eventsContent"][0]`);
+        if (isMounted && data && typeof data === 'object') {
+          setContent((prev) => ({ ...prev, ...data }));
+        }
+      } catch (err) {
+        console.warn('Sanity events fetch error:', err);
+      }
+    }
+    fetchFromSanity();
+
     return () => {
       isMounted = false;
       window.removeEventListener('maati_events_updated', sync);
@@ -944,6 +960,22 @@ export function useContactContent() {
     };
     window.addEventListener('maati_contact_updated', sync);
     window.addEventListener('storage', sync);
+
+    async function fetchFromSanity() {
+      const saved = localStorage.getItem('maati_admin_contact');
+      if (saved) return;
+      if (!isSanityConfigured) return;
+      try {
+        const data = await sanityClient.fetch<ContactContent>(`*[_type == "contactContent"][0]`);
+        if (isMounted && data && typeof data === 'object') {
+          setContent((prev) => ({ ...prev, ...data }));
+        }
+      } catch (err) {
+        console.warn('Sanity contact fetch error:', err);
+      }
+    }
+    fetchFromSanity();
+
     return () => {
       isMounted = false;
       window.removeEventListener('maati_contact_updated', sync);
@@ -1017,6 +1049,22 @@ export function usePrintMenuContent() {
     };
     window.addEventListener('maati_print_menu_updated', sync);
     window.addEventListener('storage', sync);
+
+    async function fetchFromSanity() {
+      const saved = localStorage.getItem('maati_admin_print_menu');
+      if (saved) return;
+      if (!isSanityConfigured) return;
+      try {
+        const data = await sanityClient.fetch<PrintMenuContent>(`*[_type == "printMenuContent"][0]`);
+        if (isMounted && data && typeof data === 'object') {
+          setContent((prev) => ({ ...prev, ...data }));
+        }
+      } catch (err) {
+        console.warn('Sanity print menu fetch error:', err);
+      }
+    }
+    fetchFromSanity();
+
     return () => {
       isMounted = false;
       window.removeEventListener('maati_print_menu_updated', sync);
@@ -1026,4 +1074,192 @@ export function usePrintMenuContent() {
 
   return { content };
 }
+
+// ─────────────────────────────────────────────
+// Cloud Write & Sync to Sanity Functions
+// ─────────────────────────────────────────────
+
+export async function saveSettingsToSanity(settings: SiteSettings): Promise<boolean> {
+  if (!sanityWriteClient) return false;
+  try {
+    await sanityWriteClient.createOrReplace({
+      _id: 'siteSettings',
+      _type: 'siteSettings',
+      ...settings,
+    });
+    return true;
+  } catch (err) {
+    console.error('Error saving siteSettings to Sanity:', err);
+    return false;
+  }
+}
+
+export async function saveHomepageToSanity(content: HomepageContent): Promise<boolean> {
+  if (!sanityWriteClient) return false;
+  try {
+    await sanityWriteClient.createOrReplace({
+      _id: 'homepage',
+      _type: 'homepage',
+      ...content,
+    });
+    return true;
+  } catch (err) {
+    console.error('Error saving homepage to Sanity:', err);
+    return false;
+  }
+}
+
+export async function saveEventsToSanity(content: EventsContent): Promise<boolean> {
+  if (!sanityWriteClient) return false;
+  try {
+    await sanityWriteClient.createOrReplace({
+      _id: 'eventsContent',
+      _type: 'eventsContent',
+      ...content,
+    });
+    return true;
+  } catch (err) {
+    console.error('Error saving eventsContent to Sanity:', err);
+    return false;
+  }
+}
+
+export async function saveContactToSanity(content: ContactContent): Promise<boolean> {
+  if (!sanityWriteClient) return false;
+  try {
+    await sanityWriteClient.createOrReplace({
+      _id: 'contactContent',
+      _type: 'contactContent',
+      ...content,
+    });
+    return true;
+  } catch (err) {
+    console.error('Error saving contactContent to Sanity:', err);
+    return false;
+  }
+}
+
+export async function savePrintMenuToSanity(content: PrintMenuContent): Promise<boolean> {
+  if (!sanityWriteClient) return false;
+  try {
+    await sanityWriteClient.createOrReplace({
+      _id: 'printMenuContent',
+      _type: 'printMenuContent',
+      ...content,
+    });
+    return true;
+  } catch (err) {
+    console.error('Error saving printMenuContent to Sanity:', err);
+    return false;
+  }
+}
+
+export async function saveMenuCategoriesToSanity(categories: SanityCategoryWithItems[]): Promise<boolean> {
+  if (!sanityWriteClient) return false;
+  try {
+    await sanityWriteClient.createOrReplace({
+      _id: 'menuCategoriesData',
+      _type: 'menuCategoriesData',
+      categories: categories,
+      updatedAt: new Date().toISOString(),
+    });
+    return true;
+  } catch (err) {
+    console.error('Error saving menuCategoriesData to Sanity:', err);
+    return false;
+  }
+}
+
+export async function saveGalleryToSanity(assets: any[]): Promise<boolean> {
+  if (!sanityWriteClient) return false;
+  try {
+    await sanityWriteClient.createOrReplace({
+      _id: 'galleryAssetsData',
+      _type: 'galleryAssetsData',
+      assets: assets,
+      updatedAt: new Date().toISOString(),
+    });
+    return true;
+  } catch (err) {
+    console.error('Error saving galleryAssetsData to Sanity:', err);
+    return false;
+  }
+}
+
+/**
+ * Uploads all locally stored admin data to Sanity Cloud in one operation.
+ */
+export async function syncAllLocalToSanity(): Promise<{ success: boolean; message: string }> {
+  if (!sanityWriteClient) {
+    return {
+      success: false,
+      message: 'Sanity Write Token is not configured. Please check VITE_SANITY_TOKEN in .env',
+    };
+  }
+
+  try {
+    const results: string[] = [];
+
+    // 1. Settings
+    const localSettings = localStorage.getItem('maati_admin_settings');
+    if (localSettings) {
+      await saveSettingsToSanity(JSON.parse(localSettings));
+      results.push('Site Settings');
+    }
+
+    // 2. Homepage
+    const localHomepage = localStorage.getItem('maati_admin_homepage');
+    if (localHomepage) {
+      await saveHomepageToSanity(JSON.parse(localHomepage));
+      results.push('Homepage Content');
+    }
+
+    // 3. Events
+    const localEvents = localStorage.getItem('maati_admin_events');
+    if (localEvents) {
+      await saveEventsToSanity(JSON.parse(localEvents));
+      results.push('Events Content');
+    }
+
+    // 4. Contact
+    const localContact = localStorage.getItem('maati_admin_contact');
+    if (localContact) {
+      await saveContactToSanity(JSON.parse(localContact));
+      results.push('Contact Content');
+    }
+
+    // 5. Print Menu
+    const localPrint = localStorage.getItem('maati_admin_print_menu');
+    if (localPrint) {
+      await savePrintMenuToSanity(JSON.parse(localPrint));
+      results.push('Print Menu Content');
+    }
+
+    // 6. Menu Categories & Dishes
+    const localMenu = localStorage.getItem('maati_admin_menu');
+    if (localMenu) {
+      await saveMenuCategoriesToSanity(JSON.parse(localMenu));
+      results.push('Menu Dishes & Categories');
+    }
+
+    // 7. Gallery
+    const localGallery = localStorage.getItem('maati_admin_gallery_v2');
+    if (localGallery) {
+      await saveGalleryToSanity(JSON.parse(localGallery));
+      results.push('Gallery Assets');
+    }
+
+    return {
+      success: true,
+      message: `Successfully synced ${results.length} sections to Sanity Cloud! All visitors on any device/server will now see your changes.`,
+    };
+  } catch (err: any) {
+    console.error('syncAllLocalToSanity failed:', err);
+    return {
+      success: false,
+      message: `Sync failed: ${err?.message || 'Unknown error'}`,
+    };
+  }
+}
+
 

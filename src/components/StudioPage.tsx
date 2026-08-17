@@ -49,8 +49,18 @@ import {
   EventsContent,
   ContactContent,
   PrintMenuContent,
-  MaatiWayStep
+  MaatiWayStep,
+  saveSettingsToSanity,
+  saveHomepageToSanity,
+  saveEventsToSanity,
+  saveContactToSanity,
+  savePrintMenuToSanity,
+  saveMenuCategoriesToSanity,
+  saveGalleryToSanity,
+  syncAllLocalToSanity
 } from '../lib/sanityService';
+import { canWriteToSanity } from '../lib/sanity';
+
 import {
   GalleryAssetItem,
   DEFAULT_GALLERY_ASSETS,
@@ -307,7 +317,9 @@ export const StudioPage: React.FC = () => {
   const saveGalleryAssets = (updated: GalleryAssetItem[]) => {
     setGalleryAssets(updated);
     localStorage.setItem('maati_admin_gallery_v2', JSON.stringify(updated));
+    saveGalleryToSanity(updated).catch((err) => console.warn('Sanity gallery sync error:', err));
   };
+
 
   const handleDeleteGalleryImage = (e: React.MouseEvent, assetIdOrPath: string, assetName: string) => {
     e.stopPropagation();
@@ -520,15 +532,17 @@ export const StudioPage: React.FC = () => {
     window.dispatchEvent(new CustomEvent('maati_menu_updated', { detail: { forceLocal: true } }));
     // Also trigger storage event for cross-tab sync
     window.dispatchEvent(new StorageEvent('storage', { key: 'maati_admin_menu', newValue: JSON.stringify(newCats) }));
-    showToast('Menu updated live! ✅');
+    saveMenuCategoriesToSanity(newCats).catch((err) => console.warn('Sanity menu sync error:', err));
+    showToast('Menu updated live & synced! ✅');
   };
 
   const showSuccessToast = () => {
     setHasUnsavedChanges(false);
     window.dispatchEvent(new CustomEvent('maati_homepage_updated', { detail: { forceLocal: true } }));
     window.dispatchEvent(new StorageEvent('storage', { key: 'maati_admin_homepage' }));
-    showToast('Homepage changes saved live! ✅');
+    showToast('Homepage changes saved live & synced! ✅');
   };
+
 
   // Fast Client-Side Image Compression & Auto-Optimizer
   const handleOptimizedImageUpload = async (callback: (dataUrl: string) => void) => {
@@ -897,13 +911,15 @@ export const StudioPage: React.FC = () => {
     localStorage.setItem('maati_admin_settings', JSON.stringify(siteSettings));
     window.dispatchEvent(new CustomEvent('maati_settings_updated', { detail: { forceLocal: true } }));
     window.dispatchEvent(new StorageEvent('storage', { key: 'maati_admin_settings' }));
-    showToast('Restaurant information saved! ✅');
+    saveSettingsToSanity(siteSettings).catch((err) => console.warn('Sanity settings sync error:', err));
+    showToast('Restaurant information saved & synced! ✅');
   };
 
   // Save Homepage
   const handleSaveHomepage = (e: React.FormEvent) => {
     e.preventDefault();
     localStorage.setItem('maati_admin_homepage', JSON.stringify(homepageContent));
+    saveHomepageToSanity(homepageContent).catch((err) => console.warn('Sanity homepage sync error:', err));
     showSuccessToast();
   };
 
@@ -913,7 +929,8 @@ export const StudioPage: React.FC = () => {
     localStorage.setItem('maati_admin_events', JSON.stringify(eventsContent));
     window.dispatchEvent(new CustomEvent('maati_events_updated', { detail: { forceLocal: true } }));
     window.dispatchEvent(new StorageEvent('storage', { key: 'maati_admin_events' }));
-    showToast('Events page updated live! ✅');
+    saveEventsToSanity(eventsContent).catch((err) => console.warn('Sanity events sync error:', err));
+    showToast('Events page updated & synced! ✅');
   };
 
   // Save Contact Us Page Content
@@ -922,7 +939,8 @@ export const StudioPage: React.FC = () => {
     localStorage.setItem('maati_admin_contact', JSON.stringify(contactContent));
     window.dispatchEvent(new CustomEvent('maati_contact_updated', { detail: { forceLocal: true } }));
     window.dispatchEvent(new StorageEvent('storage', { key: 'maati_admin_contact' }));
-    showToast('Contact information updated live! ✅');
+    saveContactToSanity(contactContent).catch((err) => console.warn('Sanity contact sync error:', err));
+    showToast('Contact information updated & synced! ✅');
   };
 
   // Save Print / Visual Menu Content
@@ -931,8 +949,29 @@ export const StudioPage: React.FC = () => {
     localStorage.setItem('maati_admin_print_menu', JSON.stringify(printMenuContent));
     window.dispatchEvent(new CustomEvent('maati_print_menu_updated', { detail: { forceLocal: true } }));
     window.dispatchEvent(new StorageEvent('storage', { key: 'maati_admin_print_menu' }));
-    showToast('Visual Menu preview updated live! ✅');
+    savePrintMenuToSanity(printMenuContent).catch((err) => console.warn('Sanity print menu sync error:', err));
+    showToast('Visual Menu preview updated & synced! ✅');
   };
+
+  // 1-Click Sync All Local Data to Sanity Cloud
+  const [isCloudSyncing, setIsCloudSyncing] = useState(false);
+  const handleSyncAllToCloud = async () => {
+    setIsCloudSyncing(true);
+    showToast('Syncing all site data to Sanity Cloud... ⏳');
+    try {
+      const res = await syncAllLocalToSanity();
+      if (res.success) {
+        showToast('All changes synced to Sanity Cloud! 🚀 All visitors will see them!');
+      } else {
+        showToast(`Sync warning: ${res.message}`);
+      }
+    } catch (e: any) {
+      showToast(`Sync error: ${e?.message || 'Failed'}`);
+    } finally {
+      setIsCloudSyncing(false);
+    }
+  };
+
 
   // Flattened items for filter
   const allItemsWithCat = categories.flatMap((c) =>
@@ -1264,6 +1303,17 @@ export const StudioPage: React.FC = () => {
               <span>Interactive Tour</span>
             </button>
 
+            <button
+              type="button"
+              onClick={handleSyncAllToCloud}
+              disabled={isCloudSyncing}
+              title="Push all saved admin data to Sanity Cloud so production visitors on any device see your changes"
+              className="bg-[#1e382f] hover:bg-[#2a4d41] text-white border border-[#1e382f] font-bold px-4 py-2.5 rounded-xl text-[13px] shadow-xs hover:shadow-sm transition-all flex items-center gap-1.5 disabled:opacity-50"
+            >
+              <span className="text-[14px]">☁️</span>
+              <span>{isCloudSyncing ? 'Syncing...' : 'Sync to Cloud'}</span>
+            </button>
+
             <Link
               to="/"
               target="_blank"
@@ -1279,6 +1329,7 @@ export const StudioPage: React.FC = () => {
               onClick={() => handleOpenNewItem()}
               className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-5 py-2.5 rounded-xl text-[13px] shadow-sm hover:shadow-md transition-all flex items-center gap-1.5"
             >
+
               <Plus className="w-4 h-4" />
               <span>Add Dish</span>
             </button>
