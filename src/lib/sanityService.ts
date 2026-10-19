@@ -663,10 +663,26 @@ const DEFAULT_EVENTS: EventsContent = {
 };
 
 export function useEventsContent() {
-  const [content, setContent] = useState<EventsContent>(DEFAULT_EVENTS);
+  const [content, setContent] = useState<EventsContent>(() => {
+    try {
+      const local = localStorage.getItem('maati_admin_events');
+      if (local) return JSON.parse(local);
+    } catch (e) {
+      // ignore
+    }
+    return DEFAULT_EVENTS;
+  });
 
   useEffect(() => {
     let isMounted = true;
+
+    const handleSync = (e?: Event) => {
+      if (!isMounted) return;
+      if (e instanceof CustomEvent && e.detail?.events) {
+        setContent(e.detail.events);
+      }
+    };
+    window.addEventListener('maati_events_updated', handleSync);
 
     async function fetchFromSanity() {
       if (!isSanityConfigured) return;
@@ -685,6 +701,7 @@ export function useEventsContent() {
 
     return () => {
       isMounted = false;
+      window.removeEventListener('maati_events_updated', handleSync);
     };
   }, []);
 
@@ -1179,6 +1196,58 @@ export const DEFAULT_JOBS: JobsContent = {
       ],
       offerEn: 'Fair wages, modern kitchen equipment, no late night shifts, shift meals',
       offerDe: 'Faires Gehalt, moderne Küchenausstattung, keine späten Nachtschichten, kostenlose Verpflegung',
+      active: true
+    },
+    {
+      id: 'prep-cook',
+      department: 'kitchen',
+      deptLabelEn: 'Kitchen & Prep',
+      deptLabelDe: 'Küche & Prep',
+      titleEn: 'Prep Cook / Kitchen Assistant (f/m/d)',
+      titleDe: 'Vorbereitungskoch / Prep Cook (w/m/d)',
+      typeEn: 'Part-Time / Student / Minijob',
+      typeDe: 'Teilzeit / Minijob / Werkstudent',
+      location: 'Berlin Mitte (Zimmerstraße 56)',
+      summaryEn: 'Support our morning kitchen prep with vegetable chopping, artisanal chutney blending, sauce simmering, and marinade preparation.',
+      summaryDe: 'Du unterstützt unser Küchenteam am Vormittag bei der frischen Vorbereitung von Gemüse, Chutneys, Saucen und Kichererbsen.',
+      responsibilitiesEn: [
+        'Washing, cutting, and prepping fresh market ingredients',
+        'Blending homemade mint, tamarind, and chili chutneys',
+        'Stock organization and kitchen station setup',
+        'Support with hygiene maintenance and clean workstation handover'
+      ],
+      responsibilitiesDe: [
+        'Waschen, Schneiden und Portionieren frischer Marktgemüse',
+        'Herstellung unserer hausgemachten Chutneys und Saucen',
+        'Unterstützung bei der Warenannahme und Lagerung',
+        'Reinigungs- und Vorbereitungsarbeiten vor Schichtbeginn'
+      ],
+      offerEn: 'Flexible morning shifts (great for students), supportive team, free meals',
+      offerDe: 'Flexible Schichten am Vormittag (ideal für Studenten), familiäres Team, Personalessen',
+      active: true
+    },
+    {
+      id: 'spontaneous',
+      department: 'general',
+      deptLabelEn: 'General / All Departments',
+      deptLabelDe: 'Initiativbewerbung',
+      titleEn: 'Open / Spontaneous Application (f/m/d)',
+      titleDe: 'Initiativbewerbung (w/m/d)',
+      typeEn: 'All Work Models',
+      typeDe: 'Alle Zeitmodelle',
+      location: 'Berlin Mitte (Zimmerstraße 56)',
+      summaryEn: 'Passionate about Indian soul food and genuine hospitality, but don’t see your exact role listed? We are always thrilled to hear from energetic people.',
+      summaryDe: 'Du brennst für gutes Essen und Gastfreundschaft, hast aber keine passende Stelle gefunden? Wir freuen uns immer über motivierte Talente!',
+      responsibilitiesEn: [
+        'Tell us about your background, skills, and where you want to grow',
+        'Whether full-time or flexible shifts, we love meeting proactive applicants'
+      ],
+      responsibilitiesDe: [
+        'Sag uns einfach, was du kannst und wo du dich siehst',
+        'Ob Vollzeit, Teilzeit oder als Werkstudent – wir finden den richtigen Platz für dich'
+      ],
+      offerEn: 'Tailored conditions, fair compensation, and prompt personal feedback',
+      offerDe: 'Individuelle Absprache, faires Gehalt und sofortige Rückmeldung',
       active: true
     }
   ]

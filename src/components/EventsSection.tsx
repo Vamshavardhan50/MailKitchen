@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { SEO } from './SEO';
 import { EnquiryForm } from './EnquiryForm';
 import { Users, Sparkles, CheckCircle2, Music, Utensils, Wine, ArrowDown, ArrowRight } from 'lucide-react';
+import { useEventsContent } from '../lib/sanityService';
 
 interface EventsSectionProps {
   lang?: 'de' | 'en';
@@ -11,6 +12,7 @@ interface EventsSectionProps {
 
 export const EventsSection: React.FC<EventsSectionProps> = ({ lang = 'en', onOpenReservation }) => {
   const isDe = lang === 'de';
+  const { content: cmsEvents } = useEventsContent();
 
   const title = isDe
     ? 'Events & Feiern in Berlin Mitte | MAATI Kitchen'
@@ -62,12 +64,12 @@ export const EventsSection: React.FC<EventsSectionProps> = ({ lang = 'en', onOpe
               {isDe ? 'EXKLUSIVE LOCATION IN BERLIN MITTE' : 'EXCLUSIVE VENUE IN BERLIN MITTE'}
             </span>
             <h1 className="text-[36px] sm:text-[48px] md:text-[58px] font-black leading-[1.08] tracking-tight text-white">
-              {isDe ? 'Private Events & Feiern im MAATI, Berlin Mitte' : 'Private Events & Celebrations at MAATI, Berlin Mitte'}
+              {(isDe ? cmsEvents?.headlineDe : cmsEvents?.headlineEn) || (isDe ? 'Private Events & Feiern im MAATI, Berlin Mitte' : 'Private Events & Celebrations at MAATI, Berlin Mitte')}
             </h1>
             <p className="text-white/80 text-[16px] sm:text-[18px] leading-relaxed">
-              {isDe
+              {(isDe ? cmsEvents?.descDe : cmsEvents?.descEn) || (isDe
                 ? 'Ein warmer, moderner Raum im Herzen Berlins für private Dinners, Firmenfeiern, Geburtstage und Workshops. Genießen Sie maßgeschneiderte Menüs, erlesene Weine und aufmerksamen Service.'
-                : 'A warm, design-forward space in the heart of Berlin Mitte for private dinners, corporate socials, birthdays, and workshops. Indulge in bespoke food stations, craft drinks, and attentive hospitality.'}
+                : 'A warm, design-forward space in the heart of Berlin Mitte for private dinners, corporate socials, birthdays, and workshops. Indulge in bespoke food stations, craft drinks, and attentive hospitality.')}
             </p>
             <div className="pt-4 flex flex-wrap items-center gap-4">
               <a
@@ -78,7 +80,7 @@ export const EventsSection: React.FC<EventsSectionProps> = ({ lang = 'en', onOpe
                 }}
                 className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-8 py-4 rounded-full text-[15px] shadow-lg transition-all duration-300 transform hover:scale-105 inline-flex items-center gap-2 cursor-pointer"
               >
-                <span>{isDe ? 'Privates Event Anfragen' : 'Inquire for Private Events'}</span>
+                <span>{(isDe ? cmsEvents?.ctaBtnDe : cmsEvents?.ctaBtnEn) || (isDe ? 'Privates Event Anfragen' : 'Inquire for Private Events')}</span>
                 <ArrowDown className="w-4 h-4" />
               </a>
               {onOpenReservation && (

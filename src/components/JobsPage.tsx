@@ -22,7 +22,7 @@ import {
   Building2
 } from 'lucide-react';
 import { apiUrl } from '../lib/api';
-import { useJobsContent } from '../lib/sanityService';
+import { useJobsContent, DEFAULT_JOBS } from '../lib/sanityService';
 
 interface JobsPageProps {
   lang?: 'de' | 'en';
@@ -214,9 +214,24 @@ export const JobsPage: React.FC<JobsPageProps> = ({ lang = 'en' }) => {
     { id: 'management', label: isDe ? 'Management & HQ' : 'Management & HQ' }
   ];
 
+  const rawJobs = (cmsJobs?.jobs && cmsJobs.jobs.length > 0) ? cmsJobs.jobs : (DEFAULT_JOBS.jobs || []);
+  const activeJobsList = rawJobs
+    .filter((j: any) => j.active !== false)
+    .map((j: any) => ({
+      id: j.id,
+      department: j.department || 'general',
+      deptLabel: isDe ? (j.deptLabelDe || j.deptLabelEn || 'Abteilung') : (j.deptLabelEn || 'Department'),
+      title: isDe ? (j.titleDe || j.titleEn) : (j.titleEn || j.titleDe),
+      type: isDe ? (j.typeDe || j.typeEn) : (j.typeEn || j.typeDe),
+      location: j.location || 'Berlin Mitte (Zimmerstraße 56)',
+      summary: isDe ? (j.summaryDe || j.summaryEn) : (j.summaryEn || j.summaryDe),
+      responsibilities: isDe ? (j.responsibilitiesDe || j.responsibilitiesEn || []) : (j.responsibilitiesEn || j.responsibilitiesDe || []),
+      offer: isDe ? (j.offerDe || j.offerEn) : (j.offerEn || j.offerDe),
+    }));
+
   const filteredJobs = activeDepartment === 'all'
-    ? ALL_JOBS
-    : ALL_JOBS.filter((job) => job.department === activeDepartment || job.department === 'general');
+    ? activeJobsList
+    : activeJobsList.filter((job: any) => job.department === activeDepartment || job.department === 'general');
 
   // ── Online Application Modal State ──
   const [selectedJob, setSelectedJob] = useState<string | null>(null);
@@ -503,7 +518,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ lang = 'en' }) => {
                   {isDe ? 'Deine Aufgaben & Mitgestaltung:' : 'Key Responsibilities:'}
                 </h4>
                 <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[13.5px] text-[#555]">
-                  {job.responsibilities.map((resp, rIdx) => (
+                  {job.responsibilities.map((resp: string, rIdx: number) => (
                     <li key={rIdx} className="flex items-start gap-2">
                       <Check className="w-4 h-4 text-[#d85c27] shrink-0 mt-0.5" />
                       <span>{resp}</span>

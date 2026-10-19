@@ -17,7 +17,7 @@ import {
   Flame,
   Award
 } from 'lucide-react';
-import { useCateringContent } from '../lib/sanityService';
+import { useCateringContent, DEFAULT_CATERING } from '../lib/sanityService';
 
 interface CateringPageProps {
   lang?: 'de' | 'en';
@@ -152,75 +152,21 @@ export const CateringPage: React.FC<CateringPageProps> = ({ lang = 'en' }) => {
     ? SHOWCASE_ITEMS
     : SHOWCASE_ITEMS.filter((item) => item.category === activeCategory);
 
-  const PACKAGES = [
-    {
-      id: 'essentials',
-      name: isDe ? 'The Essentials' : 'The Essentials',
-      pricePerPerson: 11.90,
-      price: '€11.90',
-      priceDetail: isDe ? 'pro Person' : 'per person',
-      minGuests: 10,
-      suitableFor: isDe ? 'Team-Lunches und Arbeitssitzungen' : 'Team lunches and working sessions',
-      features: isDe
-        ? [
-            'Auswahl aus warmen Signature Bowls (Curry oder Salatbasis)',
-            'Vegane, vegetarische und Hähnchen-Optionen',
-            'Frische hausgemachte Chutneys & geröstete Saaten',
-            '100% biologisch abbaubares Zuckerrohr-Besteck & Servietten'
-          ]
-        : [
-            'Choice of warm signature bowls (curry or salad base)',
-            'Vegan, vegetarian, and tender chicken choices',
-            'Fresh artisanal chutneys & toasted seed toppings',
-            '100% compostable sugarcane bowls, cutlery & napkins'
-          ]
-    },
-    {
-      id: 'crowd-pleaser',
-      popular: true,
-      name: isDe ? 'The Crowd-Pleaser' : 'The Crowd-Pleaser',
-      pricePerPerson: 14.90,
-      price: '€14.90',
-      priceDetail: isDe ? 'pro Person' : 'per person',
-      minGuests: 20,
-      suitableFor: isDe ? 'Kundenmeetings, All-Hands und Feiern' : 'Client meetings, all-hands, celebrations',
-      features: isDe
-        ? [
-            'Mix aus warmen Bowls und getoasteten Naan-Pocket Fingerfood-Platten',
-            'Große Vielfalt an Proteinen & knackigen Finishers',
-            'Inklusive 1x hausgemachter Mango Lassi oder frischer Limonade p.P.',
-            'Stilvolle Beschriftungskarten mit allen Allergenen & Zutaten'
-          ]
-        : [
-            'Mix of warm bowls and cut-in-half naan pocket platters',
-            'Broad variety of spiced proteins & crunchy finishers',
-            'Includes 1x homemade mango lassi or craft lemonade per guest',
-            'Elegant printed menu cards with all dietary & allergen tags'
-          ]
-    },
-    {
-      id: 'go-all-out',
-      name: isDe ? 'Go All Out' : 'Go All Out',
-      pricePerPerson: 19.90,
-      price: '€19.90',
-      priceDetail: isDe ? 'pro Person' : 'per person',
-      minGuests: 30,
-      suitableFor: isDe ? 'Besondere Events, betreut und aufgeräumt von unserem Team' : 'Special events, served and cleared by our team',
-      features: isDe
-        ? [
-            'Vollständiges Buffet mit Bowls, Naan Pockets und Fingerfood-Platten',
-            'Knusprige Samosas, Sev-Crunch und marinierte Cashews',
-            'Süße Kardamom-Jars im Weckglas als Dessert',
-            'Chai & Cold Drinks Station inklusive Gläsern, Service & Aufräumen vor Ort'
-          ]
-        : [
-            'Comprehensive spread of bowls, naan pockets, and sharing platters',
-            'Crispy spiced samosas, sev crunch, and spiced cashews',
-            'Sweet cardamom dessert jars in glass for every guest',
-            'Chai & craft drink bar, fully served and cleared on-site by our team'
-          ]
-    }
-  ];
+  const rawPackages = ((cmsCatering?.packages && cmsCatering.packages.length > 0)
+    ? cmsCatering.packages
+    : DEFAULT_CATERING.packages) || [];
+
+  const PACKAGES = rawPackages.map((p) => ({
+    id: p.id,
+    popular: Boolean(p.popular),
+    name: isDe ? (p.nameDe || p.name) : (p.name || p.nameDe),
+    pricePerPerson: p.pricePerPerson || parseFloat((p.price || '12').replace(/[^0-9.]/g, '')) || 12,
+    price: p.price || `€${p.pricePerPerson}`,
+    priceDetail: isDe ? (p.priceDetailDe || 'pro Person') : (p.priceDetailEn || 'per person'),
+    minGuests: p.minGuests || 10,
+    suitableFor: isDe ? (p.suitableForDe || p.suitableForEn) : (p.suitableForEn || p.suitableForDe),
+    features: isDe ? (p.featuresDe || p.featuresEn || []) : (p.featuresEn || p.featuresDe || []),
+  }));
 
   const ADDITIONS = [
     {

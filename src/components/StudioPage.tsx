@@ -1692,6 +1692,46 @@ export const StudioPage: React.FC = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto justify-start md:justify-end relative z-10">
+            {/* Quick Inquiries Inbox Shortcut */}
+            <button
+              type="button"
+              onClick={() => setActiveTab('inquiries')}
+              title="Open Catering Inquiries Inbox"
+              className={`font-bold px-3.5 py-2.5 rounded-xl text-[12.5px] shadow-xs hover:shadow-sm transition-all flex items-center gap-2 cursor-pointer border ${
+                activeTab === 'inquiries'
+                  ? 'bg-amber-500 text-white border-amber-400'
+                  : 'bg-white/10 hover:bg-white/20 text-white border-white/15 backdrop-blur-xs'
+              }`}
+            >
+              <Inbox className="w-4 h-4 text-amber-300" />
+              <span>Inquiries</span>
+              {inquiries.length > 0 && (
+                <span className="bg-[#d85c27] text-white text-[11px] font-black px-2 py-0.2 rounded-full">
+                  {inquiries.length}
+                </span>
+              )}
+            </button>
+
+            {/* Quick Job Applications Inbox Shortcut */}
+            <button
+              type="button"
+              onClick={() => setActiveTab('applications')}
+              title="Open Job Applications Inbox"
+              className={`font-bold px-3.5 py-2.5 rounded-xl text-[12.5px] shadow-xs hover:shadow-sm transition-all flex items-center gap-2 cursor-pointer border ${
+                activeTab === 'applications'
+                  ? 'bg-emerald-600 text-white border-emerald-500'
+                  : 'bg-white/10 hover:bg-white/20 text-white border-white/15 backdrop-blur-xs'
+              }`}
+            >
+              <Briefcase className="w-4 h-4 text-emerald-300" />
+              <span>Applications</span>
+              {applications.length > 0 && (
+                <span className="bg-emerald-500 text-white text-[11px] font-black px-2 py-0.2 rounded-full">
+                  {applications.length}
+                </span>
+              )}
+            </button>
+
             <button
               type="button"
               data-tour="tour-btn"
