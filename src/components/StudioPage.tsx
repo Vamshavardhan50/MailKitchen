@@ -143,26 +143,26 @@ export type StudioTab =
   | 'inquiries'
   | 'applications';
 
-export const TAB_TITLES: Record<StudioTab, { title: string; route?: string; icon: string }> = {
-  overview: { title: 'All Pages Directory', icon: '📑' },
-  homepage: { title: 'Homepage Content', route: '/', icon: '🏠' },
-  items: { title: 'Menu Dishes & Availability', route: '/menu', icon: '🍲' },
-  categories: { title: 'Menu Categories', route: '/menu', icon: '📁' },
-  landingPages: { title: 'Category Showcase Landings', route: '/menu/naan-pockets', icon: '🏷️' },
-  catering: { title: 'Corporate & Event Catering', route: '/catering', icon: '🍱' },
-  events: { title: 'Private Events & Venue Hire', route: '/events', icon: '🎉' },
-  about: { title: 'Brand Story & About Us', route: '/about', icon: '📖' },
-  contact: { title: 'Location, Hours & Contact', route: '/contact', icon: '📍' },
-  reservations: { title: 'Table Reservations & TheFork', icon: '🕒' },
-  jobs: { title: 'Careers & Job Openings', route: '/jobs', icon: '💼' },
-  printMenu: { title: 'Print Menu & Cards', route: '/print-menu', icon: '📄' },
-  legal: { title: 'Impressum (§ 5 TMG)', route: '/impressum', icon: '⚖️' },
-  privacy: { title: 'Privacy Policy (Datenschutz)', route: '/privacy', icon: '🔒' },
-  terms: { title: 'Terms & Conditions (AGB)', route: '/terms', icon: '📜' },
-  gallery: { title: 'Photo Library & Uploads', icon: '🖼️' },
-  settings: { title: 'Global SEO & Schema Info', icon: '⚙️' },
-  inquiries: { title: 'Customer Catering Inquiries', icon: '📥' },
-  applications: { title: 'Job Candidate Applications', icon: '👔' },
+export const TAB_TITLES: Record<StudioTab, { title: string; route?: string; icon?: string }> = {
+  overview: { title: 'All Pages Directory' },
+  homepage: { title: 'Homepage Content', route: '/' },
+  items: { title: 'Menu Dishes & Pricing', route: '/menu' },
+  categories: { title: 'Menu Categories', route: '/menu' },
+  landingPages: { title: 'Category Showcase Landings', route: '/menu/naan-pockets' },
+  catering: { title: 'Corporate & Event Catering', route: '/catering' },
+  events: { title: 'Private Events & Venue Hire', route: '/events' },
+  about: { title: 'Brand Story & About Us', route: '/about' },
+  contact: { title: 'Location, Hours & Contact', route: '/contact' },
+  reservations: { title: 'Table Reservations', route: '/contact' },
+  jobs: { title: 'Careers & Job Openings', route: '/jobs' },
+  printMenu: { title: 'Print Menu & Cards', route: '/print-menu' },
+  legal: { title: 'Impressum (§ 5 TMG)', route: '/impressum' },
+  privacy: { title: 'Privacy Policy (Datenschutz)', route: '/privacy' },
+  terms: { title: 'Terms & Conditions (AGB)', route: '/terms' },
+  gallery: { title: 'Photo Library & Media' },
+  settings: { title: 'Global SEO & Schema Info' },
+  inquiries: { title: 'Catering Inquiries Inbox' },
+  applications: { title: 'Job Candidate Applications' },
 };
 
 interface TourStep {
@@ -176,30 +176,30 @@ interface TourStep {
 const SPOTLIGHT_STEPS: TourStep[] = [
   {
     selector: '[data-tour="studio-header"]',
-    title: 'Welcome to MAATI Studio',
-    description: 'Your central command center to manage content, menu dishes, prices, and media across all pages.',
-    tip: 'Everything updates instantly on your website in English and German.',
+    title: 'MAATI Studio Command Center',
+    description: 'Welcome! This is your central hub for managing dishes, prices, catering quotes, job applicants, and all website pages in English and German.',
+    tip: 'Changes sync directly to your Sanity database and live VPS.',
     tab: 'overview',
   },
   {
     selector: '[data-tour="page-cards"]',
     title: 'Website Pages Directory',
-    description: 'Every single page on MAATI Kitchen is organized as a card here. Click any card to jump straight into its editor.',
-    tip: 'Inside any editor, click the "← Back to All Pages" button at the top to return here.',
+    description: 'Every single page of your website is listed as an interactive card right here. Click on any card (e.g. Menu & Dishes, Catering, or Homepage) to jump into its dedicated editor.',
+    tip: 'Inside any page editor, click the top "← Back to All Pages" button to return to this directory.',
     tab: 'overview',
   },
   {
     selector: '[data-tour="cloud-sync"]',
-    title: '1-Click Cloud Sync',
-    description: 'Whenever you make edits, click "Sync to Cloud" to push all your updates to Sanity Cloud and your live VPS.',
-    tip: 'Your visitors will immediately see your latest menu dishes and changes.',
+    title: 'Cloud Sync',
+    description: 'Whenever you make edits, click "Sync to Cloud" to push your changes live so visitors on phone or desktop immediately see your updates.',
+    tip: 'Use this button whenever you want your edits published live.',
     tab: 'overview',
   },
   {
     selector: '[data-tour="view-site"]',
-    title: 'Instant Website Preview',
-    description: 'Click "View Website" anytime to open your live restaurant site in a new tab and preview your updates.',
-    tip: 'You can test both English (/...) and German (/de/...) versions live.',
+    title: 'Live Preview',
+    description: 'Click "View Website" anytime to open your live restaurant site in a new browser tab and inspect your changes live in English and German.',
+    tip: 'You can test deep pages like /menu, /menu/naan-pockets, and /de/menu.',
     tab: 'overview',
   },
 ];
@@ -500,8 +500,8 @@ export const StudioPage: React.FC = () => {
         el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
         const rect = el.getBoundingClientRect();
         setSpotlightRect({
-          top: rect.top + window.scrollY,
-          left: rect.left + window.scrollX,
+          top: rect.top,
+          left: rect.left,
           width: rect.width,
           height: rect.height,
         });
@@ -1660,8 +1660,8 @@ export const StudioPage: React.FC = () => {
   // 2. MAIN ADMIN DASHBOARD
   // ═══════════════════════════════════════════════
   return (
-    <div className="min-h-screen bg-[#f5f0e8] pt-24 sm:pt-28 pb-28 px-4 sm:px-8 md:px-12 lg:px-20 relative">
-      <div className="max-w-[1360px] mx-auto space-y-6">
+    <div className="min-h-screen bg-[#f5f0e8] pt-4 sm:pt-6 pb-24 px-3 sm:px-6 md:px-10 lg:px-16 relative">
+      <div className="max-w-[1360px] mx-auto space-y-5">
 
         {/* ── Top Header Bar with Tour Guide Button ── */}
         <header
@@ -1767,7 +1767,7 @@ export const StudioPage: React.FC = () => {
                 </span>
                 <div className="flex items-center gap-2">
                   <span className="text-[16px] font-black text-[#1e382f]">
-                    {TAB_TITLES[activeTab]?.icon} {TAB_TITLES[activeTab]?.title}
+                    {TAB_TITLES[activeTab]?.title}
                   </span>
                   {TAB_TITLES[activeTab]?.route && (
                     <span className="text-[11px] font-mono font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-md">
@@ -1793,27 +1793,42 @@ export const StudioPage: React.FC = () => {
               <select
                 value={activeTab}
                 onChange={(e) => setActiveTab(e.target.value as StudioTab)}
-                className="border border-[#ebdcd0] rounded-xl px-3 py-2 text-[12px] font-bold text-[#1e382f] bg-white focus:outline-none focus:border-[#d85c27]"
+                className="border border-[#ebdcd0] rounded-xl px-3 py-2 text-[12.5px] font-bold text-[#1e382f] bg-white focus:outline-none focus:border-[#d85c27] shadow-xs cursor-pointer"
               >
-                <option value="overview">📑 All Pages Hub</option>
-                <option value="homepage">🏠 1. Homepage</option>
-                <option value="items">🍲 2. Menu Dishes</option>
-                <option value="categories">📁 3. Categories</option>
-                <option value="landingPages">🏷️ 4. Category Landings</option>
-                <option value="catering">🍱 5. Catering</option>
-                <option value="events">🎉 6. Events & Venue</option>
-                <option value="about">📖 7. Brand Story & About</option>
-                <option value="contact">📍 8. Contact & Locations</option>
-                <option value="reservations">🕒 9. Table Reservations</option>
-                <option value="jobs">💼 10. Careers & Jobs</option>
-                <option value="printMenu">📄 11. Print Cards</option>
-                <option value="legal">⚖️ 12. Impressum (§ 5 TMG)</option>
-                <option value="privacy">🔒 13. Privacy Policy (DSGVO)</option>
-                <option value="terms">📜 14. Terms & Conditions (AGB)</option>
-                <option value="settings">⚙️ 15. SEO & Info</option>
-                <option value="gallery">🖼️ 16. Photo Library</option>
-                <option value="inquiries">📥 17. Inquiries</option>
-                <option value="applications">👔 18. Job Applications</option>
+                <option value="overview">All Pages Directory</option>
+
+                <optgroup label="── Main Pages ──">
+                  <option value="homepage">Homepage</option>
+                  <option value="about">Brand Story &amp; About</option>
+                  <option value="contact">Contact &amp; Location</option>
+                  <option value="reservations">Table Reservations</option>
+                </optgroup>
+
+                <optgroup label="── Food &amp; Menu ──">
+                  <option value="items">Menu Dishes &amp; Pricing</option>
+                  <option value="categories">Menu Categories</option>
+                  <option value="landingPages">Category SEO Landings (Naan Pockets, Bowls...)</option>
+                  <option value="printMenu">Printable Menu Cards</option>
+                </optgroup>
+
+                <optgroup label="── Services &amp; Hiring ──">
+                  <option value="catering">Corporate &amp; Event Catering</option>
+                  <option value="events">Private Events &amp; Venue Hire</option>
+                  <option value="jobs">Careers &amp; Job Openings</option>
+                </optgroup>
+
+                <optgroup label="── Inboxes ──">
+                  <option value="inquiries">Catering Inquiries Inbox</option>
+                  <option value="applications">Job Applications Inbox</option>
+                </optgroup>
+
+                <optgroup label="── Legal &amp; System ──">
+                  <option value="legal">Impressum (§ 5 TMG)</option>
+                  <option value="privacy">Privacy Policy (DSGVO)</option>
+                  <option value="terms">Terms &amp; Conditions (AGB)</option>
+                  <option value="settings">Global SEO &amp; Restaurant Info</option>
+                  <option value="gallery">Photo Library &amp; Media</option>
+                </optgroup>
               </select>
             </div>
           </div>
@@ -7495,8 +7510,8 @@ export const StudioPage: React.FC = () => {
                   <rect x="0" y="0" width="100%" height="100%" fill="white" />
                   {spotlightRect && (
                     <rect
-                      x={spotlightRect.left - window.scrollX - 8}
-                      y={spotlightRect.top - window.scrollY - 8}
+                      x={spotlightRect.left - 8}
+                      y={spotlightRect.top - 8}
                       width={spotlightRect.width + 16}
                       height={spotlightRect.height + 16}
                       rx="18"
@@ -7530,35 +7545,35 @@ export const StudioPage: React.FC = () => {
               />
             )}
 
-            {/* Floating Popover Tooltip Card: Always Elevated Above or Higher & Fully Mobile Responsive */}
+            {/* Floating Popover Tooltip Card: Positioned safely next to the highlighted element */}
             {(() => {
               const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
-              const cardWidth = Math.min(350, windowWidth - 32);
-              const cardHeight = 210;
+              const windowHeight = typeof window !== 'undefined' ? window.innerHeight : 800;
+              const cardWidth = Math.min(360, windowWidth - 32);
+              const cardHeight = 220;
 
               let cardTop: number;
               let cardLeft: number;
 
               if (spotlightRect) {
-                // Check space above
-                const spaceAbove = spotlightRect.top - window.scrollY;
-                if (spaceAbove > cardHeight + 25) {
-                  // Position above the element
+                // If there is enough room below element, place below; otherwise place above
+                if (spotlightRect.top + spotlightRect.height + cardHeight + 20 < windowHeight) {
+                  cardTop = spotlightRect.top + spotlightRect.height + 16;
+                } else if (spotlightRect.top - cardHeight - 16 > 10) {
                   cardTop = spotlightRect.top - cardHeight - 16;
                 } else {
-                  // Position below, but kept high
-                  cardTop = spotlightRect.top + spotlightRect.height + 12;
+                  cardTop = (windowHeight / 2) - (cardHeight / 2);
                 }
                 cardLeft = spotlightRect.left + (spotlightRect.width / 2) - (cardWidth / 2);
               } else {
-                // Fallback: elevated center
-                cardTop = window.scrollY + 95;
+                cardTop = (windowHeight / 2) - (cardHeight / 2);
                 cardLeft = (windowWidth / 2) - (cardWidth / 2);
               }
 
-              // Keep within screen bounds
-              if (cardTop < window.scrollY + 75) {
-                cardTop = window.scrollY + 75;
+              // Keep within screen viewport bounds
+              if (cardTop < 16) cardTop = 16;
+              if (cardTop + cardHeight > windowHeight - 16) {
+                cardTop = windowHeight - cardHeight - 16;
               }
 
               if (cardLeft < 16) cardLeft = 16;
@@ -7568,7 +7583,7 @@ export const StudioPage: React.FC = () => {
 
               return (
                 <div
-                  className="absolute pointer-events-auto bg-white rounded-3xl p-4 sm:p-5 shadow-2xl border-2 border-[#ebdcd0] space-y-2.5 sm:space-y-3 z-50 animate-fadeInUp max-w-[calc(100vw-32px)]"
+                  className="absolute pointer-events-auto bg-white rounded-3xl p-5 shadow-2xl border-2 border-[#ebdcd0] space-y-3 z-50 animate-fadeInUp max-w-[calc(100vw-32px)]"
                   style={{
                     top: `${cardTop}px`,
                     left: `${cardLeft}px`,
