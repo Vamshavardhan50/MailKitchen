@@ -6,28 +6,65 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#d85c27" />
 
-  <!-- Primary SEO Meta Tags -->
-  <title>MAATI Kitchen | Fast Casual • Indian Soul | Berlin</title>
-  <meta name="title" content="MAATI Kitchen | Fast Casual • Indian Soul | Berlin" />
-  <meta name="description" content="Fresh, vibrant Indian ingredients in customizable Bowls, Salads, and Naan Pockets in Zimmerstraße 56, 10117 Berlin. Authentic spices, Modern style." />
-  <meta name="keywords" content="MAATI Kitchen, Indian Food Berlin, Healthy Indian Bowls, Butter Chicken Bowl, Naan Pockets, Indian Restaurant Zimmerstraße, Berlin Fast Casual Indian" />
+  <!-- Immediate First-Render HTML Lang Detection based on URL Authority (R1) -->
+  <script>
+    if (window.location.pathname.startsWith('/de')) {
+      document.documentElement.lang = 'de';
+    } else {
+      document.documentElement.lang = 'en';
+    }
+  </script>
+
+  <!-- Search engine verification -->
+  <meta name="google-site-verification" content="yDJxfShS_AZYy2gpyyqeSNr8TUp7otlsJ3zwPcwuuI0" />
+  <meta name="msvalidate.01" content="7182C2664B051B9F6F450C0854F9A893" />
+
+  <!-- Consent Mode v2 defaults: MUST come before the GTM snippet -->
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('consent', 'default', {
+      'ad_storage': 'denied',
+      'ad_user_data': 'denied',
+      'ad_personalization': 'denied',
+      'analytics_storage': 'denied',
+      'wait_for_update': 500
+    });
+  </script>
+
+  <!-- Google Tag Manager -->
+  <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+  })(window,document,'script','dataLayer','GTM-KLZRV6LQ');</script>
+  <!-- End Google Tag Manager -->
+
+  <!-- Primary SEO Meta Tags (v2.0) -->
+  <title>MAATI Kitchen | Modern Indian Restaurant & Café Berlin Mitte</title>
+  <meta name="title" content="MAATI Kitchen | Modern Indian Restaurant & Café Berlin Mitte" />
+  <meta name="description" content="Modern Indian food in Berlin Mitte: fresh bowls, naan pockets, curries, specialty coffee and chai. Vegan options. Zimmerstraße 56, near Checkpoint Charlie." />
   <meta name="author" content="MAATI Kitchen Berlin" />
-  <meta name="robots" content="index, follow" />
-  <link rel="canonical" href="https://maatikitchen.com" />
+  <meta name="robots" content="index, follow, max-image-preview:large" />
+  <link rel="canonical" href="https://maatikitchen.com/" />
+
+  <!-- Preload hero image for Core Web Vitals LCP -->
+  <link rel="preload" as="image" href="/assets/hero-flatlay.jpg" fetchpriority="high" />
 
   <!-- Open Graph / Facebook / WhatsApp -->
   <meta property="og:type" content="restaurant.restaurant" />
   <meta property="og:url" content="https://maatikitchen.com/" />
-  <meta property="og:title" content="MAATI Kitchen | Fast Casual • Indian Soul | Berlin" />
-  <meta property="og:description" content="Fresh, vibrant Indian ingredients in customizable Bowls, Salads, and Naan Pockets in Zimmerstraße 56, 10117 Berlin." />
-  <meta property="og:image" content="https://maatikitchen.com/assets/circle-Bq5xyFQD.png" />
   <meta property="og:site_name" content="MAATI Kitchen" />
+  <meta property="og:title" content="MAATI Kitchen | Modern Indian Restaurant & Café Berlin Mitte" />
+  <meta property="og:description" content="Modern Indian food in Berlin Mitte: fresh bowls, naan pockets, curries, specialty coffee and chai. Vegan options. Zimmerstraße 56, near Checkpoint Charlie." />
+  <meta property="og:image" content="https://maatikitchen.com/assets/circle-Bq5xyFQD.png" />
+  <meta property="og:locale" content="en_GB" />
 
   <!-- Twitter -->
   <meta property="twitter:card" content="summary_large_image" />
   <meta property="twitter:url" content="https://maatikitchen.com/" />
-  <meta property="twitter:title" content="MAATI Kitchen | Fast Casual • Indian Soul | Berlin" />
-  <meta property="twitter:description" content="Fresh, vibrant Indian ingredients in customizable Bowls, Salads, and Naan Pockets in Zimmerstraße 56, 10117 Berlin." />
+  <meta property="twitter:title" content="MAATI Kitchen | Modern Indian Restaurant & Café Berlin Mitte" />
+  <meta property="twitter:description" content="Modern Indian food in Berlin Mitte: fresh bowls, naan pockets, curries, specialty coffee and chai. Vegan options. Zimmerstraße 56, near Checkpoint Charlie." />
   <meta property="twitter:image" content="https://maatikitchen.com/assets/circle-Bq5xyFQD.png" />
 
   <!-- Google Fonts Preconnect -->
@@ -40,15 +77,22 @@
   {
     "@context": "https://schema.org",
     "@type": "Restaurant",
+    "@id": "https://maatikitchen.com/#restaurant",
     "name": "MAATI Kitchen",
-    "image": "https://maatikitchen.com/assets/circle-Bq5xyFQD.png",
-    "@id": "https://maatikitchen.com",
-    "url": "https://maatikitchen.com",
-    "telephone": "+491729498262",
+    "alternateName": "MAATI - Indische Küche und Café",
+    "image": [
+      "https://maatikitchen.com/assets/circle-Bq5xyFQD.png",
+      "https://maatikitchen.com/assets/hero-flatlay.jpg"
+    ],
+    "logo": "https://maatikitchen.com/assets/logo-C86A0r1B.png",
+    "url": "https://maatikitchen.com/",
+    "telephone": "+49 30 51891367",
     "email": "hello@maatikitchen.com",
     "priceRange": "€€",
     "menu": "https://maatikitchen.com/menu",
-    "servesCuisine": "Indian, Fast Casual, Bowls, Halal, Vegan Options, Vegetarian Options",
+    "hasMenu": "https://maatikitchen.com/menu",
+    "acceptsReservations": true,
+    "servesCuisine": "Indian, Fast Casual, Bowls, Vegan Options, Vegetarian Options",
     "address": {
       "@type": "PostalAddress",
       "streetAddress": "Zimmerstraße 56",
@@ -58,32 +102,44 @@
     },
     "geo": {
       "@type": "GeoCoordinates",
-      "latitude": 52.50722,
-      "longitude": 13.38869
+      "latitude": 52.5081,
+      "longitude": 13.3949
     },
     "openingHoursSpecification": [
       {
         "@type": "OpeningHoursSpecification",
-        "dayOfWeek": [
-          "Monday",
-          "Tuesday",
-          "Wednesday",
-          "Thursday",
-          "Friday",
-          "Saturday"
-        ],
+        "dayOfWeek": ["Monday", "Tuesday", "Wednesday"],
+        "opens": "11:00",
+        "closes": "16:00"
+      },
+      {
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": ["Thursday", "Friday", "Saturday"],
+        "opens": "11:00",
+        "closes": "21:00"
+      },
+      {
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": ["Sunday"],
         "opens": "11:30",
-        "closes": "21:30"
+        "closes": "18:00"
       }
     ],
     "sameAs": [
       "https://facebook.com",
-      "https://instagram.com"
+      "https://instagram.com/maatikitchen",
+      "https://www.lieferando.de/speisekarte/maati-indische-kuche-und-cafe-berlin",
+      "https://www.ubereats.com/de/store/maati/OS3dPd_3VuuLuJYMUIWoYA"
     ]
   }
   </script>
 </head>
 <body>
+  <!-- Google Tag Manager (noscript) -->
+  <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KLZRV6LQ"
+  height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+  <!-- End Google Tag Manager (noscript) -->
+
   <div id="root"></div>
   <script type="module" src="/src/main.tsx"></script>
 </body>

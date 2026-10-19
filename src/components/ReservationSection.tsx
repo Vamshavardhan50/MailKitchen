@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Calendar, Clock, Users, User, Mail, Phone, MessageSquare, CheckCircle2 } from 'lucide-react';
 import { DICTIONARY } from '../data/content';
-import { useContactContent } from '../lib/sanityService';
+import { useContactContent, useReservationContent } from '../lib/sanityService';
 
 interface ReservationSectionProps {
   lang: 'de' | 'en';
@@ -13,6 +13,7 @@ interface ReservationSectionProps {
 export const ReservationSection: React.FC<ReservationSectionProps> = ({ lang, isOpen, onClose, onOpen }) => {
   const text = DICTIONARY[lang];
   const { content: contactContent } = useContactContent();
+  const { content: reservationContent } = useReservationContent();
   const [guests, setGuests] = useState('2');
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
@@ -60,22 +61,29 @@ export const ReservationSection: React.FC<ReservationSectionProps> = ({ lang, is
       {/* Modern Ultra-Sleek Modal */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fadeIn"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-md animate-fadeIn"
           onClick={(e) => {
             if (e.target === e.currentTarget) onClose();
           }}
         >
-          <div className="bg-white rounded-[28px] w-full max-w-[850px] max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-100 flex flex-col">
+          <div className="bg-white rounded-t-[28px] sm:rounded-[28px] w-full max-w-[850px] max-h-[92vh] overflow-y-auto shadow-2xl border border-gray-100 flex flex-col animate-slide-down">
 
             {/* Modal Header */}
-            <div className="bg-[#1e382f] text-white p-6 md:p-8 rounded-t-[28px] flex items-center justify-between relative">
+            <div className="bg-[#1e382f] text-white p-5 sm:p-6 md:p-8 rounded-t-[28px] flex items-center justify-between relative">
               <div>
                 <span className="text-[#d85c27] text-[11px] font-black uppercase tracking-widest">MAATI Kitchen Berlin</span>
-                <h3 className="text-[24px] md:text-[28px] font-black mt-1">{text.res_modal_title}</h3>
+                <h3 className="text-[22px] sm:text-[24px] md:text-[28px] font-black mt-1">
+                  {(lang === 'de' ? reservationContent.titleDe : reservationContent.titleEn) || text.res_modal_title}
+                </h3>
+                {((lang === 'de' ? reservationContent.subtitleDe : reservationContent.subtitleEn) || reservationContent.noticeEn) && (
+                  <p className="text-[12.5px] text-white/75 mt-1 font-medium">
+                    {(lang === 'de' ? (reservationContent.subtitleDe || reservationContent.noticeDe) : (reservationContent.subtitleEn || reservationContent.noticeEn))}
+                  </p>
+                )}
               </div>
               <button
                 onClick={onClose}
-                className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors"
+                className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors active-press"
                 aria-label="Close"
               >
                 <X className="w-5 h-5" />
@@ -83,14 +91,14 @@ export const ReservationSection: React.FC<ReservationSectionProps> = ({ lang, is
             </div>
 
             {/* Modal Body: Embedded Official TheFork Widget */}
-            <div className="p-2 sm:p-4 bg-white flex-1 min-h-[650px] overflow-hidden">
+            <div className="p-1 sm:p-4 bg-white flex-1 min-h-[520px] sm:min-h-[650px] overflow-hidden">
               <iframe
-                src={`https://widget.thefork.com/${contactContent.theforkWidgetId || '7beffe40-786f-496c-b196-48b939750c77'}`}
+                src={`https://widget.thefork.com/${reservationContent.theforkWidgetId || contactContent.theforkWidgetId || '7beffe40-786f-496c-b196-48b939750c77'}`}
                 allow="payment *"
                 title="TheFork Reservation Widget"
                 style={{
                   width: '100%',
-                  minHeight: '650px',
+                  minHeight: '520px',
                   border: 'none',
                   borderRadius: '20px',
                   overflow: 'scroll'

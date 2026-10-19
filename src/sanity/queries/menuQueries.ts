@@ -116,8 +116,48 @@ export const getHomepageQuery = `
   *[_type == "homepage" && !(_id in path("drafts.**"))][0]
 `;
 
-// 6. Get Global Site Settings (excluding drafts)
+// 6. Get Global Site Settings & Tracking (excluding drafts)
 export const getSiteSettingsQuery = `
   *[_type == "siteSettings" && !(_id in path("drafts.**"))][0]
 `;
+
+// 7. Get Menu Category Landing Pages
+export const getMenuLandingPagesQuery = `
+  *[_type == "menuLandingPage" && !(_id in path("drafts.**"))]
+`;
+
+export const getMenuLandingPageByKeyQuery = (key: string) => `
+  *[_type == "menuLandingPage" && categoryKey == "${key}" && !(_id in path("drafts.**"))][0]
+`;
+
+// 8. Get Catering Page Content
+export const getCateringPageQuery = `
+  *[_type == "cateringPage" && !(_id in path("drafts.**"))][0]
+`;
+
+// 9. Get Events Page Content
+export const getEventsPageQuery = `
+  *[_type == "eventsPage" && !(_id in path("drafts.**"))][0]
+`;
+
+// 10. Get Active Job Openings
+export const getJobListingsQuery = `
+  *[_type == "jobListing" && isActive != false && !(_id in path("drafts.**"))] | order(displayOrder asc)
+`;
+
+// 11. Get Location & Transit Info
+export const getLocationPageQuery = `
+  *[_type == "locationPage" && !(_id in path("drafts.**"))][0]
+`;
+
+// 12. Get About & Heritage Content
+export const getAboutPageQuery = `
+  *[_type == "aboutPage" && !(_id in path("drafts.**"))][0]
+`;
+
+// 13. Get Legal Documents
+export const getLegalPageQuery = (type: string) => `
+  *[_type == "legalPage" && pageType == "${type}" && !(_id in path("drafts.**"))][0]
+`;
+
 

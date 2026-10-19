@@ -1,12 +1,15 @@
 import React, { useEffect } from 'react';
 import { Mail, Phone, MapPin, Building, ShieldCheck } from 'lucide-react';
 import { SEO } from './SEO';
+import { useLegalContent } from '../lib/sanityService';
 
 interface ImpressumProps {
   lang?: 'de' | 'en';
 }
 
 export const Impressum: React.FC<ImpressumProps> = ({ lang = 'de' }) => {
+  const { content: legal } = useLegalContent();
+
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
@@ -16,8 +19,10 @@ export const Impressum: React.FC<ImpressumProps> = ({ lang = 'de' }) => {
       <SEO
         title="Impressum | MAATI Kitchen Berlin"
         description="Rechtliche Angaben und Impressum der Unicorn Table UG (MAATI Kitchen) nach § 5 TMG."
-        canonicalUrl="https://maatikitchen.com/impressum"
+        canonicalUrl={lang === 'de' ? 'https://maatikitchen.com/de/impressum' : 'https://maatikitchen.com/impressum'}
         lang={lang}
+        enPath="/impressum"
+        robots="noindex, follow"
       />
       <div className="max-w-[1000px] mx-auto px-6 md:px-10">
 
@@ -41,9 +46,8 @@ export const Impressum: React.FC<ImpressumProps> = ({ lang = 'de' }) => {
               Angaben gemäß § 5 TMG
             </h2>
             <div className="bg-white/80 rounded-[20px] p-6 border border-[#ebdcd0]/60 space-y-1.5 text-[15px] leading-relaxed text-[#333]">
-              <p className="font-bold text-[17px] text-[#1a1a1a]">Unicorn Table UG</p>
-              <p>Lindenstraße 74</p>
-              <p>10969 Berlin</p>
+              <p className="font-bold text-[17px] text-[#1a1a1a]">{legal.impressumCompanyName || 'Unicorn Table UG'}</p>
+              <p>{legal.impressumAddress || 'Lindenstraße 74, 10969 Berlin'}</p>
             </div>
           </section>
 
@@ -53,7 +57,7 @@ export const Impressum: React.FC<ImpressumProps> = ({ lang = 'de' }) => {
               Vertreten durch:
             </h2>
             <div className="bg-white/80 rounded-[20px] p-6 border border-[#ebdcd0]/60 text-[15px] text-[#333]">
-              <p className="font-semibold text-[#1a1a1a]">Naveen Prasad</p>
+              <p className="font-semibold text-[#1a1a1a]">{legal.impressumManagingDirector || 'Naveen Prasad'}</p>
             </div>
           </section>
 
@@ -66,15 +70,15 @@ export const Impressum: React.FC<ImpressumProps> = ({ lang = 'de' }) => {
               <div className="flex items-center gap-3">
                 <Phone className="w-4 h-4 text-[#d85c27]" />
                 <span>Telefon: </span>
-                <a href="tel:+491729498262" className="font-semibold text-[#d85c27] hover:underline">
-                  +49 1729498262
+                <a href={`tel:${(legal.impressumPhone || '+49 1729498262').replace(/\s+/g, '')}`} className="font-semibold text-[#d85c27] hover:underline">
+                  {legal.impressumPhone || '+49 1729498262'}
                 </a>
               </div>
               <div className="flex items-center gap-3">
                 <Mail className="w-4 h-4 text-[#d85c27]" />
                 <span>E-Mail: </span>
-                <a href="mailto:hello@maatikitchen.com" className="font-semibold text-[#d85c27] hover:underline">
-                  hello@maatikitchen.com
+                <a href={`mailto:${legal.impressumEmail || 'hello@maatikitchen.com'}`} className="font-semibold text-[#d85c27] hover:underline">
+                  {legal.impressumEmail || 'hello@maatikitchen.com'}
                 </a>
               </div>
             </div>
@@ -88,8 +92,10 @@ export const Impressum: React.FC<ImpressumProps> = ({ lang = 'de' }) => {
             </h2>
             <div className="bg-white/80 rounded-[20px] p-6 border border-[#ebdcd0]/60 space-y-1.5 text-[15px] text-[#333]">
               <p>Eintragung im Handelsregister.</p>
-              <p><strong>Registergericht:</strong> Amtsgericht Charlottenburg</p>
-              <p><strong>Registernummer:</strong> HRB 207902 B</p>
+              <p><strong>Registergericht:</strong> {legal.impressumRegisterCourt || 'Amtsgericht Charlottenburg, HRB 207902 B'}</p>
+              {legal.impressumVatId && (
+                <p><strong>Umsatzsteuer-Identifikationsnummer:</strong> {legal.impressumVatId}</p>
+              )}
             </div>
           </section>
 

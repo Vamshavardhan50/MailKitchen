@@ -50,8 +50,8 @@ export const Footer: React.FC<FooterProps> = ({ lang = 'en' }) => {
 
             <div className="flex items-center gap-3">
               <Phone className="w-4 h-4 text-[#d85c27] shrink-0" />
-              <a href={`tel:${settings.phone || '+491729498262'}`} className="hover:text-[#d85c27] transition-colors">
-                {settings.phone || '+49 1729498262'}
+              <a href={`tel:${(settings.phone || '+493051891367').replace(/\s/g, '')}`} className="hover:text-[#d85c27] transition-colors">
+                {settings.phone || '+49 30 51891367'}
               </a>
             </div>
 
@@ -123,22 +123,42 @@ export const Footer: React.FC<FooterProps> = ({ lang = 'en' }) => {
           </h4>
           <ul className="space-y-3 text-[13.5px] sm:text-[14px] text-[#444]">
             <li>
-              <Link to="/about" className="hover:text-[#d85c27] transition-colors">
+              <Link to={isDe ? '/de/about' : '/about'} className="hover:text-[#d85c27] transition-colors">
                 {isDe ? 'Über uns' : 'About Us'}
               </Link>
             </li>
             <li>
-              <Link to="/privacy" className="hover:text-[#d85c27] transition-colors">
+              <Link to={isDe ? '/de/catering' : '/catering'} className="hover:text-[#d85c27] transition-colors">
+                Catering
+              </Link>
+            </li>
+            <li>
+              <Link to={isDe ? '/de/jobs' : '/jobs'} className="hover:text-[#d85c27] transition-colors">
+                {isDe ? 'Karriere / Jobs' : 'Careers / Jobs'}
+              </Link>
+            </li>
+            <li>
+              <Link to={isDe ? '/de/contact' : '/contact'} className="hover:text-[#d85c27] transition-colors">
+                {isDe ? 'Kontakt' : 'Contact Us'}
+              </Link>
+            </li>
+            <li>
+              <Link to={isDe ? '/de/locations' : '/locations'} className="hover:text-[#d85c27] transition-colors">
+                {isDe ? 'Standort & Anfahrt' : 'Locations & Directions'}
+              </Link>
+            </li>
+            <li>
+              <Link to={isDe ? '/de/privacy' : '/privacy'} className="hover:text-[#d85c27] transition-colors">
                 {isDe ? 'Datenschutz' : 'Privacy Policy'}
               </Link>
             </li>
             <li>
-              <Link to="/impressum" className="hover:text-[#d85c27] transition-colors">
+              <Link to={isDe ? '/de/impressum' : '/impressum'} className="hover:text-[#d85c27] transition-colors">
                 Impressum
               </Link>
             </li>
             <li>
-              <Link to="/terms" className="hover:text-[#d85c27] transition-colors">
+              <Link to={isDe ? '/de/terms' : '/terms'} className="hover:text-[#d85c27] transition-colors">
                 {isDe ? 'Allgemeine Geschäftsbedingungen' : 'Terms and Conditions'}
               </Link>
             </li>

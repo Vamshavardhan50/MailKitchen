@@ -37,19 +37,19 @@ export const Hero: React.FC<HeroProps> = ({ lang, onOpenReservation }) => {
 
           {/* CTAs */}
           <div className="flex flex-wrap items-center gap-3 sm:gap-4 mb-8 sm:mb-12">
-            <a
-              href="/menu"
-              className="inline-flex items-center gap-2.5 bg-[#d85c27] text-white font-bold text-[14px] sm:text-[15px] px-6 sm:px-7 py-3 sm:py-3.5 rounded-full hover:bg-[#c2501f] transition-all shadow-sm hover:shadow-md"
-            >
-              {text.hero_btn_menu}
-              <span className="text-[16px] sm:text-[18px] font-black">→</span>
-            </a>
             <button
               onClick={onOpenReservation}
+              className="inline-flex items-center gap-2 bg-[#d85c27] text-white font-extrabold text-[14px] sm:text-[15px] px-6 sm:px-7 py-3 sm:py-3.5 rounded-full hover:bg-[#c2501f] transition-all shadow-md hover:shadow-lg"
+            >
+              <span>{lang === 'de' ? 'Tisch reservieren' : 'Book A Table'}</span>
+              <span>→</span>
+            </button>
+            <a
+              href="/menu"
               className="inline-flex items-center border-2 border-[#1a1a1a] text-[#1a1a1a] font-bold text-[14px] sm:text-[15px] px-6 sm:px-7 py-3 sm:py-3.5 rounded-full hover:bg-[#1a1a1a] hover:text-white transition-all"
             >
-              {text.hero_btn_res}
-            </button>
+              {text.hero_btn_menu}
+            </a>
           </div>
 
           {/* Feature Row */}

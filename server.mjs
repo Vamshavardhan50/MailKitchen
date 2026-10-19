@@ -2,6 +2,14 @@ import http from 'http';
 import { createClient } from '@sanity/client';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+// ESM-safe __dirname equivalent
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Resolve the built frontend directory
+const DIST_DIR = path.resolve(__dirname, 'dist');
 
 // Automatically load local .env file if present
 function loadEnv() {
@@ -71,6 +79,319 @@ const server = http.createServer(async (req, res) => {
         dataset: SANITY_DATASET,
       })
     );
+    return;
+  }
+
+  // Helper: File paths for local persistence
+  const DATA_DIR = path.resolve(process.cwd(), 'src', 'data');
+  if (!fs.existsSync(DATA_DIR)) {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+  }
+  const ENQUIRIES_FILE = path.join(DATA_DIR, 'receivedEnquiries.json');
+  const APPLICATIONS_FILE = path.join(DATA_DIR, 'receivedApplications.json');
+
+  const readJson = (file) => {
+    try {
+      if (fs.existsSync(file)) {
+        return JSON.parse(fs.readFileSync(file, 'utf8') || '[]');
+      }
+    } catch (e) {
+      console.warn('Could not read', file, e.message);
+    }
+    return [];
+  };
+
+  const writeJson = (file, data) => {
+    try {
+      fs.writeFileSync(file, JSON.stringify(data, null, 2), 'utf8');
+    } catch (e) {
+      console.error('Could not write', file, e.message);
+    }
+  };
+
+  // Enquiry Submission Endpoint (Events & Catering)
+  if (url.pathname === '/api/enquiry' && req.method === 'POST') {
+    let body = '';
+    req.on('data', (chunk) => {
+      body += chunk;
+    });
+
+    req.on('end', async () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        const { enquiryType, name, email, phone, date, guests, company, message, consent, lang } = payload;
+
+        if (!name || !email || !phone || !date || !guests || !consent) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: 'Missing mandatory fields or consent.' }));
+          return;
+        }
+
+        const id = `enquiry-${Date.now()}`;
+        const newEnquiry = {
+          _id: id,
+          _type: 'enquirySubmission',
+          id,
+          enquiryType,
+          name: name.trim(),
+          email: email.trim(),
+          phone: phone.trim(),
+          date,
+          guests: Number(guests),
+          company: (company || '').trim(),
+          message: (message || '').trim(),
+          consent: Boolean(consent),
+          lang: lang || 'en',
+          status: 'new',
+          managerNotes: '',
+          receivedAt: new Date().toISOString(),
+        };
+
+        // 1. Persist to local JSON file
+        const list = readJson(ENQUIRIES_FILE);
+        list.unshift(newEnquiry);
+        writeJson(ENQUIRIES_FILE, list);
+
+        // 2. Persist to Sanity if configured
+        if (writeClient) {
+          try {
+            await writeClient.createOrReplace(newEnquiry);
+            console.log(`[Sanity] Created enquirySubmission document: ${id}`);
+          } catch (sanityErr) {
+            console.warn('[Sanity Enquiry Write Warning]:', sanityErr.message);
+          }
+        }
+
+        const subject = `[${enquiryType}] ${date}, ${guests} guests${company ? `, ${company}` : `, ${name}`}`;
+        console.log(`[MAATI Enquiry System] New enquiry received:`, subject);
+
+        const acknowledgement = lang === 'de'
+          ? 'Vielen Dank für Ihre Anfrage. Wir haben sie erhalten und melden uns innerhalb eines Werktages bei Ihnen. Bei dringenden Anliegen erreichen Sie uns telefonisch unter +49 30 51891367. MAATI Kitchen, Zimmerstrasse 56, 10117 Berlin.'
+          : 'Thank you for your enquiry. We have received it and will reply within one working day. If your request is urgent please call us on +49 30 51891367. MAATI Kitchen, Zimmerstrasse 56, 10117 Berlin.';
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(
+          JSON.stringify({
+            success: true,
+            id,
+            subject,
+            deliveredTo: 'hello@maatikitchen.com',
+            acknowledgement,
+            message: 'Enquiry processed and delivered.'
+          })
+        );
+      } catch (err) {
+        console.error('[MAATI Enquiry Error]:', err);
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: 'Server could not process enquiry' }));
+      }
+    });
+    return;
+  }
+
+  // Get Inquiries (for Studio / Admin dashboard)
+  if (url.pathname === '/api/inquiries' && req.method === 'GET') {
+    const list = readJson(ENQUIRIES_FILE);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ success: true, inquiries: list }));
+    return;
+  }
+
+  // Update Inquiry Status / Notes
+  if (url.pathname === '/api/inquiries/status' && req.method === 'POST') {
+    let body = '';
+    req.on('data', (c) => { body += c; });
+    req.on('end', async () => {
+      try {
+        const { id, status, managerNotes } = JSON.parse(body || '{}');
+        const list = readJson(ENQUIRIES_FILE);
+        const item = list.find((i) => i._id === id || i.id === id);
+        if (item) {
+          if (status) item.status = status;
+          if (managerNotes !== undefined) item.managerNotes = managerNotes;
+          writeJson(ENQUIRIES_FILE, list);
+
+          if (writeClient) {
+            try {
+              await writeClient.patch(item._id).set({ status: item.status, managerNotes: item.managerNotes }).commit();
+            } catch (e) {
+              console.warn('[Sanity Patch Error]:', e.message);
+            }
+          }
+        }
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, item }));
+      } catch (e) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: e.message }));
+      }
+    });
+    return;
+  }
+
+  // Job Application Submission Endpoint
+  if (url.pathname === '/api/apply' && req.method === 'POST') {
+    let body = '';
+    req.on('data', (chunk) => {
+      body += chunk;
+    });
+
+    req.on('end', async () => {
+      try {
+        const payload = JSON.parse(body || '{}');
+        const { position, fullName, email, phone, experienceYears, availability, resumeLink, message, consent } = payload;
+
+        if (!fullName || !email || !phone || !position || !consent) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: 'Missing mandatory applicant details.' }));
+          return;
+        }
+
+        const id = `app-${Date.now()}`;
+        const newApp = {
+          _id: id,
+          _type: 'jobApplication',
+          id,
+          position: position.trim(),
+          fullName: fullName.trim(),
+          email: email.trim(),
+          phone: phone.trim(),
+          experienceYears: (experienceYears || '').trim(),
+          availability: (availability || '').trim(),
+          resumeLink: (resumeLink || '').trim(),
+          message: (message || '').trim(),
+          status: 'new',
+          hrNotes: '',
+          submittedAt: new Date().toISOString(),
+        };
+
+        // 1. Persist locally
+        const list = readJson(APPLICATIONS_FILE);
+        list.unshift(newApp);
+        writeJson(APPLICATIONS_FILE, list);
+
+        // 2. Persist to Sanity
+        if (writeClient) {
+          try {
+            await writeClient.createOrReplace(newApp);
+            console.log(`[Sanity] Created jobApplication document: ${id}`);
+          } catch (sanityErr) {
+            console.warn('[Sanity Job Application Write Warning]:', sanityErr.message);
+          }
+        }
+
+        console.log(`[MAATI Careers] New application received for ${position}: ${fullName} (${email})`);
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(
+          JSON.stringify({
+            success: true,
+            id,
+            message: 'Application received successfully. We look forward to reviewing your profile.'
+          })
+        );
+      } catch (err) {
+        console.error('[MAATI Careers Error]:', err);
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: 'Server could not process application' }));
+      }
+    });
+    return;
+  }
+
+  // Get Applications (for Studio / Admin dashboard)
+  if (url.pathname === '/api/applications' && req.method === 'GET') {
+    const list = readJson(APPLICATIONS_FILE);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ success: true, applications: list }));
+    return;
+  }
+
+  // Update Application Status / HR Notes
+  if (url.pathname === '/api/applications/status' && req.method === 'POST') {
+    let body = '';
+    req.on('data', (c) => { body += c; });
+    req.on('end', async () => {
+      try {
+        const { id, status, hrNotes } = JSON.parse(body || '{}');
+        const list = readJson(APPLICATIONS_FILE);
+        const item = list.find((i) => i._id === id || i.id === id);
+        if (item) {
+          if (status) item.status = status;
+          if (hrNotes !== undefined) item.hrNotes = hrNotes;
+          writeJson(APPLICATIONS_FILE, list);
+
+          if (writeClient) {
+            try {
+              await writeClient.patch(item._id).set({ status: item.status, hrNotes: item.hrNotes }).commit();
+            } catch (e) {
+              console.warn('[Sanity Patch Error]:', e.message);
+            }
+          }
+        }
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, item }));
+      } catch (e) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: e.message }));
+      }
+    });
+    return;
+  }
+
+  // Delete Inquiry Endpoint
+  if (url.pathname === '/api/inquiries/delete' && req.method === 'POST') {
+    let body = '';
+    req.on('data', (c) => { body += c; });
+    req.on('end', async () => {
+      try {
+        const { id } = JSON.parse(body || '{}');
+        let list = readJson(ENQUIRIES_FILE);
+        list = list.filter((i) => i._id !== id && i.id !== id);
+        writeJson(ENQUIRIES_FILE, list);
+
+        if (writeClient) {
+          try {
+            await writeClient.delete(id);
+          } catch (e) {
+            console.warn('[Sanity Delete Warning]:', e.message);
+          }
+        }
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true }));
+      } catch (e) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: e.message }));
+      }
+    });
+    return;
+  }
+
+  // Delete Job Application Endpoint
+  if (url.pathname === '/api/applications/delete' && req.method === 'POST') {
+    let body = '';
+    req.on('data', (c) => { body += c; });
+    req.on('end', async () => {
+      try {
+        const { id } = JSON.parse(body || '{}');
+        let list = readJson(APPLICATIONS_FILE);
+        list = list.filter((i) => i._id !== id && i.id !== id);
+        writeJson(APPLICATIONS_FILE, list);
+
+        if (writeClient) {
+          try {
+            await writeClient.delete(id);
+          } catch (e) {
+            console.warn('[Sanity Delete Warning]:', e.message);
+          }
+        }
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true }));
+      } catch (e) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: e.message }));
+      }
+    });
     return;
   }
 
@@ -169,6 +490,66 @@ const server = http.createServer(async (req, res) => {
           results.push('galleryAssetsData');
         }
 
+        // 8. Catering Page Content
+        if (payload.catering) {
+          await writeClient.createOrReplace({
+            _id: 'cateringPageContent',
+            _type: 'cateringPageContent',
+            ...payload.catering,
+          });
+          results.push('cateringPageContent');
+        }
+
+        // 9. Careers / Jobs Page Content
+        if (payload.jobs) {
+          await writeClient.createOrReplace({
+            _id: 'jobsPageContent',
+            _type: 'jobsPageContent',
+            ...payload.jobs,
+          });
+          results.push('jobsPageContent');
+        }
+
+        // 10. About Us Page Content
+        if (payload.about) {
+          await writeClient.createOrReplace({
+            _id: 'aboutPageContent',
+            _type: 'aboutPageContent',
+            ...payload.about,
+          });
+          results.push('aboutPageContent');
+        }
+
+        // 11. Legal & Impressum Page Content
+        if (payload.legal) {
+          await writeClient.createOrReplace({
+            _id: 'legalPageContent',
+            _type: 'legalPageContent',
+            ...payload.legal,
+          });
+          results.push('legalPageContent');
+        }
+
+        // 12. Category Landing Pages Content
+        if (payload.landingPages) {
+          await writeClient.createOrReplace({
+            _id: 'landingPagesContent',
+            _type: 'landingPagesContent',
+            ...payload.landingPages,
+          });
+          results.push('landingPagesContent');
+        }
+
+        // 13. Reservation Modal & Widget Content
+        if (payload.reservation) {
+          await writeClient.createOrReplace({
+            _id: 'reservationContent',
+            _type: 'reservationContent',
+            ...payload.reservation,
+          });
+          results.push('reservationContent');
+        }
+
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(
           JSON.stringify({
@@ -191,8 +572,65 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  res.writeHead(404, { 'Content-Type': 'application/json' });
-  res.end(JSON.stringify({ error: 'Endpoint not found' }));
+  // ── STATIC FILE SERVER ── Serve built React frontend from dist/
+  const MIME_TYPES = {
+    '.html': 'text/html; charset=utf-8',
+    '.js':   'application/javascript; charset=utf-8',
+    '.css':  'text/css; charset=utf-8',
+    '.png':  'image/png',
+    '.jpg':  'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.webp': 'image/webp',
+    '.svg':  'image/svg+xml',
+    '.ico':  'image/x-icon',
+    '.woff': 'font/woff',
+    '.woff2':'font/woff2',
+    '.ttf':  'font/ttf',
+    '.json': 'application/json',
+    '.xml':  'application/xml',
+    '.txt':  'text/plain',
+  };
+
+  // Strip query string to get the clean file path
+  const reqPath = url.pathname;
+  let filePath = path.join(DIST_DIR, reqPath);
+
+  // Security: prevent directory traversal outside dist/
+  if (!filePath.startsWith(DIST_DIR)) {
+    res.writeHead(403);
+    res.end('Forbidden');
+    return;
+  }
+
+  // If path points to a directory, look for index.html inside it
+  if (fs.existsSync(filePath) && fs.statSync(filePath).isDirectory()) {
+    filePath = path.join(filePath, 'index.html');
+  }
+
+  if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+    const ext = path.extname(filePath).toLowerCase();
+    const mime = MIME_TYPES[ext] || 'application/octet-stream';
+
+    // Long-lived cache for hashed assets, no-cache for HTML
+    const isHashedAsset = reqPath.startsWith('/assets/');
+    res.setHeader('Cache-Control', isHashedAsset
+      ? 'public, max-age=31536000, immutable'
+      : 'no-cache, no-store, must-revalidate'
+    );
+    res.writeHead(200, { 'Content-Type': mime });
+    fs.createReadStream(filePath).pipe(res);
+  } else {
+    // SPA fallback — all unmatched routes return index.html so React Router handles them
+    const indexPath = path.join(DIST_DIR, 'index.html');
+    if (fs.existsSync(indexPath)) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      fs.createReadStream(indexPath).pipe(res);
+    } else {
+      res.writeHead(404, { 'Content-Type': 'text/plain' });
+      res.end('404 — run npm run build first');
+    }
+  }
 });
 
 server.listen(PORT, () => {

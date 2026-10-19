@@ -32,7 +32,20 @@ import {
   ArrowLeft,
   Lightbulb,
   Calendar,
-  Phone
+  Phone,
+  Inbox,
+  Briefcase,
+  User,
+  Clock,
+  MessageSquare,
+  Mail,
+  Layers,
+  Award,
+  ShieldCheck,
+  HelpCircle,
+  Eye,
+  EyeOff,
+  CheckCircle
 } from 'lucide-react';
 import {
   SanityMenuItem,
@@ -44,11 +57,34 @@ import {
   useEventsContent,
   useContactContent,
   usePrintMenuContent,
+  useCateringContent,
+  useJobsContent,
+  useAboutContent,
+  useLegalContent,
+  useLandingPagesContent,
+  useReservationContent,
   SiteSettings,
   HomepageContent,
   EventsContent,
   ContactContent,
   PrintMenuContent,
+  CateringContent,
+  CateringPackageItem,
+  CateringFaqItem,
+  JobsContent,
+  JobOpeningItem,
+  AboutContent,
+  AboutValueItem,
+  LegalContent,
+  LegalSectionItem,
+  DEFAULT_PRIVACY_SECTIONS,
+  DEFAULT_TERMS_SECTIONS,
+  LandingPagesContent,
+  LandingCategoryConfig,
+  LandingPageItem,
+  DEFAULT_LANDING_PAGES,
+  ReservationContent,
+  DEFAULT_RESERVATION,
   MaatiWayStep,
   saveSettingsToSanity,
   saveHomepageToSanity,
@@ -57,6 +93,12 @@ import {
   savePrintMenuToSanity,
   saveMenuCategoriesToSanity,
   saveGalleryToSanity,
+  saveCateringToSanity,
+  saveJobsToSanity,
+  saveAboutToSanity,
+  saveLegalToSanity,
+  saveLandingPagesToSanity,
+  saveReservationToSanity,
   syncAllLocalToSanity
 } from '../lib/sanityService';
 
@@ -66,6 +108,7 @@ import {
   DEFAULT_GALLERY_ASSETS,
   compressImageFile
 } from '../data/galleryAssets';
+import { apiUrl } from '../lib/api';
 
 const AVAILABLE_TAGS = [
   'Bowls & Mains',
@@ -79,60 +122,85 @@ const AVAILABLE_TAGS = [
   'My Uploads',
 ];
 
+export type StudioTab =
+  | 'overview'
+  | 'homepage'
+  | 'items'
+  | 'categories'
+  | 'landingPages'
+  | 'catering'
+  | 'events'
+  | 'jobs'
+  | 'about'
+  | 'contact'
+  | 'reservations'
+  | 'printMenu'
+  | 'legal'
+  | 'privacy'
+  | 'terms'
+  | 'settings'
+  | 'gallery'
+  | 'inquiries'
+  | 'applications';
+
+export const TAB_TITLES: Record<StudioTab, { title: string; route?: string; icon: string }> = {
+  overview: { title: 'All Pages Directory', icon: '📑' },
+  homepage: { title: 'Homepage Content', route: '/', icon: '🏠' },
+  items: { title: 'Menu Dishes & Availability', route: '/menu', icon: '🍲' },
+  categories: { title: 'Menu Categories', route: '/menu', icon: '📁' },
+  landingPages: { title: 'Category Showcase Landings', route: '/menu/naan-pockets', icon: '🏷️' },
+  catering: { title: 'Corporate & Event Catering', route: '/catering', icon: '🍱' },
+  events: { title: 'Private Events & Venue Hire', route: '/events', icon: '🎉' },
+  about: { title: 'Brand Story & About Us', route: '/about', icon: '📖' },
+  contact: { title: 'Location, Hours & Contact', route: '/contact', icon: '📍' },
+  reservations: { title: 'Table Reservations & TheFork', icon: '🕒' },
+  jobs: { title: 'Careers & Job Openings', route: '/jobs', icon: '💼' },
+  printMenu: { title: 'Print Menu & Cards', route: '/print-menu', icon: '📄' },
+  legal: { title: 'Impressum (§ 5 TMG)', route: '/impressum', icon: '⚖️' },
+  privacy: { title: 'Privacy Policy (Datenschutz)', route: '/privacy', icon: '🔒' },
+  terms: { title: 'Terms & Conditions (AGB)', route: '/terms', icon: '📜' },
+  gallery: { title: 'Photo Library & Uploads', icon: '🖼️' },
+  settings: { title: 'Global SEO & Schema Info', icon: '⚙️' },
+  inquiries: { title: 'Customer Catering Inquiries', icon: '📥' },
+  applications: { title: 'Job Candidate Applications', icon: '👔' },
+};
+
 interface TourStep {
   selector: string;
   title: string;
   description: string;
   tip?: string;
-  tab?: 'items' | 'categories' | 'homepage' | 'gallery' | 'settings' | 'events' | 'contact' | 'printMenu';
+  tab?: StudioTab;
 }
 
 const SPOTLIGHT_STEPS: TourStep[] = [
   {
-    selector: '[data-tour="add-dish"]',
-    title: '+ Add New Dish',
-    description: 'Click here anytime to add a new dish with title, prices, ingredients, and photos.',
-    tip: 'You can set single pricing or multiple options like Chicken / Prawns.',
-    tab: 'items',
+    selector: '[data-tour="studio-header"]',
+    title: 'Welcome to MAATI Studio',
+    description: 'Your central command center to manage content, menu dishes, prices, and media across all pages.',
+    tip: 'Everything updates instantly on your website in English and German.',
+    tab: 'overview',
   },
   {
-    selector: '[data-tour="nav-tabs"]',
-    title: 'Main Navigation Bar',
-    description: 'Easily switch between your Dishes list, Categories, Homepage texts, and the Photo Library.',
-    tip: 'The numbers show how many items you currently have.',
-    tab: 'items',
+    selector: '[data-tour="page-cards"]',
+    title: 'Website Pages Directory',
+    description: 'Every single page on MAATI Kitchen is organized as a card here. Click any card to jump straight into its editor.',
+    tip: 'Inside any editor, click the "← Back to All Pages" button at the top to return here.',
+    tab: 'overview',
   },
   {
-    selector: '[data-tour="metrics"]',
-    title: 'Live Menu Overview',
-    description: 'See at a glance how many dishes are available, sold out, or featured on your homepage.',
-    tab: 'items',
+    selector: '[data-tour="cloud-sync"]',
+    title: '1-Click Cloud Sync',
+    description: 'Whenever you make edits, click "Sync to Cloud" to push all your updates to Sanity Cloud and your live VPS.',
+    tip: 'Your visitors will immediately see your latest menu dishes and changes.',
+    tab: 'overview',
   },
   {
-    selector: '[data-tour="dish-available"]',
-    title: '1-Click Availability Toggle',
-    description: 'Click this button to instantly mark any dish as Available or Sold Out for the day.',
-    tip: 'Sold-out items will be greyed out automatically.',
-    tab: 'items',
-  },
-  {
-    selector: '[data-tour="dish-star"]',
-    title: 'Feature on Homepage',
-    description: 'Click the Star on your signature dishes to showcase them on the homepage "Treat Your Tastebuds" section.',
-    tip: 'You can arrange their order using the arrows above.',
-    tab: 'items',
-  },
-  {
-    selector: '[data-tour="dish-edit"]',
-    title: 'Edit Dish Details',
-    description: 'Click the blue pencil to change prices, descriptions in English & German, or dish photos.',
-    tab: 'items',
-  },
-  {
-    selector: '[data-tour="tab-gallery"]',
-    title: 'Photo Library & Fast Uploads',
-    description: 'Upload food photos directly from your phone. Photos are auto-compressed in milliseconds and organized by tags.',
-    tab: 'gallery',
+    selector: '[data-tour="view-site"]',
+    title: 'Instant Website Preview',
+    description: 'Click "View Website" anytime to open your live restaurant site in a new tab and preview your updates.',
+    tip: 'You can test both English (/...) and German (/de/...) versions live.',
+    tab: 'overview',
   },
 ];
 
@@ -150,8 +218,14 @@ export const StudioPage: React.FC = () => {
   const { content: initialEvents } = useEventsContent();
   const { content: initialContact } = useContactContent();
   const { content: initialPrintMenu } = usePrintMenuContent();
+  const { content: initialCatering } = useCateringContent();
+  const { content: initialJobs } = useJobsContent();
+  const { content: initialAbout } = useAboutContent();
+  const { content: initialLegal } = useLegalContent();
+  const { content: initialLandingPages } = useLandingPagesContent();
+  const { content: initialReservation } = useReservationContent();
 
-  const [activeTab, setActiveTab] = useState<'items' | 'categories' | 'homepage' | 'gallery' | 'settings' | 'events' | 'contact' | 'printMenu'>('items');
+  const [activeTab, setActiveTab] = useState<StudioTab>('overview');
   const [categories, setCategories] = useState<SanityCategoryWithItems[]>([]);
   const [selectedCatId, setSelectedCatId] = useState<string>('all');
   
@@ -163,8 +237,220 @@ export const StudioPage: React.FC = () => {
   const [eventsContent, _setEventsContent] = useState<EventsContent>(initialEvents);
   // Contact page state
   const [contactContent, _setContactContent] = useState<ContactContent>(initialContact);
+  // Catering page state
+  const [cateringContent, _setCateringContent] = useState<CateringContent>(initialCatering);
+  // Jobs page state
+  const [jobsContent, _setJobsContent] = useState<JobsContent>(initialJobs);
+  // About Us page state
+  const [aboutContent, _setAboutContent] = useState<AboutContent>(initialAbout);
+  // Legal & Impressum state
+  const [legalContent, _setLegalContent] = useState<LegalContent>(initialLegal);
+  // Category Landing Pages state
+  const [landingPagesContent, _setLandingPagesContent] = useState<LandingPagesContent>(initialLandingPages);
+  const [selectedLandingKey, setSelectedLandingKey] = useState<'naan-pockets' | 'bowls' | 'breakfast' | 'coffee-chai'>('naan-pockets');
+  // Table Reservations state
+  const [reservationContent, _setReservationContent] = useState<ReservationContent>(initialReservation);
+
+  useEffect(() => { _setCateringContent(initialCatering); }, [initialCatering]);
+  useEffect(() => { _setJobsContent(initialJobs); }, [initialJobs]);
+  useEffect(() => { _setAboutContent(initialAbout); }, [initialAbout]);
+  useEffect(() => { _setLegalContent(initialLegal); }, [initialLegal]);
+  useEffect(() => { _setLandingPagesContent(initialLandingPages); }, [initialLandingPages]);
+  useEffect(() => { _setReservationContent(initialReservation); }, [initialReservation]);
   // Print / Visual Menu state
   const [printMenuContent, _setPrintMenuContent] = useState<PrintMenuContent>(initialPrintMenu);
+
+  // Inquiries & Applications State
+  const [inquiries, setInquiries] = useState<any[]>([]);
+  const [applications, setApplications] = useState<any[]>([]);
+  const [inquiriesFilter, setInquiriesFilter] = useState<'all' | 'new' | 'contacted' | 'confirmed' | 'archived'>('all');
+  const [applicationsFilter, setApplicationsFilter] = useState<'all' | 'new' | 'reviewing' | 'interview' | 'hired' | 'rejected'>('all');
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [noteDraft, setNoteDraft] = useState('');
+
+  const fetchInquiries = async () => {
+    let combined: any[] = [];
+    try {
+      const local = JSON.parse(localStorage.getItem('maati_stored_enquiries') || '[]');
+      if (Array.isArray(local)) combined = [...local];
+    } catch (e) {
+      // ignore
+    }
+
+    try {
+      const res = await fetch(apiUrl('/api/inquiries'));
+      const data = await res.json().catch(() => ({}));
+      if (data.success && Array.isArray(data.inquiries)) {
+        const ids = new Set(combined.map((x) => x._id || x.id));
+        data.inquiries.forEach((item: any) => {
+          if (!ids.has(item._id || item.id)) {
+            combined.push(item);
+          }
+        });
+      }
+    } catch (e) {
+      // ignore
+    }
+
+    setInquiries(combined);
+  };
+
+  const fetchApplications = async () => {
+    let combined: any[] = [];
+    try {
+      const local = JSON.parse(localStorage.getItem('maati_stored_applications') || '[]');
+      if (Array.isArray(local)) combined = [...local];
+    } catch (e) {
+      // ignore
+    }
+
+    try {
+      const res = await fetch(apiUrl('/api/applications'));
+      const data = await res.json().catch(() => ({}));
+      if (data.success && Array.isArray(data.applications)) {
+        const ids = new Set(combined.map((x) => x._id || x.id));
+        data.applications.forEach((item: any) => {
+          if (!ids.has(item._id || item.id)) {
+            combined.push(item);
+          }
+        });
+      }
+    } catch (e) {
+      // ignore
+    }
+
+    setApplications(combined);
+  };
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchInquiries();
+      fetchApplications();
+
+      const handleNewApp = () => fetchApplications();
+      const handleNewEnquiry = () => fetchInquiries();
+
+      window.addEventListener('maati_application_received', handleNewApp);
+      window.addEventListener('maati_enquiry_received', handleNewEnquiry);
+
+      return () => {
+        window.removeEventListener('maati_application_received', handleNewApp);
+        window.removeEventListener('maati_enquiry_received', handleNewEnquiry);
+      };
+    }
+  }, [isAuthenticated, activeTab]);
+
+  const handleUpdateInquiryStatus = async (id: string, newStatus: string) => {
+    try {
+      await fetch(apiUrl('/api/inquiries/status'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, status: newStatus }),
+      });
+      setInquiries((prev) =>
+        prev.map((item) => (item._id === id || item.id === id ? { ...item, status: newStatus } : item))
+      );
+      showToast('Inquiry status updated! 📥');
+    } catch (e) {
+      showToast('Failed to update status');
+    }
+  };
+
+  const handleSaveInquiryNote = async (id: string) => {
+    try {
+      await fetch(apiUrl('/api/inquiries/status'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, managerNotes: noteDraft }),
+      });
+      setInquiries((prev) =>
+        prev.map((item) => (item._id === id || item.id === id ? { ...item, managerNotes: noteDraft } : item))
+      );
+      setEditingNoteId(null);
+      setNoteDraft('');
+      showToast('Manager note saved! 📝');
+    } catch (e) {
+      showToast('Failed to save note');
+    }
+  };
+
+  const handleUpdateApplicationStatus = async (id: string, newStatus: string) => {
+    try {
+      await fetch(apiUrl('/api/applications/status'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, status: newStatus }),
+      });
+      setApplications((prev) =>
+        prev.map((item) => (item._id === id || item.id === id ? { ...item, status: newStatus } : item))
+      );
+      showToast('Application status updated! 💼');
+    } catch (e) {
+      showToast('Failed to update status');
+    }
+  };
+
+  const handleSaveApplicationNote = async (id: string) => {
+    try {
+      await fetch(apiUrl('/api/applications/status'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, hrNotes: noteDraft }),
+      });
+      setApplications((prev) =>
+        prev.map((item) => (item._id === id || item.id === id ? { ...item, hrNotes: noteDraft } : item))
+      );
+      setEditingNoteId(null);
+      setNoteDraft('');
+      showToast('HR note saved! 📝');
+    } catch (e) {
+      showToast('Failed to save note');
+    }
+  };
+
+  const handleDeleteInquiry = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this customer inquiry?')) return;
+    try {
+      setInquiries((prev) => prev.filter((item) => item._id !== id && item.id !== id));
+      try {
+        const local = JSON.parse(localStorage.getItem('maati_stored_enquiries') || '[]');
+        const updated = local.filter((item: any) => item._id !== id && item.id !== id);
+        localStorage.setItem('maati_stored_enquiries', JSON.stringify(updated));
+      } catch (e) {
+        // ignore
+      }
+      await fetch(apiUrl('/api/inquiries/delete'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      }).catch(() => null);
+      showToast('Inquiry deleted successfully! 🗑️');
+    } catch (e) {
+      showToast('Failed to delete inquiry');
+    }
+  };
+
+  const handleDeleteApplication = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this job application?')) return;
+    try {
+      setApplications((prev) => prev.filter((item) => item._id !== id && item.id !== id));
+      try {
+        const local = JSON.parse(localStorage.getItem('maati_stored_applications') || '[]');
+        const updated = local.filter((item: any) => item._id !== id && item.id !== id);
+        localStorage.setItem('maati_stored_applications', JSON.stringify(updated));
+      } catch (e) {
+        // ignore
+      }
+      await fetch(apiUrl('/api/applications/delete'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      }).catch(() => null);
+      showToast('Job application deleted! 🗑️');
+    } catch (e) {
+      showToast('Failed to delete application');
+    }
+  };
 
   // Auto-track changes
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -974,6 +1260,90 @@ export const StudioPage: React.FC = () => {
     }
   };
 
+  // Save Catering Page Content
+  const handleSaveCatering = async (e: React.FormEvent) => {
+    e.preventDefault();
+    localStorage.setItem('maati_admin_catering', JSON.stringify(cateringContent));
+    window.dispatchEvent(new CustomEvent('maati_catering_updated', { detail: { catering: cateringContent, forceLocal: true } }));
+    window.dispatchEvent(new StorageEvent('storage', { key: 'maati_admin_catering' }));
+    const syncRes = await saveCateringToSanity(cateringContent);
+    if (syncRes.success) {
+      showToast('Catering packages & pricing saved & published to Sanity Cloud! 🚀');
+    } else {
+      showToast(`Saved locally, but Cloud Sync failed: ${syncRes.message} ⚠️`);
+    }
+  };
+
+  // Save Jobs & Careers Page Content
+  const handleSaveJobs = async (e: React.FormEvent) => {
+    e.preventDefault();
+    localStorage.setItem('maati_admin_jobs', JSON.stringify(jobsContent));
+    window.dispatchEvent(new CustomEvent('maati_jobs_updated', { detail: { jobs: jobsContent, forceLocal: true } }));
+    window.dispatchEvent(new StorageEvent('storage', { key: 'maati_admin_jobs' }));
+    const syncRes = await saveJobsToSanity(jobsContent);
+    if (syncRes.success) {
+      showToast('Jobs & Careers page saved & published to Sanity Cloud! 🚀');
+    } else {
+      showToast(`Saved locally, but Cloud Sync failed: ${syncRes.message} ⚠️`);
+    }
+  };
+
+  // Save About Us Page Content
+  const handleSaveAbout = async (e: React.FormEvent) => {
+    e.preventDefault();
+    localStorage.setItem('maati_admin_about', JSON.stringify(aboutContent));
+    window.dispatchEvent(new CustomEvent('maati_about_updated', { detail: { about: aboutContent, forceLocal: true } }));
+    window.dispatchEvent(new StorageEvent('storage', { key: 'maati_admin_about' }));
+    const syncRes = await saveAboutToSanity(aboutContent);
+    if (syncRes.success) {
+      showToast('About Us brand story saved & published to Sanity Cloud! 🚀');
+    } else {
+      showToast(`Saved locally, but Cloud Sync failed: ${syncRes.message} ⚠️`);
+    }
+  };
+
+  // Save Legal & Impressum Content
+  const handleSaveLegal = async (e: React.FormEvent) => {
+    e.preventDefault();
+    localStorage.setItem('maati_admin_legal', JSON.stringify(legalContent));
+    window.dispatchEvent(new CustomEvent('maati_legal_updated', { detail: { legal: legalContent, forceLocal: true } }));
+    window.dispatchEvent(new StorageEvent('storage', { key: 'maati_admin_legal' }));
+    const syncRes = await saveLegalToSanity(legalContent);
+    if (syncRes.success) {
+      showToast('Legal & Impressum company details saved & published to Sanity Cloud! 🚀');
+    } else {
+      showToast(`Saved locally, but Cloud Sync failed: ${syncRes.message} ⚠️`);
+    }
+  };
+
+  // Save Category Landing Pages Content
+  const handleSaveLandingPages = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    localStorage.setItem('maati_admin_landing_pages', JSON.stringify(landingPagesContent));
+    window.dispatchEvent(new CustomEvent('maati_landing_pages_updated', { detail: { landingPages: landingPagesContent, forceLocal: true } }));
+    window.dispatchEvent(new StorageEvent('storage', { key: 'maati_admin_landing_pages' }));
+    const syncRes = await saveLandingPagesToSanity(landingPagesContent);
+    if (syncRes.success) {
+      showToast('Category Landing Pages saved & published to Sanity Cloud! 🚀');
+    } else {
+      showToast(`Saved locally, but Cloud Sync failed: ${syncRes.message} ⚠️`);
+    }
+  };
+
+  // Save Reservation Settings Content
+  const handleSaveReservation = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    localStorage.setItem('maati_admin_reservation', JSON.stringify(reservationContent));
+    window.dispatchEvent(new CustomEvent('maati_reservation_updated', { detail: { reservation: reservationContent, forceLocal: true } }));
+    window.dispatchEvent(new StorageEvent('storage', { key: 'maati_admin_reservation' }));
+    const syncRes = await saveReservationToSanity(reservationContent);
+    if (syncRes.success) {
+      showToast('Table Reservation settings saved & published to Sanity Cloud! 🚀');
+    } else {
+      showToast(`Saved locally, but Cloud Sync failed: ${syncRes.message} ⚠️`);
+    }
+  };
+
   // 1-Click Sync All Local Data to Sanity Cloud
   const [isCloudSyncing, setIsCloudSyncing] = useState(false);
   const handleSyncAllToCloud = async () => {
@@ -1294,179 +1664,915 @@ export const StudioPage: React.FC = () => {
       <div className="max-w-[1360px] mx-auto space-y-6">
 
         {/* ── Top Header Bar with Tour Guide Button ── */}
-        <header className="bg-[#fffdfa] rounded-[28px] p-5 sm:p-7 border border-[#ebdcd0] shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-[#1e382f] text-white flex items-center justify-center shadow-sm shrink-0">
-              <Sparkles className="w-6 h-6 text-[#d85c27]" />
+        <header
+          data-tour="studio-header"
+          className="bg-gradient-to-r from-[#142820] via-[#1e382f] to-[#172e25] rounded-[28px] p-5 sm:p-6 text-white shadow-xl border border-white/10 flex flex-col md:flex-row items-start md:items-center justify-between gap-5 relative overflow-hidden"
+        >
+          {/* Subtle Ambient Glow */}
+          <div className="absolute top-0 right-1/4 w-80 h-32 bg-[#d85c27]/15 rounded-full blur-3xl pointer-events-none" />
+
+          <div className="flex items-center gap-4 relative z-10">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#d85c27] to-[#b34415] text-white flex items-center justify-center shadow-md shrink-0 border border-amber-300/20">
+              <Sparkles className="w-6 h-6 text-amber-100" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-[24px] sm:text-[28px] font-black text-[#1e382f] leading-tight">
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <h1 className="text-[22px] sm:text-[26px] font-black text-white leading-tight tracking-tight">
                   MAATI Studio
                 </h1>
-                <span className="bg-emerald-100 text-emerald-800 text-[11px] font-black px-2.5 py-0.5 rounded-full">
-                  Live
+                <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 text-[11px] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1.5 shadow-xs">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  Live Production
                 </span>
               </div>
-              <p className="text-[#666] text-[13px] mt-0.5">
-                Simple control over your dishes, categories, photos, and homepage.
+              <p className="text-white/70 text-[12.5px] mt-0.5 font-medium">
+                Unified Content &amp; Operations Command Center · Berlin Mitte
               </p>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto justify-start md:justify-end">
+          <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto justify-start md:justify-end relative z-10">
             <button
               type="button"
+              data-tour="tour-btn"
               onClick={startSpotlightTour}
-              className="bg-[#fae8d8] hover:bg-[#f3d9c2] text-[#d85c27] border border-[#ebdcd0] font-black px-4 py-2.5 rounded-xl text-[13px] shadow-xs hover:shadow-sm transition-all flex items-center gap-1.5"
+              className="bg-white/10 hover:bg-white/20 text-amber-200 border border-white/15 font-bold px-3.5 py-2.5 rounded-xl text-[12.5px] shadow-xs hover:shadow-sm transition-all flex items-center gap-1.5 cursor-pointer backdrop-blur-xs"
             >
-              <Compass className="w-4 h-4" />
-              <span>Interactive Tour</span>
+              <Compass className="w-4 h-4 text-amber-300" />
+              <span>Tour Guide</span>
             </button>
 
             <button
               type="button"
+              data-tour="cloud-sync"
               onClick={handleSyncAllToCloud}
               disabled={isCloudSyncing}
               title="Push all saved admin data to Sanity Cloud so production visitors on any device see your changes"
-              className="bg-[#1e382f] hover:bg-[#2a4d41] text-white border border-[#1e382f] font-bold px-4 py-2.5 rounded-xl text-[13px] shadow-xs hover:shadow-sm transition-all flex items-center gap-1.5 disabled:opacity-50"
+              className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-4 py-2.5 rounded-xl text-[13px] shadow-sm hover:shadow-md transition-all flex items-center gap-2 disabled:opacity-50 cursor-pointer"
             >
-              <span className="text-[14px]">☁️</span>
+              <span className="text-[14px]">{isCloudSyncing ? '⏳' : '☁️'}</span>
               <span>{isCloudSyncing ? 'Syncing...' : 'Sync to Cloud'}</span>
             </button>
 
             <Link
               to="/"
               target="_blank"
+              data-tour="view-site"
               rel="noopener noreferrer"
-              className="bg-white hover:bg-gray-50 text-[#1e382f] border border-[#ebdcd0] font-bold px-4 py-2.5 rounded-xl text-[13px] shadow-xs hover:shadow-sm transition-all flex items-center gap-1.5"
+              className="bg-white/10 hover:bg-white/20 text-white border border-white/15 font-bold px-3.5 py-2.5 rounded-xl text-[12.5px] shadow-xs hover:shadow-sm transition-all flex items-center gap-1.5 backdrop-blur-xs"
             >
-              <ExternalLink className="w-4 h-4 text-[#d85c27]" />
+              <ExternalLink className="w-4 h-4 text-amber-300" />
               <span>View Website</span>
             </Link>
 
-            <button
-              data-tour="add-dish"
-              onClick={() => handleOpenNewItem()}
-              className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-5 py-2.5 rounded-xl text-[13px] shadow-sm hover:shadow-md transition-all flex items-center gap-1.5"
-            >
-
-              <Plus className="w-4 h-4" />
-              <span>Add Dish</span>
-            </button>
+            {activeTab === 'items' && (
+              <button
+                data-tour="add-dish"
+                onClick={() => handleOpenNewItem()}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold px-4 py-2.5 rounded-xl text-[13px] shadow-sm hover:shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add Dish</span>
+              </button>
+            )}
 
             <button
               onClick={handleLogout}
-              title="Logout"
-              className="p-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors"
+              title="Logout from Studio"
+              className="p-2.5 rounded-xl bg-white/10 hover:bg-rose-500/80 text-white/90 hover:text-white border border-white/15 transition-all cursor-pointer"
             >
               <LogOut className="w-4 h-4" />
             </button>
           </div>
         </header>
 
-        {/* ── Segmented Navigation Tabs ── */}
-        <nav
-          data-tour="nav-tabs"
-          className="flex items-center gap-2 overflow-x-auto no-scrollbar bg-[#fffdfa] p-2 rounded-2xl border border-[#ebdcd0] shadow-sm"
-        >
-          <button
-            onClick={() => setActiveTab('items')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-extrabold text-[13.5px] whitespace-nowrap transition-all ${
-              activeTab === 'items'
-                ? 'bg-[#1e382f] text-white shadow-sm'
-                : 'text-[#1e382f] hover:bg-[#1e382f]/5'
-            }`}
-          >
-            <Utensils className="w-4 h-4 text-[#d85c27]" />
-            <span>Dishes ({allItemsWithCat.length})</span>
-          </button>
+        {/* ── Sub-Header Bar when inside any Page Editor: Back to All Pages Button ── */}
+        {activeTab !== 'overview' && (
+          <div className="bg-[#fffdfa] rounded-[24px] p-4 sm:p-5 border border-[#ebdcd0] shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-fadeIn">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setActiveTab('overview')}
+                className="bg-[#1e382f] hover:bg-[#d85c27] text-white font-extrabold px-5 py-2.5 rounded-xl text-[13.5px] flex items-center gap-2 shadow-xs hover:shadow-md transition-all cursor-pointer group"
+              >
+                <ArrowLeft className="w-4 h-4 text-[#d85c27] group-hover:text-white transition-colors" />
+                <span>← Back to All Pages</span>
+              </button>
 
-          <button
-            onClick={() => setActiveTab('categories')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-extrabold text-[13.5px] whitespace-nowrap transition-all ${
-              activeTab === 'categories'
-                ? 'bg-[#1e382f] text-white shadow-sm'
-                : 'text-[#1e382f] hover:bg-[#1e382f]/5'
-            }`}
-          >
-            <FolderTree className="w-4 h-4 text-[#d85c27]" />
-            <span>Categories ({categories.length})</span>
-          </button>
+              <div className="h-6 w-px bg-[#ebdcd0] hidden sm:block" />
 
-          <button
-            onClick={() => setActiveTab('homepage')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-extrabold text-[13.5px] whitespace-nowrap transition-all ${
-              activeTab === 'homepage'
-                ? 'bg-[#1e382f] text-white shadow-sm'
-                : 'text-[#1e382f] hover:bg-[#1e382f]/5'
-            }`}
-          >
-            <Home className="w-4 h-4 text-[#d85c27]" />
-            <span>Homepage Sections</span>
-          </button>
+              <div>
+                <span className="text-[10.5px] font-black text-[#888] uppercase tracking-wider block">
+                  Current Editor
+                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[16px] font-black text-[#1e382f]">
+                    {TAB_TITLES[activeTab]?.icon} {TAB_TITLES[activeTab]?.title}
+                  </span>
+                  {TAB_TITLES[activeTab]?.route && (
+                    <span className="text-[11px] font-mono font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-md">
+                      {TAB_TITLES[activeTab]?.route}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
 
-          <button
-            data-tour="tab-gallery"
-            onClick={() => setActiveTab('gallery')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-extrabold text-[13.5px] whitespace-nowrap transition-all ${
-              activeTab === 'gallery'
-                ? 'bg-[#1e382f] text-white shadow-sm'
-                : 'text-[#1e382f] hover:bg-[#1e382f]/5'
-            }`}
-          >
-            <ImageIcon className="w-4 h-4 text-[#d85c27]" />
-            <span>Photo Library ({galleryAssets.length})</span>
-          </button>
+            <div className="flex items-center gap-2 self-end sm:self-auto">
+              {TAB_TITLES[activeTab]?.route && (
+                <Link
+                  to={TAB_TITLES[activeTab].route!}
+                  target="_blank"
+                  className="bg-white hover:bg-gray-50 text-[#1e382f] border border-[#ebdcd0] font-bold px-3 py-2 rounded-xl text-[12px] flex items-center gap-1.5 transition-colors"
+                >
+                  <ExternalLink className="w-3.5 h-3.5 text-[#d85c27]" />
+                  <span>View Live Page</span>
+                </Link>
+              )}
 
-          <button
-            onClick={() => setActiveTab('events')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-extrabold text-[13.5px] whitespace-nowrap transition-all ${
-              activeTab === 'events'
-                ? 'bg-[#1e382f] text-white shadow-sm'
-                : 'text-[#1e382f] hover:bg-[#1e382f]/5'
-            }`}
-          >
-            <Calendar className="w-4 h-4 text-[#d85c27]" />
-            <span>Events Page</span>
-          </button>
+              <select
+                value={activeTab}
+                onChange={(e) => setActiveTab(e.target.value as StudioTab)}
+                className="border border-[#ebdcd0] rounded-xl px-3 py-2 text-[12px] font-bold text-[#1e382f] bg-white focus:outline-none focus:border-[#d85c27]"
+              >
+                <option value="overview">📑 All Pages Hub</option>
+                <option value="homepage">🏠 1. Homepage</option>
+                <option value="items">🍲 2. Menu Dishes</option>
+                <option value="categories">📁 3. Categories</option>
+                <option value="landingPages">🏷️ 4. Category Landings</option>
+                <option value="catering">🍱 5. Catering</option>
+                <option value="events">🎉 6. Events & Venue</option>
+                <option value="about">📖 7. Brand Story & About</option>
+                <option value="contact">📍 8. Contact & Locations</option>
+                <option value="reservations">🕒 9. Table Reservations</option>
+                <option value="jobs">💼 10. Careers & Jobs</option>
+                <option value="printMenu">📄 11. Print Cards</option>
+                <option value="legal">⚖️ 12. Impressum (§ 5 TMG)</option>
+                <option value="privacy">🔒 13. Privacy Policy (DSGVO)</option>
+                <option value="terms">📜 14. Terms & Conditions (AGB)</option>
+                <option value="settings">⚙️ 15. SEO & Info</option>
+                <option value="gallery">🖼️ 16. Photo Library</option>
+                <option value="inquiries">📥 17. Inquiries</option>
+                <option value="applications">👔 18. Job Applications</option>
+              </select>
+            </div>
+          </div>
+        )}
 
-          <button
-            onClick={() => setActiveTab('contact')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-extrabold text-[13.5px] whitespace-nowrap transition-all ${
-              activeTab === 'contact'
-                ? 'bg-[#1e382f] text-white shadow-sm'
-                : 'text-[#1e382f] hover:bg-[#1e382f]/5'
-            }`}
-          >
-            <Phone className="w-4 h-4 text-[#d85c27]" />
-            <span>Contact Us</span>
-          </button>
+        {/* ═══════════════════════════════════════════════
+            TAB 0: ALL WEBSITE PAGES DIRECTORY
+        ═══════════════════════════════════════════════ */}
+        {activeTab === 'overview' && (
+          <div className="space-y-6 animate-fadeIn">
+            {/* Mission Control Hub Banner */}
+            <div className="bg-[#fffdfa] rounded-[28px] p-6 sm:p-8 border border-[#ebdcd0] shadow-sm relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+              <div className="max-w-[780px] space-y-3 relative z-10">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="bg-[#1e382f] text-white text-[10.5px] font-black uppercase tracking-widest px-3 py-1 rounded-full inline-block">
+                    Architecture &amp; Pages Hub
+                  </span>
+                  <span className="bg-amber-100 text-amber-900 text-[11px] font-bold px-2.5 py-0.5 rounded-full border border-amber-200">
+                    18 Management Modules
+                  </span>
+                </div>
+                <h2 className="text-[24px] sm:text-[30px] font-black leading-tight text-[#1e382f]">
+                  Website Pages &amp; Content Directory
+                </h2>
+                <p className="text-[#666] text-[13.5px] leading-relaxed">
+                  Click any card below to open its dedicated editor. Update headlines, pricing, and ingredients in English &amp; German, upload photos, and keep your Google search results fresh.
+                </p>
+                <div className="flex flex-wrap items-center gap-2 pt-1 text-[11.5px]">
+                  <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-lg border border-gray-200 flex items-center gap-1.5 font-bold">
+                    <span>🌐</span> 24 Multilingual URLs Active
+                  </span>
+                  <span className="bg-emerald-50 text-emerald-800 px-3 py-1 rounded-lg border border-emerald-200 flex items-center gap-1.5 font-bold">
+                    <span>🍲</span> {allItemsWithCat.length} Dishes Live
+                  </span>
+                  <span className="bg-blue-50 text-blue-800 px-3 py-1 rounded-lg border border-blue-200 flex items-center gap-1.5 font-bold">
+                    <span>📁</span> {categories.length} Categories
+                  </span>
+                  <span className="bg-purple-50 text-purple-800 px-3 py-1 rounded-lg border border-purple-200 flex items-center gap-1.5 font-bold">
+                    <span>⚖️</span> Impressum &amp; GDPR Validated
+                  </span>
+                </div>
+              </div>
 
-          <button
-            onClick={() => setActiveTab('printMenu')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-extrabold text-[13.5px] whitespace-nowrap transition-all ${
-              activeTab === 'printMenu'
-                ? 'bg-[#1e382f] text-white shadow-sm'
-                : 'text-[#1e382f] hover:bg-[#1e382f]/5'
-            }`}
-          >
-            <FileText className="w-4 h-4 text-[#d85c27]" />
-            <span>Visual Menu Cards</span>
-          </button>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 relative z-10 shrink-0 w-full md:w-auto">
+                <button
+                  type="button"
+                  onClick={handleSyncAllToCloud}
+                  disabled={isCloudSyncing}
+                  className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-5 py-3 rounded-xl text-[13px] shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+                >
+                  <Sparkles className="w-4 h-4 text-amber-200" />
+                  <span>{isCloudSyncing ? 'Syncing...' : 'Sync All Pages Live 🚀'}</span>
+                </button>
+              </div>
+              <div className="absolute -bottom-16 -right-16 w-64 h-64 rounded-full bg-[#d85c27]/5 blur-3xl pointer-events-none" />
+            </div>
 
-          <button
-            onClick={() => setActiveTab('settings')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-extrabold text-[13.5px] whitespace-nowrap transition-all ${
-              activeTab === 'settings'
-                ? 'bg-[#1e382f] text-white shadow-sm'
-                : 'text-[#1e382f] hover:bg-[#1e382f]/5'
-            }`}
-          >
-            <Sliders className="w-4 h-4 text-[#d85c27]" />
-            <span>Restaurant Info</span>
-          </button>
-        </nav>
+            {/* Pages Grid */}
+            <div data-tour="page-cards" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+
+              {/* 1. Homepage */}
+              <div
+                onClick={() => setActiveTab('homepage')}
+                className="bg-[#fffdfa] rounded-[24px] p-6 border border-[#ebdcd0] shadow-sm hover:shadow-md hover:border-[#d85c27] transition-all flex flex-col justify-between space-y-4 group cursor-pointer"
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="w-10 h-10 rounded-xl bg-orange-100 text-[#d85c27] flex items-center justify-center font-black">
+                      <Home className="w-5 h-5" />
+                    </div>
+                    <span className="text-[11px] font-mono font-bold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-lg">/ and /de</span>
+                  </div>
+                  <div>
+                    <h3 className="text-[17px] font-black text-[#1e382f]">1. Homepage</h3>
+                    <p className="text-[12.5px] text-[#666] leading-relaxed mt-1">
+                      Hero headlines, "Treat Your Tastebuds" signature dishes, "The Maati Way" 5-step bowl builder, and catering callout.
+                    </p>
+                  </div>
+                </div>
+                <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setActiveTab('homepage'); }}
+                    className="bg-[#1e382f] group-hover:bg-[#d85c27] text-white text-[12.5px] font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 transition-colors"
+                  >
+                    <Edit3 className="w-3.5 h-3.5 text-[#d85c27] group-hover:text-white" />
+                    <span>Edit Homepage</span>
+                  </button>
+                  <Link
+                    to="/"
+                    target="_blank"
+                    onClick={(e) => e.stopPropagation()}
+                    className="p-2 text-gray-400 hover:text-[#d85c27] transition-colors rounded-lg hover:bg-gray-50"
+                    title="View Live Page"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                  </Link>
+                </div>
+              </div>
+
+              {/* 2. Menu Dishes */}
+              <div
+                onClick={() => setActiveTab('items')}
+                className="bg-[#fffdfa] rounded-[24px] p-6 border border-[#ebdcd0] shadow-sm hover:shadow-md hover:border-[#d85c27] transition-all flex flex-col justify-between space-y-4 group cursor-pointer"
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-black">
+                      <Utensils className="w-5 h-5" />
+                    </div>
+                    <span className="text-[11px] font-mono font-bold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-lg">/menu and /de/menu</span>
+                  </div>
+                  <div>
+                    <h3 className="text-[17px] font-black text-[#1e382f]">2. Menu &amp; Dishes ({allItemsWithCat.length})</h3>
+                    <p className="text-[12.5px] text-[#666] leading-relaxed mt-1">
+                      Dishes list with single or variant pricing, ingredients, spicy/vegan badges, daily 1-click availability toggle, and category groupings.
+                    </p>
+                  </div>
+                </div>
+                <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setActiveTab('items'); }}
+                    className="bg-[#1e382f] group-hover:bg-[#d85c27] text-white text-[12.5px] font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 transition-colors"
+                  >
+                    <Edit3 className="w-3.5 h-3.5 text-[#d85c27] group-hover:text-white" />
+                    <span>Manage Dishes</span>
+                  </button>
+                  <Link
+                    to="/menu"
+                    target="_blank"
+                    onClick={(e) => e.stopPropagation()}
+                    className="p-2 text-gray-400 hover:text-[#d85c27] transition-colors rounded-lg hover:bg-gray-50"
+                    title="View Live Page"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                  </Link>
+                </div>
+              </div>
+
+              {/* 3. Category Landing Pages */}
+              <div
+                onClick={() => setActiveTab('landingPages')}
+                className="bg-[#fffdfa] rounded-[24px] p-6 border border-[#ebdcd0] shadow-sm hover:shadow-md hover:border-[#d85c27] transition-all flex flex-col justify-between space-y-4 group cursor-pointer"
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-black">
+                      <Tag className="w-5 h-5" />
+                    </div>
+                    <span className="text-[11px] font-mono font-bold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-lg">4 SEO Pages</span>
+                  </div>
+                  <div>
+                    <h3 className="text-[17px] font-black text-[#1e382f]">3. Category Landing Pages</h3>
+                    <p className="text-[12.5px] text-[#666] leading-relaxed mt-1">
+                      Dedicated pages for Naan Pockets, Bowls, Breakfast, and Coffee/Chai with custom H1 headers, SEO descriptions, and highlighted food cards.
+                    </p>
+                  </div>
+                </div>
+                <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setActiveTab('landingPages'); }}
+                    className="bg-[#1e382f] group-hover:bg-[#d85c27] text-white text-[12.5px] font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 transition-colors"
+                  >
+                    <Edit3 className="w-3.5 h-3.5 text-[#d85c27] group-hover:text-white" />
+                    <span>Edit Landings</span>
+                  </button>
+                  <Link
+                    to="/menu/naan-pockets"
+                    target="_blank"
+                    onClick={(e) => e.stopPropagation()}
+                    className="p-2 text-gray-400 hover:text-[#d85c27] transition-colors rounded-lg hover:bg-gray-50"
+                    title="View Naan Pockets Page"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                  </Link>
+                </div>
+              </div>
+
+              {/* 4. Catering Page */}
+              <div
+                onClick={() => setActiveTab('catering')}
+                className="bg-[#fffdfa] rounded-[24px] p-6 border border-[#ebdcd0] shadow-sm hover:shadow-md hover:border-[#d85c27] transition-all flex flex-col justify-between space-y-4 group cursor-pointer"
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-800 flex items-center justify-center font-black">
+                      <Layers className="w-5 h-5" />
+                    </div>
+                    <span className="text-[11px] font-mono font-bold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-lg">/catering</span>
+                  </div>
+                  <div>
+                    <h3 className="text-[17px] font-black text-[#1e382f]">4. Catering Page</h3>
+                    <p className="text-[12.5px] text-[#666] leading-relaxed mt-1">
+                      Corporate office packages (€11.90, €15.90, €19.90), min guests, feature bullet points in EN &amp; DE, lead time notice, and catering FAQs.
+                    </p>
+                  </div>
+                </div>
+                <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setActiveTab('catering'); }}
+                    className="bg-[#1e382f] group-hover:bg-[#d85c27] text-white text-[12.5px] font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 transition-colors"
+                  >
+                    <Edit3 className="w-3.5 h-3.5 text-[#d85c27] group-hover:text-white" />
+                    <span>Edit Catering</span>
+                  </button>
+                  <Link
+                    to="/catering"
+                    target="_blank"
+                    onClick={(e) => e.stopPropagation()}
+                    className="p-2 text-gray-400 hover:text-[#d85c27] transition-colors rounded-lg hover:bg-gray-50"
+                    title="View Live Page"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                  </Link>
+                </div>
+              </div>
+
+              {/* 5. Events Page */}
+              <div
+                onClick={() => setActiveTab('events')}
+                className="bg-[#fffdfa] rounded-[24px] p-6 border border-[#ebdcd0] shadow-sm hover:shadow-md hover:border-[#d85c27] transition-all flex flex-col justify-between space-y-4 group cursor-pointer"
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-800 flex items-center justify-center font-black">
+                      <Calendar className="w-5 h-5" />
+                    </div>
+                    <span className="text-[11px] font-mono font-bold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-lg">/events</span>
+                  </div>
+                  <div>
+                    <h3 className="text-[17px] font-black text-[#1e382f]">5. Events &amp; Venue Hire</h3>
+                    <p className="text-[12.5px] text-[#666] leading-relaxed mt-1">
+                      Private venue buyout specs, standing capacity (60 guests), seating arrangements, AV/sound equipment perks, and enquiry form.
+                    </p>
+                  </div>
+                </div>
+                <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setActiveTab('events'); }}
+                    className="bg-[#1e382f] group-hover:bg-[#d85c27] text-white text-[12.5px] font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 transition-colors"
+                  >
+                    <Edit3 className="w-3.5 h-3.5 text-[#d85c27] group-hover:text-white" />
+                    <span>Edit Events</span>
+                  </button>
+                  <Link
+                    to="/events"
+                    target="_blank"
+                    onClick={(e) => e.stopPropagation()}
+                    className="p-2 text-gray-400 hover:text-[#d85c27] transition-colors rounded-lg hover:bg-gray-50"
+                    title="View Live Page"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                  </Link>
+                </div>
+              </div>
+
+              {/* 6. About Us */}
+              <div
+                onClick={() => setActiveTab('about')}
+                className="bg-[#fffdfa] rounded-[24px] p-6 border border-[#ebdcd0] shadow-sm hover:shadow-md hover:border-[#d85c27] transition-all flex flex-col justify-between space-y-4 group cursor-pointer"
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="w-10 h-10 rounded-xl bg-teal-100 text-teal-800 flex items-center justify-center font-black">
+                      <Sparkles className="w-5 h-5" />
+                    </div>
+                    <span className="text-[11px] font-mono font-bold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-lg">/about</span>
+                  </div>
+                  <div>
+                    <h3 className="text-[17px] font-black text-[#1e382f]">6. About Us &amp; Story</h3>
+                    <p className="text-[12.5px] text-[#666] leading-relaxed mt-1">
+                      Brand heritage, traditional family recipes, philosophy of मिट्टी (clay &amp; soil), 3 core values, and restaurant photos.
+                    </p>
+                  </div>
+                </div>
+                <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setActiveTab('about'); }}
+                    className="bg-[#1e382f] group-hover:bg-[#d85c27] text-white text-[12.5px] font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 transition-colors"
+                  >
+                    <Edit3 className="w-3.5 h-3.5 text-[#d85c27] group-hover:text-white" />
+                    <span>Edit About Us</span>
+                  </button>
+                  <Link
+                    to="/about"
+                    target="_blank"
+                    onClick={(e) => e.stopPropagation()}
+                    className="p-2 text-gray-400 hover:text-[#d85c27] transition-colors rounded-lg hover:bg-gray-50"
+                    title="View Live Page"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                  </Link>
+                </div>
+              </div>
+
+              {/* 7. Locations & Contact */}
+              <div
+                onClick={() => setActiveTab('contact')}
+                className="bg-[#fffdfa] rounded-[24px] p-6 border border-[#ebdcd0] shadow-sm hover:shadow-md hover:border-[#d85c27] transition-all flex flex-col justify-between space-y-4 group cursor-pointer"
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-800 flex items-center justify-center font-black">
+                      <Phone className="w-5 h-5" />
+                    </div>
+                    <span className="text-[11px] font-mono font-bold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-lg">/locations &amp; /contact</span>
+                  </div>
+                  <div>
+                    <h3 className="text-[17px] font-black text-[#1e382f]">7. Locations &amp; Contact</h3>
+                    <p className="text-[12.5px] text-[#666] leading-relaxed mt-1">
+                      Restaurant address (Zimmerstraße 56), weekly opening hours, direct phone number, email address, and Google Maps embed.
+                    </p>
+                  </div>
+                </div>
+                <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setActiveTab('contact'); }}
+                    className="bg-[#1e382f] group-hover:bg-[#d85c27] text-white text-[12.5px] font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 transition-colors"
+                  >
+                    <Edit3 className="w-3.5 h-3.5 text-[#d85c27] group-hover:text-white" />
+                    <span>Edit Contact</span>
+                  </button>
+                  <Link
+                    to="/locations"
+                    target="_blank"
+                    onClick={(e) => e.stopPropagation()}
+                    className="p-2 text-gray-400 hover:text-[#d85c27] transition-colors rounded-lg hover:bg-gray-50"
+                    title="View Live Page"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                  </Link>
+                </div>
+              </div>
+
+              {/* 8. Table Reservations */}
+              <div
+                onClick={() => setActiveTab('reservations')}
+                className="bg-[#fffdfa] rounded-[24px] p-6 border border-[#ebdcd0] shadow-sm hover:shadow-md hover:border-[#d85c27] transition-all flex flex-col justify-between space-y-4 group cursor-pointer"
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="w-10 h-10 rounded-xl bg-teal-100 text-teal-800 flex items-center justify-center font-black">
+                      <Clock className="w-5 h-5" />
+                    </div>
+                    <span className="text-[11px] font-mono font-bold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-lg">Reservation Modal</span>
+                  </div>
+                  <div>
+                    <h3 className="text-[17px] font-black text-[#1e382f]">8. Table Reservations</h3>
+                    <p className="text-[12.5px] text-[#666] leading-relaxed mt-1">
+                      TheFork booking widget integration, modal title &amp; notice, max group size, and walk-in guidance for table bookings.
+                    </p>
+                  </div>
+                </div>
+                <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setActiveTab('reservations'); }}
+                    className="bg-[#1e382f] group-hover:bg-[#d85c27] text-white text-[12.5px] font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 transition-colors"
+                  >
+                    <Edit3 className="w-3.5 h-3.5 text-[#d85c27] group-hover:text-white" />
+                    <span>Edit Reservations</span>
+                  </button>
+                  <span className="text-[11.5px] text-emerald-700 font-bold bg-emerald-50 px-2.5 py-1 rounded-lg">
+                    TheFork Active
+                  </span>
+                </div>
+              </div>
+
+              {/* 9. Careers / Jobs */}
+              <div
+                onClick={() => setActiveTab('jobs')}
+                className="bg-[#fffdfa] rounded-[24px] p-6 border border-[#ebdcd0] shadow-sm hover:shadow-md hover:border-[#d85c27] transition-all flex flex-col justify-between space-y-4 group cursor-pointer"
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-800 flex items-center justify-center font-black">
+                      <Briefcase className="w-5 h-5" />
+                    </div>
+                    <span className="text-[11px] font-mono font-bold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-lg">/jobs &amp; /careers</span>
+                  </div>
+                  <div>
+                    <h3 className="text-[17px] font-black text-[#1e382f]">9. Careers &amp; Jobs ({jobsContent.jobs?.length || 0})</h3>
+                    <p className="text-[12.5px] text-[#666] leading-relaxed mt-1">
+                      Post restaurant openings (Managers, Baristas, Line Cooks), edit job descriptions, perks, and review submitted candidate CVs.
+                    </p>
+                  </div>
+                </div>
+                <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setActiveTab('jobs'); }}
+                    className="bg-[#1e382f] group-hover:bg-[#d85c27] text-white text-[12.5px] font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 transition-colors"
+                  >
+                    <Edit3 className="w-3.5 h-3.5 text-[#d85c27] group-hover:text-white" />
+                    <span>Edit Careers</span>
+                  </button>
+                  <Link
+                    to="/jobs"
+                    target="_blank"
+                    onClick={(e) => e.stopPropagation()}
+                    className="p-2 text-gray-400 hover:text-[#d85c27] transition-colors rounded-lg hover:bg-gray-50"
+                    title="View Live Page"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                  </Link>
+                </div>
+              </div>
+
+              {/* 10. Visual Menu Cards */}
+              <div
+                onClick={() => setActiveTab('printMenu')}
+                className="bg-[#fffdfa] rounded-[24px] p-6 border border-[#ebdcd0] shadow-sm hover:shadow-md hover:border-[#d85c27] transition-all flex flex-col justify-between space-y-4 group cursor-pointer"
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="w-10 h-10 rounded-xl bg-stone-100 text-stone-800 flex items-center justify-center font-black">
+                      <FileText className="w-5 h-5" />
+                    </div>
+                    <span className="text-[11px] font-mono font-bold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-lg">Menu Page Preview</span>
+                  </div>
+                  <div>
+                    <h3 className="text-[17px] font-black text-[#1e382f]">10. Visual Menu Cards</h3>
+                    <p className="text-[12.5px] text-[#666] leading-relaxed mt-1">
+                      Page 1 (Bowls &amp; Naan) and Page 2 (Lassis &amp; Drinks) high-resolution print menu graphic cards and inspect modal.
+                    </p>
+                  </div>
+                </div>
+                <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setActiveTab('printMenu'); }}
+                    className="bg-[#1e382f] group-hover:bg-[#d85c27] text-white text-[12.5px] font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 transition-colors"
+                  >
+                    <Edit3 className="w-3.5 h-3.5 text-[#d85c27] group-hover:text-white" />
+                    <span>Edit Menu Cards</span>
+                  </button>
+                  <Link
+                    to="/menu"
+                    target="_blank"
+                    onClick={(e) => e.stopPropagation()}
+                    className="p-2 text-gray-400 hover:text-[#d85c27] transition-colors rounded-lg hover:bg-gray-50"
+                    title="View Live Page"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                  </Link>
+                </div>
+              </div>
+
+              {/* 11. Impressum */}
+              <div
+                onClick={() => setActiveTab('legal')}
+                className="bg-[#fffdfa] rounded-[24px] p-6 border border-[#ebdcd0] shadow-sm hover:shadow-md hover:border-[#d85c27] transition-all flex flex-col justify-between space-y-4 group cursor-pointer"
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="w-10 h-10 rounded-xl bg-gray-100 text-gray-800 flex items-center justify-center font-black">
+                      <ShieldCheck className="w-5 h-5" />
+                    </div>
+                    <span className="text-[11px] font-mono font-bold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-lg">/impressum</span>
+                  </div>
+                  <div>
+                    <h3 className="text-[17px] font-black text-[#1e382f]">11. Impressum (§ 5 TMG)</h3>
+                    <p className="text-[12.5px] text-[#666] leading-relaxed mt-1">
+                      Official German legal imprint: Unicorn Table UG, managing director (Naveen Prasad), Charlottenburg commercial register, and VAT ID.
+                    </p>
+                  </div>
+                </div>
+                <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setActiveTab('legal'); }}
+                    className="bg-[#1e382f] group-hover:bg-[#d85c27] text-white text-[12.5px] font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 transition-colors"
+                  >
+                    <Edit3 className="w-3.5 h-3.5 text-[#d85c27] group-hover:text-white" />
+                    <span>Edit Impressum</span>
+                  </button>
+                  <Link
+                    to="/impressum"
+                    target="_blank"
+                    onClick={(e) => e.stopPropagation()}
+                    className="p-2 text-gray-400 hover:text-[#d85c27] transition-colors rounded-lg hover:bg-gray-50"
+                    title="View Live Page"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                  </Link>
+                </div>
+              </div>
+
+              {/* 12. Privacy Policy */}
+              <div
+                onClick={() => setActiveTab('privacy')}
+                className="bg-[#fffdfa] rounded-[24px] p-6 border border-[#ebdcd0] shadow-sm hover:shadow-md hover:border-[#d85c27] transition-all flex flex-col justify-between space-y-4 group cursor-pointer"
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="w-10 h-10 rounded-xl bg-sky-100 text-sky-800 flex items-center justify-center font-black">
+                      <Lock className="w-5 h-5" />
+                    </div>
+                    <span className="text-[11px] font-mono font-bold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-lg">/privacy &amp; /de/datenschutz</span>
+                  </div>
+                  <div>
+                    <h3 className="text-[17px] font-black text-[#1e382f]">12. Privacy Policy (Datenschutz)</h3>
+                    <p className="text-[12.5px] text-[#666] leading-relaxed mt-1">
+                      GDPR and DSGVO data protection statements, data processor disclosures, cookie policies, and visitor rights.
+                    </p>
+                  </div>
+                </div>
+                <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setActiveTab('privacy'); }}
+                    className="bg-[#1e382f] group-hover:bg-[#d85c27] text-white text-[12.5px] font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 transition-colors"
+                  >
+                    <Edit3 className="w-3.5 h-3.5 text-[#d85c27] group-hover:text-white" />
+                    <span>Edit Privacy</span>
+                  </button>
+                  <Link
+                    to="/privacy"
+                    target="_blank"
+                    onClick={(e) => e.stopPropagation()}
+                    className="p-2 text-gray-400 hover:text-[#d85c27] transition-colors rounded-lg hover:bg-gray-50"
+                    title="View Live Page"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                  </Link>
+                </div>
+              </div>
+
+              {/* 13. Terms & Conditions */}
+              <div
+                onClick={() => setActiveTab('terms')}
+                className="bg-[#fffdfa] rounded-[24px] p-6 border border-[#ebdcd0] shadow-sm hover:shadow-md hover:border-[#d85c27] transition-all flex flex-col justify-between space-y-4 group cursor-pointer"
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-black">
+                      <Award className="w-5 h-5" />
+                    </div>
+                    <span className="text-[11px] font-mono font-bold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-lg">/terms &amp; /de/agb</span>
+                  </div>
+                  <div>
+                    <h3 className="text-[17px] font-black text-[#1e382f]">13. Terms &amp; Conditions (AGB)</h3>
+                    <p className="text-[12.5px] text-[#666] leading-relaxed mt-1">
+                      General terms of service, ordering policies, catering commitments, cancellation rules, and legal jurisdiction in Berlin.
+                    </p>
+                  </div>
+                </div>
+                <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setActiveTab('terms'); }}
+                    className="bg-[#1e382f] group-hover:bg-[#d85c27] text-white text-[12.5px] font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 transition-colors"
+                  >
+                    <Edit3 className="w-3.5 h-3.5 text-[#d85c27] group-hover:text-white" />
+                    <span>Edit Terms</span>
+                  </button>
+                  <Link
+                    to="/terms"
+                    target="_blank"
+                    onClick={(e) => e.stopPropagation()}
+                    className="p-2 text-gray-400 hover:text-[#d85c27] transition-colors rounded-lg hover:bg-gray-50"
+                    title="View Live Page"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                  </Link>
+                </div>
+              </div>
+
+              {/* 14. Restaurant Info & Global SEO */}
+              <div
+                onClick={() => setActiveTab('settings')}
+                className="bg-[#fffdfa] rounded-[24px] p-6 border border-[#ebdcd0] shadow-sm hover:shadow-md hover:border-[#d85c27] transition-all flex flex-col justify-between space-y-4 group cursor-pointer"
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-800 flex items-center justify-center font-black">
+                      <Sliders className="w-5 h-5" />
+                    </div>
+                    <span className="text-[11px] font-mono font-bold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-lg">Global Schema &amp; SEO</span>
+                  </div>
+                  <div>
+                    <h3 className="text-[17px] font-black text-[#1e382f]">14. Restaurant Info &amp; SEO</h3>
+                    <p className="text-[12.5px] text-[#666] leading-relaxed mt-1">
+                      JSON-LD structured data (Restaurant, Catering, EventVenue), telephone numbers, coordinates, and social media URLs.
+                    </p>
+                  </div>
+                </div>
+                <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setActiveTab('settings'); }}
+                    className="bg-[#1e382f] group-hover:bg-[#d85c27] text-white text-[12.5px] font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 transition-colors"
+                  >
+                    <Edit3 className="w-3.5 h-3.5 text-[#d85c27] group-hover:text-white" />
+                    <span>Edit SEO &amp; Info</span>
+                  </button>
+                  <span className="text-[11.5px] text-gray-500 font-semibold">
+                    100% Schema Validated
+                  </span>
+                </div>
+              </div>
+
+              {/* 15. Menu Categories */}
+              <div
+                onClick={() => setActiveTab('categories')}
+                className="bg-[#fffdfa] rounded-[24px] p-6 border border-[#ebdcd0] shadow-sm hover:shadow-md hover:border-[#d85c27] transition-all flex flex-col justify-between space-y-4 group cursor-pointer"
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="w-10 h-10 rounded-xl bg-lime-100 text-lime-800 flex items-center justify-center font-black">
+                      <FolderTree className="w-5 h-5" />
+                    </div>
+                    <span className="text-[11px] font-mono font-bold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-lg">Category Management</span>
+                  </div>
+                  <div>
+                    <h3 className="text-[17px] font-black text-[#1e382f]">15. Menu Categories</h3>
+                    <p className="text-[12.5px] text-[#666] leading-relaxed mt-1">
+                      Organize dishes into Signature Bowls, Punjab Naan Pockets, Chai &amp; Drinks, rearrange sorting order, and edit German category names.
+                    </p>
+                  </div>
+                </div>
+                <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setActiveTab('categories'); }}
+                    className="bg-[#1e382f] group-hover:bg-[#d85c27] text-white text-[12.5px] font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 transition-colors"
+                  >
+                    <Edit3 className="w-3.5 h-3.5 text-[#d85c27] group-hover:text-white" />
+                    <span>Edit Categories</span>
+                  </button>
+                  <span className="text-[11.5px] text-gray-500 font-semibold">
+                    {categories.length} Categories Live
+                  </span>
+                </div>
+              </div>
+
+              {/* 16. Photo Library & Fast Uploads */}
+              <div
+                onClick={() => setActiveTab('gallery')}
+                className="bg-[#fffdfa] rounded-[24px] p-6 border border-[#ebdcd0] shadow-sm hover:shadow-md hover:border-[#d85c27] transition-all flex flex-col justify-between space-y-4 group cursor-pointer"
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="w-10 h-10 rounded-xl bg-pink-100 text-pink-800 flex items-center justify-center font-black">
+                      <ImageIcon className="w-5 h-5" />
+                    </div>
+                    <span className="text-[11px] font-mono font-bold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-lg">Media &amp; CDN</span>
+                  </div>
+                  <div>
+                    <h3 className="text-[17px] font-black text-[#1e382f]">16. Photo Library ({galleryAssets.length})</h3>
+                    <p className="text-[12.5px] text-[#666] leading-relaxed mt-1">
+                      Upload food photos from mobile or desktop. Automatically compressed to lightweight WebP, tagged by category, and easily deleted.
+                    </p>
+                  </div>
+                </div>
+                <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setActiveTab('gallery'); }}
+                    className="bg-[#1e382f] group-hover:bg-[#d85c27] text-white text-[12.5px] font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 transition-colors"
+                  >
+                    <Edit3 className="w-3.5 h-3.5 text-[#d85c27] group-hover:text-white" />
+                    <span>Open Library</span>
+                  </button>
+                  <span className="text-[11.5px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-lg">
+                    Auto-WebP
+                  </span>
+                </div>
+              </div>
+
+              {/* 17. Customer Inquiries Inbox */}
+              <div
+                onClick={() => setActiveTab('inquiries')}
+                className="bg-[#fffdfa] rounded-[24px] p-6 border border-[#ebdcd0] shadow-sm hover:shadow-md hover:border-[#d85c27] transition-all flex flex-col justify-between space-y-4 group cursor-pointer"
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-black">
+                      <Inbox className="w-5 h-5" />
+                    </div>
+                    {inquiries.filter((i) => i.status === 'new').length > 0 ? (
+                      <span className="text-[11px] font-black bg-[#d85c27] text-white px-2.5 py-1 rounded-lg animate-pulse">
+                        {inquiries.filter((i) => i.status === 'new').length} New Enquiries
+                      </span>
+                    ) : (
+                      <span className="text-[11px] font-mono font-bold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-lg">Inbox</span>
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="text-[17px] font-black text-[#1e382f]">17. Catering Inquiries ({inquiries.length})</h3>
+                    <p className="text-[12.5px] text-[#666] leading-relaxed mt-1">
+                      Review customer quotes for office lunches and weddings. Update workflow status (New, Contacted, Confirmed) and internal notes.
+                    </p>
+                  </div>
+                </div>
+                <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setActiveTab('inquiries'); }}
+                    className="bg-[#1e382f] group-hover:bg-[#d85c27] text-white text-[12.5px] font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 transition-colors"
+                  >
+                    <Edit3 className="w-3.5 h-3.5 text-[#d85c27] group-hover:text-white" />
+                    <span>View Inquiries</span>
+                  </button>
+                  <span className="text-[11.5px] text-gray-500 font-semibold">
+                    {inquiries.length} Total
+                  </span>
+                </div>
+              </div>
+
+              {/* 18. Job Applications Inbox */}
+              <div
+                onClick={() => setActiveTab('applications')}
+                className="bg-[#fffdfa] rounded-[24px] p-6 border border-[#ebdcd0] shadow-sm hover:shadow-md hover:border-[#d85c27] transition-all flex flex-col justify-between space-y-4 group cursor-pointer"
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="w-10 h-10 rounded-xl bg-violet-100 text-violet-800 flex items-center justify-center font-black">
+                      <Briefcase className="w-5 h-5" />
+                    </div>
+                    {applications.filter((a) => a.status === 'new').length > 0 ? (
+                      <span className="text-[11px] font-black bg-emerald-600 text-white px-2.5 py-1 rounded-lg">
+                        {applications.filter((a) => a.status === 'new').length} New Applicants
+                      </span>
+                    ) : (
+                      <span className="text-[11px] font-mono font-bold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-lg">HR Inbox</span>
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="text-[17px] font-black text-[#1e382f]">18. Job Applications ({applications.length})</h3>
+                    <p className="text-[12.5px] text-[#666] leading-relaxed mt-1">
+                      Candidate CVs submitted for Service, Kitchen, and Barista roles. Filter by status (Reviewing, Interview, Hired) with HR notes.
+                    </p>
+                  </div>
+                </div>
+                <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setActiveTab('applications'); }}
+                    className="bg-[#1e382f] group-hover:bg-[#d85c27] text-white text-[12.5px] font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 transition-colors"
+                  >
+                    <Edit3 className="w-3.5 h-3.5 text-[#d85c27] group-hover:text-white" />
+                    <span>View Applications</span>
+                  </button>
+                  <span className="text-[11.5px] text-gray-500 font-semibold">
+                    {applications.length} Candidates
+                  </span>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        )}
 
         {/* ═══════════════════════════════════════════════
             TAB 1: MENU DISHES
@@ -1586,20 +2692,32 @@ export const StudioPage: React.FC = () => {
                   )}
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <span className="text-[12px] font-bold text-[#666] shrink-0">Category:</span>
-                  <select
-                    value={selectedCatId}
-                    onChange={(e) => setSelectedCatId(e.target.value)}
-                    className="bg-white border border-[#ebdcd0] text-[#1e382f] font-bold rounded-xl px-3 py-2 text-[13px] focus:outline-none focus:border-[#d85c27]"
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[12px] font-bold text-[#666] shrink-0">Category:</span>
+                    <select
+                      value={selectedCatId}
+                      onChange={(e) => setSelectedCatId(e.target.value)}
+                      className="bg-white border border-[#ebdcd0] text-[#1e382f] font-bold rounded-xl px-3 py-2 text-[13px] focus:outline-none focus:border-[#d85c27]"
+                    >
+                      <option value="all">All Categories ({allItemsWithCat.length})</option>
+                      {categories.map((c) => (
+                        <option key={c._id} value={c._id}>
+                          {c.name} ({c.items?.length || 0})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <button
+                    type="button"
+                    data-tour="add-dish"
+                    onClick={() => handleOpenNewItem()}
+                    className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-4 py-2 rounded-xl text-[13px] shadow-sm hover:shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
                   >
-                    <option value="all">All Categories ({allItemsWithCat.length})</option>
-                    {categories.map((c) => (
-                      <option key={c._id} value={c._id}>
-                        {c.name} ({c.items?.length || 0})
-                      </option>
-                    ))}
-                  </select>
+                    <Plus className="w-4 h-4" />
+                    <span>+ Add Dish</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -3392,6 +4510,2359 @@ export const StudioPage: React.FC = () => {
             </div>
           </form>
         )}
+
+        {/* ═══════════════════════════════════════════════
+            TAB 9: RECEIVED INQUIRIES & BOOKINGS
+        ═══════════════════════════════════════════════ */}
+        {activeTab === 'inquiries' && (
+          <div className="bg-[#fffdfa] rounded-[24px] p-6 sm:p-8 border border-[#ebdcd0] shadow-sm space-y-6 animate-fadeIn">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-5">
+              <div>
+                <h2 className="text-[20px] font-black text-[#1e382f] flex items-center gap-2.5">
+                  <Inbox className="w-5 h-5 text-[#d85c27]" />
+                  <span>Received Inquiries & Bookings</span>
+                </h2>
+                <p className="text-[13px] text-[#666] mt-0.5">
+                  Review all catering requests, private event bookings, and general messages submitted via website forms.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-1.5 bg-[#fcf8f3] p-1.5 rounded-xl border border-[#ebdcd0] overflow-x-auto">
+                {(['all', 'new', 'contacted', 'confirmed', 'archived'] as const).map((filter) => (
+                  <button
+                    key={filter}
+                    type="button"
+                    onClick={() => setInquiriesFilter(filter)}
+                    className={`px-3 py-1 text-[12px] font-extrabold rounded-lg capitalize transition-all ${
+                      inquiriesFilter === filter ? 'bg-[#1e382f] text-white shadow-xs' : 'text-[#1e382f] hover:bg-gray-200/60'
+                    }`}
+                  >
+                    {filter}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {(() => {
+              const filtered = inquiries.filter((it) => {
+                if (inquiriesFilter === 'all') return true;
+                return it.status === inquiriesFilter;
+              });
+
+              if (filtered.length === 0) {
+                return (
+                  <div className="py-16 text-center space-y-2">
+                    <Inbox className="w-10 h-10 text-gray-300 mx-auto" />
+                    <h3 className="font-bold text-[#1e382f] text-[16px]">No Inquiries Found</h3>
+                    <p className="text-[13px] text-gray-500">
+                      {inquiriesFilter === 'all'
+                        ? 'New catering and event inquiries submitted by website visitors will appear here automatically.'
+                        : `No inquiries with status "${inquiriesFilter}".`}
+                    </p>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="space-y-4">
+                  {filtered.map((item) => {
+                    const statusColors: Record<string, string> = {
+                      new: 'bg-amber-100 text-amber-800 border-amber-300',
+                      contacted: 'bg-blue-100 text-blue-800 border-blue-300',
+                      confirmed: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+                      archived: 'bg-gray-100 text-gray-600 border-gray-300',
+                    };
+
+                    return (
+                      <div
+                        key={item._id || item.id}
+                        className="bg-white rounded-2xl p-6 border border-[#ebdcd0] shadow-xs space-y-4 hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-gray-100">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-3">
+                              <h3 className="text-[18px] font-black text-[#1e382f]">{item.name}</h3>
+                              <span className="bg-[#d85c27]/10 text-[#d85c27] font-bold text-[11px] uppercase px-2.5 py-0.5 rounded-full">
+                                {item.enquiryType || 'General'}
+                              </span>
+                              <span className={`text-[11px] font-bold uppercase px-2.5 py-0.5 rounded-full border ${statusColors[item.status || 'new'] || statusColors.new}`}>
+                                {item.status || 'new'}
+                              </span>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-3 text-[13px] text-gray-600">
+                              <span>📅 Date: <strong>{item.date || 'TBD'}</strong></span>
+                              <span>•</span>
+                              <span>👥 Guests: <strong>{item.guests || '-'}</strong></span>
+                              {item.company && (
+                                <>
+                                  <span>•</span>
+                                  <span>🏢 {item.company}</span>
+                                </>
+                              )}
+                              <span>•</span>
+                              <span className="text-gray-400 text-[11.5px]">
+                                {item.receivedAt ? new Date(item.receivedAt).toLocaleDateString() : 'Recent'}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <a
+                              href={`tel:${item.phone}`}
+                              className="px-3 py-1.5 rounded-xl border border-gray-200 text-[12px] font-bold text-[#1e382f] hover:bg-gray-50 flex items-center gap-1.5"
+                            >
+                              <Phone className="w-3.5 h-3.5 text-[#d85c27]" />
+                              <span>{item.phone}</span>
+                            </a>
+                            <a
+                              href={`mailto:${item.email}?subject=Regarding your MAATI Kitchen inquiry (${item.date || ''})`}
+                              className="px-3 py-1.5 rounded-xl bg-[#1e382f] text-white text-[12px] font-bold hover:bg-[#142620] flex items-center gap-1.5 shadow-xs"
+                            >
+                              <Mail className="w-3.5 h-3.5 text-[#d85c27]" />
+                              <span>Email Customer</span>
+                            </a>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteInquiry(item._id || item.id)}
+                              title="Delete Inquiry"
+                              className="p-1.5 rounded-xl text-gray-400 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-100 transition-colors cursor-pointer"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Customer Message */}
+                        {item.message && (
+                          <div className="bg-[#fcf8f3] p-3.5 rounded-xl border border-[#ebdcd0] text-[13.5px] text-[#333] leading-relaxed">
+                            <span className="text-[11px] font-bold text-[#d85c27] block mb-0.5">CUSTOMER NOTE:</span>
+                            {item.message}
+                          </div>
+                        )}
+
+                        {/* Manager Controls: Status & Notes */}
+                        <div className="pt-2 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[12px] font-bold text-gray-600">Update Status:</span>
+                            <select
+                              value={item.status || 'new'}
+                              onChange={(e) => handleUpdateInquiryStatus(item._id || item.id, e.target.value)}
+                              className="border border-gray-200 rounded-lg px-2.5 py-1 text-[12px] font-bold text-[#1e382f] bg-white focus:outline-none focus:border-[#d85c27]"
+                            >
+                              <option value="new">🟡 New / Unread</option>
+                              <option value="contacted">🔵 Contacted</option>
+                              <option value="confirmed">🟢 Confirmed / Booked</option>
+                              <option value="archived">⚪ Archived</option>
+                            </select>
+                          </div>
+
+                          <div className="flex-1 md:max-w-[420px]">
+                            {editingNoteId === (item._id || item.id) ? (
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="text"
+                                  value={noteDraft}
+                                  onChange={(e) => setNoteDraft(e.target.value)}
+                                  placeholder="Add manager internal note (e.g. sent quote €45/head)..."
+                                  className="w-full text-[12px] border rounded-lg px-2.5 py-1 focus:outline-none focus:border-[#d85c27]"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => handleSaveInquiryNote(item._id || item.id)}
+                                  className="bg-[#1e382f] text-white text-[11px] font-bold px-3 py-1 rounded-lg shrink-0"
+                                >
+                                  Save
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingNoteId(null)}
+                                  className="text-gray-400 hover:text-gray-600 text-[11px] shrink-0"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center justify-between gap-2 text-[12px] text-gray-600">
+                                <span className="truncate italic">
+                                  {item.managerNotes ? `Note: "${item.managerNotes}"` : 'No internal note yet.'}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditingNoteId(item._id || item.id);
+                                    setNoteDraft(item.managerNotes || '');
+                                  }}
+                                  className="text-[#d85c27] hover:underline font-bold text-[11px] shrink-0"
+                                >
+                                  {item.managerNotes ? 'Edit Note' : '+ Add Note'}
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+          </div>
+        )}
+
+        {/* ═══════════════════════════════════════════════
+            TAB 10: RECEIVED JOB APPLICATIONS
+        ═══════════════════════════════════════════════ */}
+        {activeTab === 'applications' && (
+          <div className="bg-[#fffdfa] rounded-[24px] p-6 sm:p-8 border border-[#ebdcd0] shadow-sm space-y-6 animate-fadeIn">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-5">
+              <div>
+                <h2 className="text-[20px] font-black text-[#1e382f] flex items-center gap-2.5">
+                  <Briefcase className="w-5 h-5 text-[#d85c27]" />
+                  <span>Job Applications (Careers)</span>
+                </h2>
+                <p className="text-[13px] text-[#666] mt-0.5">
+                  Review incoming applications submitted for Service, Kitchen, and general vacancies.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-1.5 bg-[#fcf8f3] p-1.5 rounded-xl border border-[#ebdcd0] overflow-x-auto">
+                {(['all', 'new', 'reviewing', 'interview', 'hired', 'rejected'] as const).map((filter) => (
+                  <button
+                    key={filter}
+                    type="button"
+                    onClick={() => setApplicationsFilter(filter)}
+                    className={`px-3 py-1 text-[12px] font-extrabold rounded-lg capitalize transition-all ${
+                      applicationsFilter === filter ? 'bg-[#1e382f] text-white shadow-xs' : 'text-[#1e382f] hover:bg-gray-200/60'
+                    }`}
+                  >
+                    {filter}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {(() => {
+              const filtered = applications.filter((it) => {
+                if (applicationsFilter === 'all') return true;
+                return it.status === applicationsFilter;
+              });
+
+              if (filtered.length === 0) {
+                return (
+                  <div className="py-16 text-center space-y-2">
+                    <Briefcase className="w-10 h-10 text-gray-300 mx-auto" />
+                    <h3 className="font-bold text-[#1e382f] text-[16px]">No Applications Found</h3>
+                    <p className="text-[13px] text-gray-500">
+                      {applicationsFilter === 'all'
+                        ? 'Job applicants submitting through the careers page will appear here.'
+                        : `No candidate applications with status "${applicationsFilter}".`}
+                    </p>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="space-y-4">
+                  {filtered.map((item) => {
+                    const statusColors: Record<string, string> = {
+                      new: 'bg-amber-100 text-amber-800 border-amber-300',
+                      reviewing: 'bg-blue-100 text-blue-800 border-blue-300',
+                      interview: 'bg-purple-100 text-purple-800 border-purple-300',
+                      hired: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+                      rejected: 'bg-rose-100 text-rose-800 border-rose-300',
+                    };
+
+                    return (
+                      <div
+                        key={item._id || item.id}
+                        className="bg-white rounded-2xl p-6 border border-[#ebdcd0] shadow-xs space-y-4 hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-gray-100">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-3">
+                              <h3 className="text-[18px] font-black text-[#1e382f]">{item.fullName}</h3>
+                              <span className="bg-[#1e382f]/10 text-[#1e382f] font-bold text-[11px] px-2.5 py-0.5 rounded-full">
+                                {item.position}
+                              </span>
+                              <span className={`text-[11px] font-bold uppercase px-2.5 py-0.5 rounded-full border ${statusColors[item.status || 'new'] || statusColors.new}`}>
+                                {item.status || 'new'}
+                              </span>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-3 text-[13px] text-gray-600">
+                              {item.availability && <span>⏱ Available: <strong>{item.availability}</strong></span>}
+                              {item.experienceYears && (
+                                <>
+                                  <span>•</span>
+                                  <span>💼 Experience: <strong>{item.experienceYears}</strong></span>
+                                </>
+                              )}
+                              <span>•</span>
+                              <span className="text-gray-400 text-[11.5px]">
+                                {item.submittedAt ? new Date(item.submittedAt).toLocaleDateString() : 'Recent'}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <a
+                              href={`tel:${item.phone}`}
+                              className="px-3 py-1.5 rounded-xl border border-gray-200 text-[12px] font-bold text-[#1e382f] hover:bg-gray-50 flex items-center gap-1.5"
+                            >
+                              <Phone className="w-3.5 h-3.5 text-[#d85c27]" />
+                              <span>{item.phone}</span>
+                            </a>
+                            <a
+                              href={`mailto:${item.email}?subject=Bewerbung bei MAATI Kitchen: ${item.position}`}
+                              className="px-3 py-1.5 rounded-xl bg-[#1e382f] text-white text-[12px] font-bold hover:bg-[#142620] flex items-center gap-1.5 shadow-xs"
+                            >
+                              <Mail className="w-3.5 h-3.5 text-[#d85c27]" />
+                              <span>Email Candidate</span>
+                            </a>
+                            {item.resumeLink && (
+                              <a
+                                href={item.resumeLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-3 py-1.5 rounded-xl bg-[#d85c27] text-white text-[12px] font-bold hover:bg-[#c24f1c] flex items-center gap-1.5 shadow-xs"
+                              >
+                                <ExternalLink className="w-3.5 h-3.5" />
+                                <span>View Resume</span>
+                              </a>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteApplication(item._id || item.id)}
+                              title="Delete Application"
+                              className="p-1.5 rounded-xl text-gray-400 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-100 transition-colors cursor-pointer"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Candidate Intro */}
+                        {item.message && (
+                          <div className="bg-[#fcf8f3] p-3.5 rounded-xl border border-[#ebdcd0] text-[13.5px] text-[#333] leading-relaxed">
+                            <span className="text-[11px] font-bold text-[#d85c27] block mb-0.5">COVER NOTE:</span>
+                            {item.message}
+                          </div>
+                        )}
+
+                        {/* HR Controls: Status & Notes */}
+                        <div className="pt-2 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[12px] font-bold text-gray-600">Update Status:</span>
+                            <select
+                              value={item.status || 'new'}
+                              onChange={(e) => handleUpdateApplicationStatus(item._id || item.id, e.target.value)}
+                              className="border border-gray-200 rounded-lg px-2.5 py-1 text-[12px] font-bold text-[#1e382f] bg-white focus:outline-none focus:border-[#d85c27]"
+                            >
+                              <option value="new">🟡 New / Unreviewed</option>
+                              <option value="reviewing">🔵 Under Review</option>
+                              <option value="interview">🟣 Interview Scheduled</option>
+                              <option value="hired">🟢 Hired</option>
+                              <option value="rejected">🔴 Not Selected</option>
+                            </select>
+                          </div>
+
+                          <div className="flex-1 md:max-w-[420px]">
+                            {editingNoteId === (item._id || item.id) ? (
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="text"
+                                  value={noteDraft}
+                                  onChange={(e) => setNoteDraft(e.target.value)}
+                                  placeholder="Add HR / interview feedback note..."
+                                  className="w-full text-[12px] border rounded-lg px-2.5 py-1 focus:outline-none focus:border-[#d85c27]"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => handleSaveApplicationNote(item._id || item.id)}
+                                  className="bg-[#1e382f] text-white text-[11px] font-bold px-3 py-1 rounded-lg shrink-0"
+                                >
+                                  Save
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingNoteId(null)}
+                                  className="text-gray-400 hover:text-gray-600 text-[11px] shrink-0"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center justify-between gap-2 text-[12px] text-gray-600">
+                                <span className="truncate italic">
+                                  {item.hrNotes ? `HR Note: "${item.hrNotes}"` : 'No HR interview note yet.'}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditingNoteId(item._id || item.id);
+                                    setNoteDraft(item.hrNotes || '');
+                                  }}
+                                  className="text-[#d85c27] hover:underline font-bold text-[11px] shrink-0"
+                                >
+                                  {item.hrNotes ? 'Edit HR Note' : '+ Add HR Note'}
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+          </div>
+        )}
+
+        {/* ═══════════════════════════════════════════════
+            TAB 11: CATERING PAGE CONTENT & PACKAGES
+        ═══════════════════════════════════════════════ */}
+        {activeTab === 'catering' && (
+          <form onSubmit={handleSaveCatering} className="bg-[#fffdfa] rounded-[24px] p-6 sm:p-8 border border-[#ebdcd0] shadow-sm space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-5">
+              <div>
+                <h2 className="text-[20px] font-black text-[#1e382f] flex items-center gap-2.5">
+                  <Layers className="w-5 h-5 text-[#d85c27]" />
+                  <span>Catering Page Content, Packages & Pricing</span>
+                </h2>
+                <p className="text-[13px] text-[#666] mt-0.5">
+                  Update your corporate packages, guest calculator rates, FAQs, and delivery lead times.
+                </p>
+              </div>
+
+              {/* Language Switcher */}
+              <div className="flex items-center gap-1.5 bg-[#fcf8f3] p-1.5 rounded-xl border border-[#ebdcd0] shrink-0">
+                <span className="text-[11px] font-bold text-gray-500 uppercase px-2">Language:</span>
+                <button
+                  type="button"
+                  onClick={() => setAdminContentLang('en')}
+                  className={`px-3 py-1 text-[12px] font-extrabold rounded-lg transition-all ${
+                    adminContentLang === 'en' ? 'bg-[#1e382f] text-white shadow-xs' : 'text-[#1e382f] hover:bg-gray-200/60'
+                  }`}
+                >
+                  English (EN)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAdminContentLang('de')}
+                  className={`px-3 py-1 text-[12px] font-extrabold rounded-lg transition-all ${
+                    adminContentLang === 'de' ? 'bg-[#1e382f] text-white shadow-xs' : 'text-[#1e382f] hover:bg-gray-200/60'
+                  }`}
+                >
+                  Deutsch (DE)
+                </button>
+              </div>
+            </div>
+
+            {/* Hero Section */}
+            <div className="space-y-4">
+              <h3 className="text-[14px] font-extrabold text-[#1e382f] uppercase tracking-wider">1. Hero Section</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[12px] font-bold text-[#333] mb-1">Badge / Tagline ({adminContentLang.toUpperCase()})</label>
+                  <input
+                    type="text"
+                    value={adminContentLang === 'en' ? (cateringContent.badgeEn || '') : (cateringContent.badgeDe || '')}
+                    onChange={(e) => _setCateringContent(adminContentLang === 'en' ? { ...cateringContent, badgeEn: e.target.value } : { ...cateringContent, badgeDe: e.target.value })}
+                    placeholder="e.g. MAATI CATERING BERLIN MITTE"
+                    className="w-full border rounded-xl px-3.5 py-2.5 text-[13.5px] focus:outline-none focus:border-[#d85c27]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[12px] font-bold text-[#333] mb-1">Lead Time Notice ({adminContentLang.toUpperCase()})</label>
+                  <input
+                    type="text"
+                    value={adminContentLang === 'en' ? (cateringContent.leadTimeEn || '') : (cateringContent.leadTimeDe || '')}
+                    onChange={(e) => _setCateringContent(adminContentLang === 'en' ? { ...cateringContent, leadTimeEn: e.target.value } : { ...cateringContent, leadTimeDe: e.target.value })}
+                    placeholder="e.g. 24 to 48 hours recommended..."
+                    className="w-full border rounded-xl px-3.5 py-2.5 text-[13.5px] focus:outline-none focus:border-[#d85c27]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[12px] font-bold text-[#333] mb-1">Hero Title ({adminContentLang.toUpperCase()})</label>
+                <input
+                  type="text"
+                  value={adminContentLang === 'en' ? (cateringContent.heroTitleEn || '') : (cateringContent.heroTitleDe || '')}
+                  onChange={(e) => _setCateringContent(adminContentLang === 'en' ? { ...cateringContent, heroTitleEn: e.target.value } : { ...cateringContent, heroTitleDe: e.target.value })}
+                  placeholder="e.g. Corporate Catering That Brings Teams Together"
+                  className="w-full border rounded-xl px-3.5 py-2.5 text-[14px] font-bold focus:outline-none focus:border-[#d85c27]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[12px] font-bold text-[#333] mb-1">Hero Description ({adminContentLang.toUpperCase()})</label>
+                <textarea
+                  rows={2}
+                  value={adminContentLang === 'en' ? (cateringContent.heroDescEn || '') : (cateringContent.heroDescDe || '')}
+                  onChange={(e) => _setCateringContent(adminContentLang === 'en' ? { ...cateringContent, heroDescEn: e.target.value } : { ...cateringContent, heroDescDe: e.target.value })}
+                  placeholder="e.g. Vibrant Indian bowls, toasted naan pockets..."
+                  className="w-full border rounded-xl px-3.5 py-2.5 text-[13.5px] focus:outline-none focus:border-[#d85c27] resize-none"
+                />
+              </div>
+            </div>
+
+            {/* Packages Section */}
+            <div className="space-y-4 pt-4 border-t border-gray-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-[14px] font-extrabold text-[#1e382f] uppercase tracking-wider">2. Catering Packages ({cateringContent.packages?.length || 0})</h3>
+                  <p className="text-[12px] text-gray-500">Tiered packages displayed in the packages grid & used for automatic budget calculation.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const newPkg: CateringPackageItem = {
+                      id: 'pkg_' + Date.now(),
+                      name: 'New Package',
+                      nameDe: 'Neues Paket',
+                      price: '€12.90',
+                      priceDetailEn: 'per person',
+                      priceDetailDe: 'pro Person',
+                      pricePerPerson: 12.90,
+                      minGuests: 10,
+                      suitableForEn: 'Casual meetings & team gatherings',
+                      suitableForDe: 'Meetings & Team-Events',
+                      featuresEn: ['Signature bowls', 'Fresh chutneys', 'Eco cutlery'],
+                      featuresDe: ['Signature Bowls', 'Hausgemachte Chutneys', 'Bio-Besteck']
+                    };
+                    _setCateringContent({
+                      ...cateringContent,
+                      packages: [...(cateringContent.packages || []), newPkg]
+                    });
+                  }}
+                  className="bg-[#1e382f] hover:bg-[#2a4d41] text-white text-[12px] font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-all"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add Package</span>
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {(cateringContent.packages || []).map((pkg, idx) => (
+                  <div key={pkg.id || idx} className="bg-[#fcf8f3] rounded-2xl p-5 border border-[#ebdcd0] space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="w-6 h-6 rounded-full bg-[#d85c27] text-white text-[11px] font-black flex items-center justify-center">
+                          {idx + 1}
+                        </span>
+                        <input
+                          type="text"
+                          value={adminContentLang === 'en' ? pkg.name : (pkg.nameDe || pkg.name)}
+                          onChange={(e) => {
+                            const updated = [...(cateringContent.packages || [])];
+                            updated[idx] = adminContentLang === 'en'
+                              ? { ...updated[idx], name: e.target.value }
+                              : { ...updated[idx], nameDe: e.target.value };
+                            _setCateringContent({ ...cateringContent, packages: updated });
+                          }}
+                          className="font-black text-[15px] text-[#1e382f] border-b border-dashed border-[#d85c27] bg-transparent focus:outline-none"
+                          placeholder="Package Name"
+                        />
+                        {pkg.popular && (
+                          <span className="bg-amber-100 text-amber-800 text-[10px] font-black px-2 py-0.5 rounded-full uppercase">
+                            Most Popular
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <label className="text-[11px] font-bold text-gray-600 flex items-center gap-1 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={!!pkg.popular}
+                            onChange={(e) => {
+                              const updated = [...(cateringContent.packages || [])];
+                              updated[idx] = { ...updated[idx], popular: e.target.checked };
+                              _setCateringContent({ ...cateringContent, packages: updated });
+                            }}
+                            className="rounded text-[#d85c27]"
+                          />
+                          Popular Badge
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!window.confirm(`Delete package "${pkg.name}"?`)) return;
+                            const updated = (cateringContent.packages || []).filter((_, i) => i !== idx);
+                            _setCateringContent({ ...cateringContent, packages: updated });
+                          }}
+                          className="p-1.5 text-gray-400 hover:text-rose-600 rounded-lg hover:bg-white"
+                          title="Delete package"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-bold text-gray-600 mb-1">Price Per Person (€)</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={pkg.pricePerPerson}
+                          onChange={(e) => {
+                            const val = parseFloat(e.target.value) || 0;
+                            const updated = [...(cateringContent.packages || [])];
+                            updated[idx] = {
+                              ...updated[idx],
+                              pricePerPerson: val,
+                              price: `€${val.toFixed(2).replace('.', ',')}`
+                            };
+                            _setCateringContent({ ...cateringContent, packages: updated });
+                          }}
+                          className="w-full border rounded-xl px-3 py-2 text-[13px] bg-white focus:outline-none focus:border-[#d85c27]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-gray-600 mb-1">Min Guests</label>
+                        <input
+                          type="number"
+                          value={pkg.minGuests || 10}
+                          onChange={(e) => {
+                            const updated = [...(cateringContent.packages || [])];
+                            updated[idx] = { ...updated[idx], minGuests: parseInt(e.target.value) || 1 };
+                            _setCateringContent({ ...cateringContent, packages: updated });
+                          }}
+                          className="w-full border rounded-xl px-3 py-2 text-[13px] bg-white focus:outline-none focus:border-[#d85c27]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-gray-600 mb-1">Suitable For Tag ({adminContentLang.toUpperCase()})</label>
+                        <input
+                          type="text"
+                          value={adminContentLang === 'en' ? (pkg.suitableForEn || '') : (pkg.suitableForDe || '')}
+                          onChange={(e) => {
+                            const updated = [...(cateringContent.packages || [])];
+                            updated[idx] = adminContentLang === 'en'
+                              ? { ...updated[idx], suitableForEn: e.target.value }
+                              : { ...updated[idx], suitableForDe: e.target.value };
+                            _setCateringContent({ ...cateringContent, packages: updated });
+                          }}
+                          placeholder="e.g. Team lunches & workshops"
+                          className="w-full border rounded-xl px-3 py-2 text-[13px] bg-white focus:outline-none focus:border-[#d85c27]"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Features list */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[11px] font-bold text-gray-600">Features / Bullet Points ({adminContentLang.toUpperCase()}):</label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updated = [...(cateringContent.packages || [])];
+                            const currentFeatures = adminContentLang === 'en' ? (updated[idx].featuresEn || []) : (updated[idx].featuresDe || []);
+                            if (adminContentLang === 'en') {
+                              updated[idx] = { ...updated[idx], featuresEn: [...currentFeatures, 'New feature item'] };
+                            } else {
+                              updated[idx] = { ...updated[idx], featuresDe: [...currentFeatures, 'Neuer Punkt'] };
+                            }
+                            _setCateringContent({ ...cateringContent, packages: updated });
+                          }}
+                          className="text-[#d85c27] text-[11px] font-bold hover:underline"
+                        >
+                          + Add Feature
+                        </button>
+                      </div>
+                      {(adminContentLang === 'en' ? (pkg.featuresEn || []) : (pkg.featuresDe || [])).map((feat, fIdx) => (
+                        <div key={fIdx} className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={feat}
+                            onChange={(e) => {
+                              const updated = [...(cateringContent.packages || [])];
+                              if (adminContentLang === 'en') {
+                                const list = [...(updated[idx].featuresEn || [])];
+                                list[fIdx] = e.target.value;
+                                updated[idx] = { ...updated[idx], featuresEn: list };
+                              } else {
+                                const list = [...(updated[idx].featuresDe || [])];
+                                list[fIdx] = e.target.value;
+                                updated[idx] = { ...updated[idx], featuresDe: list };
+                              }
+                              _setCateringContent({ ...cateringContent, packages: updated });
+                            }}
+                            className="w-full border rounded-lg px-3 py-1.5 text-[12.5px] bg-white focus:outline-none focus:border-[#d85c27]"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = [...(cateringContent.packages || [])];
+                              if (adminContentLang === 'en') {
+                                updated[idx] = { ...updated[idx], featuresEn: (updated[idx].featuresEn || []).filter((_, i) => i !== fIdx) };
+                              } else {
+                                updated[idx] = { ...updated[idx], featuresDe: (updated[idx].featuresDe || []).filter((_, i) => i !== fIdx) };
+                              }
+                              _setCateringContent({ ...cateringContent, packages: updated });
+                            }}
+                            className="text-gray-400 hover:text-rose-600 p-1"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* FAQs Section */}
+            <div className="space-y-4 pt-4 border-t border-gray-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-[14px] font-extrabold text-[#1e382f] uppercase tracking-wider">3. Frequently Asked Questions ({cateringContent.faqs?.length || 0})</h3>
+                  <p className="text-[12px] text-gray-500">Accordion questions answered directly on the Catering page.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const newFaq: CateringFaqItem = {
+                      qEn: 'New Question?',
+                      qDe: 'Neue Frage?',
+                      aEn: 'Answer details here...',
+                      aDe: 'Antwortdetails hier...'
+                    };
+                    _setCateringContent({
+                      ...cateringContent,
+                      faqs: [...(cateringContent.faqs || []), newFaq]
+                    });
+                  }}
+                  className="bg-[#1e382f] hover:bg-[#2a4d41] text-white text-[12px] font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-all"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add FAQ</span>
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                {(cateringContent.faqs || []).map((faq, fIdx) => (
+                  <div key={fIdx} className="bg-white rounded-xl p-4 border border-[#ebdcd0] space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <input
+                        type="text"
+                        value={adminContentLang === 'en' ? faq.qEn : faq.qDe}
+                        onChange={(e) => {
+                          const updated = [...(cateringContent.faqs || [])];
+                          updated[fIdx] = adminContentLang === 'en'
+                            ? { ...updated[fIdx], qEn: e.target.value }
+                            : { ...updated[fIdx], qDe: e.target.value };
+                          _setCateringContent({ ...cateringContent, faqs: updated });
+                        }}
+                        placeholder="Question"
+                        className="font-bold text-[13.5px] text-[#1e382f] w-full border-b border-gray-200 pb-1 focus:outline-none focus:border-[#d85c27]"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updated = (cateringContent.faqs || []).filter((_, i) => i !== fIdx);
+                          _setCateringContent({ ...cateringContent, faqs: updated });
+                        }}
+                        className="text-gray-400 hover:text-rose-600 p-1"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <textarea
+                      rows={2}
+                      value={adminContentLang === 'en' ? faq.aEn : faq.aDe}
+                      onChange={(e) => {
+                        const updated = [...(cateringContent.faqs || [])];
+                        updated[fIdx] = adminContentLang === 'en'
+                          ? { ...updated[fIdx], aEn: e.target.value }
+                          : { ...updated[fIdx], aDe: e.target.value };
+                        _setCateringContent({ ...cateringContent, faqs: updated });
+                      }}
+                      placeholder="Answer"
+                      className="w-full text-[12.5px] text-gray-700 border rounded-lg p-2 focus:outline-none focus:border-[#d85c27] resize-none"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-gray-100">
+              <button
+                type="submit"
+                className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-7 py-3 rounded-full text-[14px] shadow-sm hover:shadow-md transition-all flex items-center gap-2"
+              >
+                <Save className="w-4 h-4" /> Save Catering Content & Pricing
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* ═══════════════════════════════════════════════
+            TAB 12: CAREERS / JOBS PAGE CONTENT
+        ═══════════════════════════════════════════════ */}
+        {activeTab === 'jobs' && (
+          <form onSubmit={handleSaveJobs} className="bg-[#fffdfa] rounded-[24px] p-6 sm:p-8 border border-[#ebdcd0] shadow-sm space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-5">
+              <div>
+                <h2 className="text-[20px] font-black text-[#1e382f] flex items-center gap-2.5">
+                  <Briefcase className="w-5 h-5 text-[#d85c27]" />
+                  <span>Careers & Job Openings Management</span>
+                </h2>
+                <p className="text-[13px] text-[#666] mt-0.5">
+                  Add, edit, or toggle job vacancies live on the website. Candidates can apply online directly.
+                </p>
+              </div>
+
+              {/* Language Switcher */}
+              <div className="flex items-center gap-1.5 bg-[#fcf8f3] p-1.5 rounded-xl border border-[#ebdcd0] shrink-0">
+                <span className="text-[11px] font-bold text-gray-500 uppercase px-2">Language:</span>
+                <button
+                  type="button"
+                  onClick={() => setAdminContentLang('en')}
+                  className={`px-3 py-1 text-[12px] font-extrabold rounded-lg transition-all ${
+                    adminContentLang === 'en' ? 'bg-[#1e382f] text-white shadow-xs' : 'text-[#1e382f] hover:bg-gray-200/60'
+                  }`}
+                >
+                  English (EN)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAdminContentLang('de')}
+                  className={`px-3 py-1 text-[12px] font-extrabold rounded-lg transition-all ${
+                    adminContentLang === 'de' ? 'bg-[#1e382f] text-white shadow-xs' : 'text-[#1e382f] hover:bg-gray-200/60'
+                  }`}
+                >
+                  Deutsch (DE)
+                </button>
+              </div>
+            </div>
+
+            {/* Hero Section */}
+            <div className="space-y-4">
+              <h3 className="text-[14px] font-extrabold text-[#1e382f] uppercase tracking-wider">1. Careers Hero Header</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[12px] font-bold text-[#333] mb-1">Badge ({adminContentLang.toUpperCase()})</label>
+                  <input
+                    type="text"
+                    value={adminContentLang === 'en' ? (jobsContent.badgeEn || '') : (jobsContent.badgeDe || '')}
+                    onChange={(e) => _setJobsContent(adminContentLang === 'en' ? { ...jobsContent, badgeEn: e.target.value } : { ...jobsContent, badgeDe: e.target.value })}
+                    placeholder="e.g. CAREERS AT MAATI"
+                    className="w-full border rounded-xl px-3.5 py-2.5 text-[13.5px] focus:outline-none focus:border-[#d85c27]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[12px] font-bold text-[#333] mb-1">Culture Section Title ({adminContentLang.toUpperCase()})</label>
+                  <input
+                    type="text"
+                    value={adminContentLang === 'en' ? (jobsContent.cultureTitleEn || '') : (jobsContent.cultureTitleDe || '')}
+                    onChange={(e) => _setJobsContent(adminContentLang === 'en' ? { ...jobsContent, cultureTitleEn: e.target.value } : { ...jobsContent, cultureTitleDe: e.target.value })}
+                    placeholder="e.g. More Than Just A Restaurant Job"
+                    className="w-full border rounded-xl px-3.5 py-2.5 text-[13.5px] focus:outline-none focus:border-[#d85c27]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[12px] font-bold text-[#333] mb-1">Hero Title ({adminContentLang.toUpperCase()})</label>
+                <input
+                  type="text"
+                  value={adminContentLang === 'en' ? (jobsContent.heroTitleEn || '') : (jobsContent.heroTitleDe || '')}
+                  onChange={(e) => _setJobsContent(adminContentLang === 'en' ? { ...jobsContent, heroTitleEn: e.target.value } : { ...jobsContent, heroTitleDe: e.target.value })}
+                  placeholder="e.g. Put Down Roots With Us. Shape Berlin Dining."
+                  className="w-full border rounded-xl px-3.5 py-2.5 text-[14px] font-bold focus:outline-none focus:border-[#d85c27]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[12px] font-bold text-[#333] mb-1">Hero Tagline ({adminContentLang.toUpperCase()})</label>
+                <textarea
+                  rows={2}
+                  value={adminContentLang === 'en' ? (jobsContent.heroDescEn || '') : (jobsContent.heroDescDe || '')}
+                  onChange={(e) => _setJobsContent(adminContentLang === 'en' ? { ...jobsContent, heroDescEn: e.target.value } : { ...jobsContent, heroDescDe: e.target.value })}
+                  placeholder="e.g. We are looking for dedicated individuals who care about honest Indian soul food..."
+                  className="w-full border rounded-xl px-3.5 py-2.5 text-[13.5px] focus:outline-none focus:border-[#d85c27] resize-none"
+                />
+              </div>
+            </div>
+
+            {/* Job Openings Manager */}
+            <div className="space-y-4 pt-4 border-t border-gray-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-[14px] font-extrabold text-[#1e382f] uppercase tracking-wider">
+                    2. Active Job Postings ({jobsContent.jobs?.length || 0})
+                  </h3>
+                  <p className="text-[12px] text-gray-500">
+                    Easily turn positions on/off with 1-click. Applicants submit their CV and info directly to your Studio.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const newJob: JobOpeningItem = {
+                      id: 'job_' + Date.now(),
+                      department: 'service',
+                      deptLabelEn: 'Service & Hospitality',
+                      deptLabelDe: 'Service & Gastronomie',
+                      titleEn: 'Service Crew / Barista (f/m/d)',
+                      titleDe: 'Servicekraft / Barista (w/m/d)',
+                      typeEn: 'Part-Time / Full-Time',
+                      typeDe: 'Teilzeit / Vollzeit',
+                      location: 'Berlin Mitte (Zimmerstraße 56)',
+                      summaryEn: 'Be the welcoming face of MAATI, serving hot bowls, chai, and smiles.',
+                      summaryDe: 'Begrüße unsere Gäste mit einem Lächeln und serviere Chai und frische Bowls.',
+                      responsibilitiesEn: [
+                        'Welcoming guests and taking orders with warmth',
+                        'Preparing specialty coffees, chais, and fresh lassis',
+                        'Maintaining pristine dining room cleanliness'
+                      ],
+                      responsibilitiesDe: [
+                        'Herzliche Gästebetreuung und Aufnahme von Bestellungen',
+                        'Zubereitung von Kaffeespezialitäten, Chai & Lassis',
+                        'Sicherstellung von Sauberkeit und Ordnung im Gastraum'
+                      ],
+                      offerEn: 'Fair wages, free staff meal per shift, warm team culture',
+                      offerDe: 'Faires Gehalt, kostenlose Schichtverpflegung, herzliches Team',
+                      active: true
+                    };
+                    _setJobsContent({
+                      ...jobsContent,
+                      jobs: [...(jobsContent.jobs || []), newJob]
+                    });
+                  }}
+                  className="bg-[#1e382f] hover:bg-[#2a4d41] text-white text-[12px] font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-all"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add Job Posting</span>
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {(jobsContent.jobs || []).map((job, jIdx) => (
+                  <div key={job.id || jIdx} className="bg-[#fcf8f3] rounded-2xl p-5 border border-[#ebdcd0] space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updated = [...(jobsContent.jobs || [])];
+                            updated[jIdx] = { ...updated[jIdx], active: !updated[jIdx].active };
+                            _setJobsContent({ ...jobsContent, jobs: updated });
+                          }}
+                          className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black transition-all ${
+                            job.active
+                              ? 'bg-emerald-600 text-white shadow-xs'
+                              : 'bg-gray-200 text-gray-600'
+                          }`}
+                        >
+                          {job.active ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                          <span>{job.active ? 'Active (Live)' : 'Draft (Hidden)'}</span>
+                        </button>
+                        <input
+                          type="text"
+                          value={adminContentLang === 'en' ? job.titleEn : job.titleDe}
+                          onChange={(e) => {
+                            const updated = [...(jobsContent.jobs || [])];
+                            updated[jIdx] = adminContentLang === 'en'
+                              ? { ...updated[jIdx], titleEn: e.target.value }
+                              : { ...updated[jIdx], titleDe: e.target.value };
+                            _setJobsContent({ ...jobsContent, jobs: updated });
+                          }}
+                          placeholder="Job Title"
+                          className="font-black text-[16px] text-[#1e382f] bg-transparent border-b border-dashed border-[#d85c27] focus:outline-none"
+                        />
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!window.confirm(`Delete job opening "${job.titleEn}"?`)) return;
+                            const updated = (jobsContent.jobs || []).filter((_, i) => i !== jIdx);
+                            _setJobsContent({ ...jobsContent, jobs: updated });
+                          }}
+                          className="p-1.5 text-gray-400 hover:text-rose-600 rounded-lg hover:bg-white"
+                          title="Delete Job"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-bold text-gray-600 mb-1">Department</label>
+                        <select
+                          value={job.department}
+                          onChange={(e) => {
+                            const val = e.target.value as any;
+                            const labels: Record<string, { en: string; de: string }> = {
+                              management: { en: 'Management & Leadership', de: 'Management & Leitung' },
+                              service: { en: 'Service & Hospitality', de: 'Service & Gastronomie' },
+                              kitchen: { en: 'Kitchen & Prep', de: 'Küche & Zubereitung' },
+                              general: { en: 'General / All Departments', de: 'Allgemein' }
+                            };
+                            const updated = [...(jobsContent.jobs || [])];
+                            updated[jIdx] = {
+                              ...updated[jIdx],
+                              department: val,
+                              deptLabelEn: labels[val]?.en || 'Department',
+                              deptLabelDe: labels[val]?.de || 'Abteilung'
+                            };
+                            _setJobsContent({ ...jobsContent, jobs: updated });
+                          }}
+                          className="w-full border rounded-xl px-3 py-2 text-[13px] bg-white focus:outline-none focus:border-[#d85c27]"
+                        >
+                          <option value="management">Management & Leadership</option>
+                          <option value="service">Service & Hospitality</option>
+                          <option value="kitchen">Kitchen & Prep</option>
+                          <option value="general">General / All Departments</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-gray-600 mb-1">Type ({adminContentLang.toUpperCase()})</label>
+                        <input
+                          type="text"
+                          value={adminContentLang === 'en' ? job.typeEn : job.typeDe}
+                          onChange={(e) => {
+                            const updated = [...(jobsContent.jobs || [])];
+                            updated[jIdx] = adminContentLang === 'en'
+                              ? { ...updated[jIdx], typeEn: e.target.value }
+                              : { ...updated[jIdx], typeDe: e.target.value };
+                            _setJobsContent({ ...jobsContent, jobs: updated });
+                          }}
+                          placeholder="e.g. Full-Time / Teilzeit"
+                          className="w-full border rounded-xl px-3 py-2 text-[13px] bg-white focus:outline-none focus:border-[#d85c27]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-gray-600 mb-1">Location</label>
+                        <input
+                          type="text"
+                          value={job.location || 'Berlin Mitte (Zimmerstraße 56)'}
+                          onChange={(e) => {
+                            const updated = [...(jobsContent.jobs || [])];
+                            updated[jIdx] = { ...updated[jIdx], location: e.target.value };
+                            _setJobsContent({ ...jobsContent, jobs: updated });
+                          }}
+                          className="w-full border rounded-xl px-3 py-2 text-[13px] bg-white focus:outline-none focus:border-[#d85c27]"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-gray-600 mb-1">Short Summary ({adminContentLang.toUpperCase()})</label>
+                      <input
+                        type="text"
+                        value={adminContentLang === 'en' ? (job.summaryEn || '') : (job.summaryDe || '')}
+                        onChange={(e) => {
+                          const updated = [...(jobsContent.jobs || [])];
+                          updated[jIdx] = adminContentLang === 'en'
+                            ? { ...updated[jIdx], summaryEn: e.target.value }
+                            : { ...updated[jIdx], summaryDe: e.target.value };
+                          _setJobsContent({ ...jobsContent, jobs: updated });
+                        }}
+                        className="w-full border rounded-xl px-3 py-2 text-[13px] bg-white focus:outline-none focus:border-[#d85c27]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-gray-600 mb-1">What We Offer / Perks ({adminContentLang.toUpperCase()})</label>
+                      <input
+                        type="text"
+                        value={adminContentLang === 'en' ? (job.offerEn || '') : (job.offerDe || '')}
+                        onChange={(e) => {
+                          const updated = [...(jobsContent.jobs || [])];
+                          updated[jIdx] = adminContentLang === 'en'
+                            ? { ...updated[jIdx], offerEn: e.target.value }
+                            : { ...updated[jIdx], offerDe: e.target.value };
+                          _setJobsContent({ ...jobsContent, jobs: updated });
+                        }}
+                        placeholder="e.g. Fair wages, free meals, career growth"
+                        className="w-full border rounded-xl px-3 py-2 text-[13px] bg-white focus:outline-none focus:border-[#d85c27]"
+                      />
+                    </div>
+
+                    {/* Responsibilities list */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[11px] font-bold text-gray-600">Key Tasks / Requirements ({adminContentLang.toUpperCase()}):</label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updated = [...(jobsContent.jobs || [])];
+                            if (adminContentLang === 'en') {
+                              updated[jIdx] = { ...updated[jIdx], responsibilitiesEn: [...(updated[jIdx].responsibilitiesEn || []), 'New responsibility'] };
+                            } else {
+                              updated[jIdx] = { ...updated[jIdx], responsibilitiesDe: [...(updated[jIdx].responsibilitiesDe || []), 'Neue Aufgabe'] };
+                            }
+                            _setJobsContent({ ...jobsContent, jobs: updated });
+                          }}
+                          className="text-[#d85c27] text-[11px] font-bold hover:underline"
+                        >
+                          + Add Task
+                        </button>
+                      </div>
+                      {(adminContentLang === 'en' ? (job.responsibilitiesEn || []) : (job.responsibilitiesDe || [])).map((resp, rIdx) => (
+                        <div key={rIdx} className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={resp}
+                            onChange={(e) => {
+                              const updated = [...(jobsContent.jobs || [])];
+                              if (adminContentLang === 'en') {
+                                const list = [...(updated[jIdx].responsibilitiesEn || [])];
+                                list[rIdx] = e.target.value;
+                                updated[jIdx] = { ...updated[jIdx], responsibilitiesEn: list };
+                              } else {
+                                const list = [...(updated[jIdx].responsibilitiesDe || [])];
+                                list[rIdx] = e.target.value;
+                                updated[jIdx] = { ...updated[jIdx], responsibilitiesDe: list };
+                              }
+                              _setJobsContent({ ...jobsContent, jobs: updated });
+                            }}
+                            className="w-full border rounded-lg px-3 py-1.5 text-[12.5px] bg-white focus:outline-none focus:border-[#d85c27]"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = [...(jobsContent.jobs || [])];
+                              if (adminContentLang === 'en') {
+                                updated[jIdx] = { ...updated[jIdx], responsibilitiesEn: (updated[jIdx].responsibilitiesEn || []).filter((_, i) => i !== rIdx) };
+                              } else {
+                                updated[jIdx] = { ...updated[jIdx], responsibilitiesDe: (updated[jIdx].responsibilitiesDe || []).filter((_, i) => i !== rIdx) };
+                              }
+                              _setJobsContent({ ...jobsContent, jobs: updated });
+                            }}
+                            className="text-gray-400 hover:text-rose-600 p-1"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-gray-100">
+              <button
+                type="submit"
+                className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-7 py-3 rounded-full text-[14px] shadow-sm hover:shadow-md transition-all flex items-center gap-2"
+              >
+                <Save className="w-4 h-4" /> Save Careers Page & Job Postings
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* ═══════════════════════════════════════════════
+            TAB 13: ABOUT US & BRAND STORY CONTENT
+        ═══════════════════════════════════════════════ */}
+        {activeTab === 'about' && (
+          <form onSubmit={handleSaveAbout} className="bg-[#fffdfa] rounded-[24px] p-6 sm:p-8 border border-[#ebdcd0] shadow-sm space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-5">
+              <div>
+                <h2 className="text-[20px] font-black text-[#1e382f] flex items-center gap-2.5">
+                  <Sparkles className="w-5 h-5 text-[#d85c27]" />
+                  <span>About Us & Brand Story Content</span>
+                </h2>
+                <p className="text-[13px] text-[#666] mt-0.5">
+                  Edit the philosophy of MAATI, your story, core values, and the meaning of soil & clay.
+                </p>
+              </div>
+
+              {/* Language Switcher */}
+              <div className="flex items-center gap-1.5 bg-[#fcf8f3] p-1.5 rounded-xl border border-[#ebdcd0] shrink-0">
+                <span className="text-[11px] font-bold text-gray-500 uppercase px-2">Language:</span>
+                <button
+                  type="button"
+                  onClick={() => setAdminContentLang('en')}
+                  className={`px-3 py-1 text-[12px] font-extrabold rounded-lg transition-all ${
+                    adminContentLang === 'en' ? 'bg-[#1e382f] text-white shadow-xs' : 'text-[#1e382f] hover:bg-gray-200/60'
+                  }`}
+                >
+                  English (EN)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAdminContentLang('de')}
+                  className={`px-3 py-1 text-[12px] font-extrabold rounded-lg transition-all ${
+                    adminContentLang === 'de' ? 'bg-[#1e382f] text-white shadow-xs' : 'text-[#1e382f] hover:bg-gray-200/60'
+                  }`}
+                >
+                  Deutsch (DE)
+                </button>
+              </div>
+            </div>
+
+            {/* Header / Hero */}
+            <div className="space-y-4">
+              <h3 className="text-[14px] font-extrabold text-[#1e382f] uppercase tracking-wider">1. Hero Section</h3>
+              <div>
+                <label className="block text-[12px] font-bold text-[#333] mb-1">Headline ({adminContentLang.toUpperCase()})</label>
+                <input
+                  type="text"
+                  value={adminContentLang === 'en' ? (aboutContent.heroTitleEn || '') : (aboutContent.heroTitleDe || '')}
+                  onChange={(e) => _setAboutContent(adminContentLang === 'en' ? { ...aboutContent, heroTitleEn: e.target.value } : { ...aboutContent, heroTitleDe: e.target.value })}
+                  placeholder="The Story Behind MAATI"
+                  className="w-full border rounded-xl px-3.5 py-2.5 text-[14px] font-bold focus:outline-none focus:border-[#d85c27]"
+                />
+              </div>
+              <div>
+                <label className="block text-[12px] font-bold text-[#333] mb-1">Hero Subtitle ({adminContentLang.toUpperCase()})</label>
+                <textarea
+                  rows={2}
+                  value={adminContentLang === 'en' ? (aboutContent.heroSubtitleEn || '') : (aboutContent.heroSubtitleDe || '')}
+                  onChange={(e) => _setAboutContent(adminContentLang === 'en' ? { ...aboutContent, heroSubtitleEn: e.target.value } : { ...aboutContent, heroSubtitleDe: e.target.value })}
+                  className="w-full border rounded-xl px-3.5 py-2.5 text-[13.5px] focus:outline-none focus:border-[#d85c27] resize-none"
+                />
+              </div>
+            </div>
+
+            {/* Main Brand Story */}
+            <div className="space-y-4 pt-4 border-t border-gray-100">
+              <h3 className="text-[14px] font-extrabold text-[#1e382f] uppercase tracking-wider">2. Our Story Section</h3>
+              <div>
+                <label className="block text-[12px] font-bold text-[#333] mb-1">Section Title ({adminContentLang.toUpperCase()})</label>
+                <input
+                  type="text"
+                  value={adminContentLang === 'en' ? (aboutContent.storyTitleEn || '') : (aboutContent.storyTitleDe || '')}
+                  onChange={(e) => _setAboutContent(adminContentLang === 'en' ? { ...aboutContent, storyTitleEn: e.target.value } : { ...aboutContent, storyTitleDe: e.target.value })}
+                  placeholder="Rooted in Indian Heritage, Made for Berlin"
+                  className="w-full border rounded-xl px-3.5 py-2.5 text-[14px] font-bold focus:outline-none focus:border-[#d85c27]"
+                />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[12px] font-bold text-[#333] mb-1">Story Paragraph 1 ({adminContentLang.toUpperCase()})</label>
+                  <textarea
+                    rows={4}
+                    value={adminContentLang === 'en' ? (aboutContent.storyP1En || '') : (aboutContent.storyP1De || '')}
+                    onChange={(e) => _setAboutContent(adminContentLang === 'en' ? { ...aboutContent, storyP1En: e.target.value } : { ...aboutContent, storyP1De: e.target.value })}
+                    className="w-full border rounded-xl px-3.5 py-2.5 text-[13px] focus:outline-none focus:border-[#d85c27] resize-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[12px] font-bold text-[#333] mb-1">Story Paragraph 2 ({adminContentLang.toUpperCase()})</label>
+                  <textarea
+                    rows={4}
+                    value={adminContentLang === 'en' ? (aboutContent.storyP2En || '') : (aboutContent.storyP2De || '')}
+                    onChange={(e) => _setAboutContent(adminContentLang === 'en' ? { ...aboutContent, storyP2En: e.target.value } : { ...aboutContent, storyP2De: e.target.value })}
+                    className="w-full border rounded-xl px-3.5 py-2.5 text-[13px] focus:outline-none focus:border-[#d85c27] resize-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* The Meaning of Maati */}
+            <div className="space-y-4 pt-4 border-t border-gray-100">
+              <h3 className="text-[14px] font-extrabold text-[#1e382f] uppercase tracking-wider">3. The Meaning of "Maati" (मिट्टी)</h3>
+              <div>
+                <label className="block text-[12px] font-bold text-[#333] mb-1">Box Title ({adminContentLang.toUpperCase()})</label>
+                <input
+                  type="text"
+                  value={adminContentLang === 'en' ? (aboutContent.maatiMeaningTitleEn || '') : (aboutContent.maatiMeaningTitleDe || '')}
+                  onChange={(e) => _setAboutContent(adminContentLang === 'en' ? { ...aboutContent, maatiMeaningTitleEn: e.target.value } : { ...aboutContent, maatiMeaningTitleDe: e.target.value })}
+                  placeholder="“मिट्टी — Maati: The Word That Connects India”"
+                  className="w-full border rounded-xl px-3.5 py-2.5 text-[14px] font-bold focus:outline-none focus:border-[#d85c27]"
+                />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[12px] font-bold text-[#333] mb-1">Explanation Part 1 ({adminContentLang.toUpperCase()})</label>
+                  <textarea
+                    rows={3}
+                    value={adminContentLang === 'en' ? (aboutContent.maatiMeaningP1En || '') : (aboutContent.maatiMeaningP1De || '')}
+                    onChange={(e) => _setAboutContent(adminContentLang === 'en' ? { ...aboutContent, maatiMeaningP1En: e.target.value } : { ...aboutContent, maatiMeaningP1De: e.target.value })}
+                    className="w-full border rounded-xl px-3.5 py-2.5 text-[13px] focus:outline-none focus:border-[#d85c27] resize-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[12px] font-bold text-[#333] mb-1">Explanation Part 2 ({adminContentLang.toUpperCase()})</label>
+                  <textarea
+                    rows={3}
+                    value={adminContentLang === 'en' ? (aboutContent.maatiMeaningP2En || '') : (aboutContent.maatiMeaningP2De || '')}
+                    onChange={(e) => _setAboutContent(adminContentLang === 'en' ? { ...aboutContent, maatiMeaningP2En: e.target.value } : { ...aboutContent, maatiMeaningP2De: e.target.value })}
+                    className="w-full border rounded-xl px-3.5 py-2.5 text-[13px] focus:outline-none focus:border-[#d85c27] resize-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Core Values */}
+            <div className="space-y-4 pt-4 border-t border-gray-100">
+              <h3 className="text-[14px] font-extrabold text-[#1e382f] uppercase tracking-wider">4. Three Core Brand Values</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {(aboutContent.values || []).map((val, vIdx) => (
+                  <div key={vIdx} className="bg-[#fcf8f3] rounded-2xl p-4 border border-[#ebdcd0] space-y-2">
+                    <span className="text-[11px] font-black text-[#d85c27] uppercase">Value #{vIdx + 1}</span>
+                    <input
+                      type="text"
+                      value={adminContentLang === 'en' ? val.titleEn : val.titleDe}
+                      onChange={(e) => {
+                        const updated = [...(aboutContent.values || [])];
+                        updated[vIdx] = adminContentLang === 'en'
+                          ? { ...updated[vIdx], titleEn: e.target.value }
+                          : { ...updated[vIdx], titleDe: e.target.value };
+                        _setAboutContent({ ...aboutContent, values: updated });
+                      }}
+                      className="font-bold text-[13.5px] text-[#1e382f] w-full border rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:border-[#d85c27]"
+                    />
+                    <textarea
+                      rows={3}
+                      value={adminContentLang === 'en' ? val.descEn : val.descDe}
+                      onChange={(e) => {
+                        const updated = [...(aboutContent.values || [])];
+                        updated[vIdx] = adminContentLang === 'en'
+                          ? { ...updated[vIdx], descEn: e.target.value }
+                          : { ...updated[vIdx], descDe: e.target.value };
+                        _setAboutContent({ ...aboutContent, values: updated });
+                      }}
+                      className="w-full text-[12px] border rounded-lg p-2 bg-white focus:outline-none focus:border-[#d85c27] resize-none"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Images */}
+            <div className="space-y-4 pt-4 border-t border-gray-100">
+              <h3 className="text-[14px] font-extrabold text-[#1e382f] uppercase tracking-wider">5. About Section Images</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="bg-[#fcf8f3] border border-[#ebdcd0] rounded-2xl p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[12px] font-black text-[#1e382f]">Main Kitchen Image</label>
+                    <button
+                      type="button"
+                      onClick={() => setActiveGallerySection(activeGallerySection === 'about1' ? null : 'about1')}
+                      className="text-[11px] font-bold text-[#d85c27] bg-white px-2.5 py-1 rounded-lg border border-[#ebdcd0]"
+                    >
+                      {activeGallerySection === 'about1' ? 'Hide' : 'Browse Photos'}
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-16 h-16 rounded-xl overflow-hidden bg-white shrink-0 border border-[#ebdcd0]">
+                      <img src={aboutContent.aboutImg1 || '/assets/show5-BiQql1jr.jpeg'} alt="About 1" className="w-full h-full object-cover" />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleOptimizedImageUpload((url) => _setAboutContent({ ...aboutContent, aboutImg1: url }))}
+                      className="bg-[#1e382f] text-white text-[12px] font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5"
+                    >
+                      <Upload className="w-3.5 h-3.5 text-[#d85c27]" /> Upload Photo
+                    </button>
+                  </div>
+                  {activeGallerySection === 'about1' && (
+                    <div className="pt-2">
+                      {renderGalleryPicker(
+                        aboutContent.aboutImg1 || '',
+                        (url) => _setAboutContent({ ...aboutContent, aboutImg1: url }),
+                        () => setActiveGallerySection(null)
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div className="bg-[#fcf8f3] border border-[#ebdcd0] rounded-2xl p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[12px] font-black text-[#1e382f]">Secondary Ambience Image</label>
+                    <button
+                      type="button"
+                      onClick={() => setActiveGallerySection(activeGallerySection === 'about2' ? null : 'about2')}
+                      className="text-[11px] font-bold text-[#d85c27] bg-white px-2.5 py-1 rounded-lg border border-[#ebdcd0]"
+                    >
+                      {activeGallerySection === 'about2' ? 'Hide' : 'Browse Photos'}
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-16 h-16 rounded-xl overflow-hidden bg-white shrink-0 border border-[#ebdcd0]">
+                      <img src={aboutContent.aboutImg2 || '/assets/show2-CM6MShfY.jpeg'} alt="About 2" className="w-full h-full object-cover" />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleOptimizedImageUpload((url) => _setAboutContent({ ...aboutContent, aboutImg2: url }))}
+                      className="bg-[#1e382f] text-white text-[12px] font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5"
+                    >
+                      <Upload className="w-3.5 h-3.5 text-[#d85c27]" /> Upload Photo
+                    </button>
+                  </div>
+                  {activeGallerySection === 'about2' && (
+                    <div className="pt-2">
+                      {renderGalleryPicker(
+                        aboutContent.aboutImg2 || '',
+                        (url) => _setAboutContent({ ...aboutContent, aboutImg2: url }),
+                        () => setActiveGallerySection(null)
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-gray-100">
+              <button
+                type="submit"
+                className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-7 py-3 rounded-full text-[14px] shadow-sm hover:shadow-md transition-all flex items-center gap-2"
+              >
+                <Save className="w-4 h-4" /> Save About Us Content
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* ═══════════════════════════════════════════════
+            TAB 14: LEGAL, IMPRESSUM & PRIVACY
+        ═══════════════════════════════════════════════ */}
+        {activeTab === 'legal' && (
+          <form onSubmit={handleSaveLegal} className="bg-[#fffdfa] rounded-[24px] p-6 sm:p-8 border border-[#ebdcd0] shadow-sm space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-5">
+              <div>
+                <h2 className="text-[20px] font-black text-[#1e382f] flex items-center gap-2.5">
+                  <ShieldCheck className="w-5 h-5 text-[#d85c27]" />
+                  <span>Legal Information, Impressum & Policies</span>
+                </h2>
+                <p className="text-[13px] text-[#666] mt-0.5">
+                  Update official German legal notices (§ 5 TMG), commercial registration, and GDPR policies.
+                </p>
+              </div>
+            </div>
+
+            {/* Impressum Section */}
+            <div className="space-y-4">
+              <h3 className="text-[14px] font-extrabold text-[#1e382f] uppercase tracking-wider">
+                1. Impressum (§ 5 TMG Angaben)
+              </h3>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[12px] font-bold text-[#333] mb-1">Company Legal Name *</label>
+                  <input
+                    type="text"
+                    value={legalContent.impressumCompanyName || ''}
+                    onChange={(e) => _setLegalContent({ ...legalContent, impressumCompanyName: e.target.value })}
+                    placeholder="Unicorn Table UG (MAATI Kitchen)"
+                    className="w-full border rounded-xl px-3.5 py-2.5 text-[13.5px] focus:outline-none focus:border-[#d85c27]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[12px] font-bold text-[#333] mb-1">Managing Director / Vertreten durch *</label>
+                  <input
+                    type="text"
+                    value={legalContent.impressumManagingDirector || ''}
+                    onChange={(e) => _setLegalContent({ ...legalContent, impressumManagingDirector: e.target.value })}
+                    placeholder="Naveen Prasad"
+                    className="w-full border rounded-xl px-3.5 py-2.5 text-[13.5px] focus:outline-none focus:border-[#d85c27]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[12px] font-bold text-[#333] mb-1">Registered Address *</label>
+                <input
+                  type="text"
+                  value={legalContent.impressumAddress || ''}
+                  onChange={(e) => _setLegalContent({ ...legalContent, impressumAddress: e.target.value })}
+                  placeholder="Lindenstraße 74, 10969 Berlin"
+                  className="w-full border rounded-xl px-3.5 py-2.5 text-[13.5px] focus:outline-none focus:border-[#d85c27]"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[12px] font-bold text-[#333] mb-1">Register Court & Number *</label>
+                  <input
+                    type="text"
+                    value={legalContent.impressumRegisterCourt || ''}
+                    onChange={(e) => _setLegalContent({ ...legalContent, impressumRegisterCourt: e.target.value })}
+                    placeholder="Amtsgericht Charlottenburg, HRB 207902 B"
+                    className="w-full border rounded-xl px-3.5 py-2.5 text-[13.5px] focus:outline-none focus:border-[#d85c27]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[12px] font-bold text-[#333] mb-1">VAT ID / USt-IdNr.</label>
+                  <input
+                    type="text"
+                    value={legalContent.impressumVatId || ''}
+                    onChange={(e) => _setLegalContent({ ...legalContent, impressumVatId: e.target.value })}
+                    placeholder="DE 324 159 872"
+                    className="w-full border rounded-xl px-3.5 py-2.5 text-[13.5px] focus:outline-none focus:border-[#d85c27]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[12px] font-bold text-[#333] mb-1">Official Legal Email</label>
+                  <input
+                    type="email"
+                    value={legalContent.impressumEmail || ''}
+                    onChange={(e) => _setLegalContent({ ...legalContent, impressumEmail: e.target.value })}
+                    placeholder="hello@maatikitchen.com"
+                    className="w-full border rounded-xl px-3.5 py-2.5 text-[13.5px] focus:outline-none focus:border-[#d85c27]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[12px] font-bold text-[#333] mb-1">Official Legal Phone</label>
+                  <input
+                    type="text"
+                    value={legalContent.impressumPhone || ''}
+                    onChange={(e) => _setLegalContent({ ...legalContent, impressumPhone: e.target.value })}
+                    placeholder="+49 1729498262"
+                    className="w-full border rounded-xl px-3.5 py-2.5 text-[13.5px] focus:outline-none focus:border-[#d85c27]"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Privacy Policy & Terms */}
+            <div className="space-y-4 pt-4 border-t border-gray-100">
+              <h3 className="text-[14px] font-extrabold text-[#1e382f] uppercase tracking-wider">
+                2. Privacy Policy & Terms Statements
+              </h3>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[12px] font-bold text-[#333] mb-1">Privacy Policy Intro (English)</label>
+                  <textarea
+                    rows={3}
+                    value={legalContent.privacyPolicyEn || ''}
+                    onChange={(e) => _setLegalContent({ ...legalContent, privacyPolicyEn: e.target.value })}
+                    className="w-full border rounded-xl px-3.5 py-2.5 text-[13px] focus:outline-none focus:border-[#d85c27] resize-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[12px] font-bold text-[#333] mb-1">Privacy Policy Intro (Deutsch)</label>
+                  <textarea
+                    rows={3}
+                    value={legalContent.privacyPolicyDe || ''}
+                    onChange={(e) => _setLegalContent({ ...legalContent, privacyPolicyDe: e.target.value })}
+                    className="w-full border rounded-xl px-3.5 py-2.5 text-[13px] focus:outline-none focus:border-[#d85c27] resize-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[12px] font-bold text-[#333] mb-1">Terms & Conditions (English)</label>
+                  <textarea
+                    rows={3}
+                    value={legalContent.termsEn || ''}
+                    onChange={(e) => _setLegalContent({ ...legalContent, termsEn: e.target.value })}
+                    className="w-full border rounded-xl px-3.5 py-2.5 text-[13px] focus:outline-none focus:border-[#d85c27] resize-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[12px] font-bold text-[#333] mb-1">Terms & Conditions (Deutsch)</label>
+                  <textarea
+                    rows={3}
+                    value={legalContent.termsDe || ''}
+                    onChange={(e) => _setLegalContent({ ...legalContent, termsDe: e.target.value })}
+                    className="w-full border rounded-xl px-3.5 py-2.5 text-[13px] focus:outline-none focus:border-[#d85c27] resize-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-gray-100">
+              <button
+                type="submit"
+                className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-7 py-3 rounded-full text-[14px] shadow-sm hover:shadow-md transition-all flex items-center gap-2"
+              >
+                <Save className="w-4 h-4" /> Save Legal & Impressum Details
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* ═══════════════════════════════════════════════
+            TAB 15: CATEGORY LANDING PAGES (SEO)
+        ═══════════════════════════════════════════════ */}
+        {activeTab === 'landingPages' && (() => {
+          const currentLanding = landingPagesContent[selectedLandingKey] || DEFAULT_LANDING_PAGES[selectedLandingKey];
+          
+          const updateLandingField = (field: keyof LandingCategoryConfig, value: any) => {
+            _setLandingPagesContent((prev) => ({
+              ...prev,
+              [selectedLandingKey]: {
+                ...(prev[selectedLandingKey] || DEFAULT_LANDING_PAGES[selectedLandingKey]),
+                [field]: value
+              }
+            }));
+          };
+
+          const updateLandingItem = (index: number, updatedItem: LandingPageItem) => {
+            const currentList = [...(currentLanding.items || [])];
+            currentList[index] = updatedItem;
+            updateLandingField('items', currentList);
+          };
+
+          const deleteLandingItem = (index: number) => {
+            const currentList = (currentLanding.items || []).filter((_, i) => i !== index);
+            updateLandingField('items', currentList);
+          };
+
+          const addLandingItem = () => {
+            const currentList = [...(currentLanding.items || [])];
+            currentList.push({
+              nameEn: 'New Signature Dish',
+              nameDe: 'Neues Signature Gericht',
+              descEn: 'Fresh authentic spices and vibrant flavors.',
+              descDe: 'Frische authentische Gewürze und lebendige Aromen.',
+              dietary: 'Vegetarian'
+            });
+            updateLandingField('items', currentList);
+          };
+
+          const landingOptions: { key: 'naan-pockets' | 'bowls' | 'breakfast' | 'coffee-chai'; label: string; route: string }[] = [
+            { key: 'naan-pockets', label: 'Punjab Naan Pockets', route: '/menu/naan-pockets' },
+            { key: 'bowls', label: 'Signature Bowls', route: '/menu/bowls' },
+            { key: 'breakfast', label: 'Berlin Breakfast', route: '/menu/breakfast' },
+            { key: 'coffee-chai', label: 'Specialty Coffee & Chai', route: '/menu/coffee-chai' },
+          ];
+
+          return (
+            <form onSubmit={handleSaveLandingPages} className="bg-[#fffdfa] rounded-[24px] p-6 sm:p-8 border border-[#ebdcd0] shadow-sm space-y-6 animate-fadeIn">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-5">
+                <div>
+                  <h2 className="text-[20px] font-black text-[#1e382f] flex items-center gap-2.5">
+                    <Layers className="w-5 h-5 text-[#d85c27]" />
+                    <span>Category Landing Pages (SEO Landings)</span>
+                  </h2>
+                  <p className="text-[13px] text-[#666] mt-0.5">
+                    Manage individual category showcase landing pages with dedicated search titles, hero badges, starting prices, and highlight dishes.
+                  </p>
+                </div>
+
+                {/* Language Switcher */}
+                <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-[#ebdcd0] self-start sm:self-auto shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setAdminContentLang('en')}
+                    className={`px-3 py-1.5 text-[12px] font-extrabold rounded-lg transition-all ${
+                      adminContentLang === 'en' ? 'bg-[#1e382f] text-white shadow-xs' : 'text-[#1e382f] hover:bg-gray-100'
+                    }`}
+                  >
+                    English (EN)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAdminContentLang('de')}
+                    className={`px-3 py-1.5 text-[12px] font-extrabold rounded-lg transition-all ${
+                      adminContentLang === 'de' ? 'bg-[#1e382f] text-white shadow-xs' : 'text-[#1e382f] hover:bg-gray-100'
+                    }`}
+                  >
+                    Deutsch (DE)
+                  </button>
+                </div>
+              </div>
+
+              {/* Sub-navigation for the 4 landing pages */}
+              <div className="flex flex-wrap items-center gap-2 bg-[#fcf8f3] p-2 rounded-2xl border border-[#ebdcd0]">
+                {landingOptions.map((opt) => {
+                  const isSelected = selectedLandingKey === opt.key;
+                  return (
+                    <button
+                      key={opt.key}
+                      type="button"
+                      onClick={() => setSelectedLandingKey(opt.key)}
+                      className={`px-4 py-2 rounded-xl text-[13px] font-black transition-all flex items-center gap-2 ${
+                        isSelected
+                          ? 'bg-[#1e382f] text-white shadow-sm'
+                          : 'bg-white text-[#1e382f] border border-[#ebdcd0] hover:bg-amber-50/50'
+                      }`}
+                    >
+                      <span>{opt.label}</span>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-mono ${isSelected ? 'bg-[#2a4d41] text-amber-200' : 'bg-gray-100 text-gray-500'}`}>
+                        {opt.route}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Live Route Link Notice */}
+              <div className="flex items-center justify-between bg-amber-50/60 border border-amber-200 rounded-xl px-4 py-2.5 text-[12.5px] text-amber-900">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-[#d85c27]" />
+                  <span>Currently editing live page at: <strong className="font-mono">/menu/{selectedLandingKey}</strong></span>
+                </div>
+                <Link
+                  to={`/menu/${selectedLandingKey}`}
+                  target="_blank"
+                  className="font-bold text-[#d85c27] hover:underline flex items-center gap-1 shrink-0"
+                >
+                  <span>Open Live Page</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+
+              {/* 1. SEO Metadata */}
+              <div className="space-y-4">
+                <h3 className="text-[14px] font-extrabold text-[#1e382f] uppercase tracking-wider">
+                  1. Search Engine (SEO) Meta Tags
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[12px] font-bold text-[#333] mb-1">
+                      Browser Tab Title ({adminContentLang.toUpperCase()}) *
+                    </label>
+                    <input
+                      type="text"
+                      value={adminContentLang === 'en' ? (currentLanding.titleEn || '') : (currentLanding.titleDe || '')}
+                      onChange={(e) => updateLandingField(adminContentLang === 'en' ? 'titleEn' : 'titleDe', e.target.value)}
+                      className="w-full border rounded-xl px-3.5 py-2.5 text-[13.5px] focus:outline-none focus:border-[#d85c27]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[12px] font-bold text-[#333] mb-1">
+                      Meta Description ({adminContentLang.toUpperCase()}) *
+                    </label>
+                    <input
+                      type="text"
+                      value={adminContentLang === 'en' ? (currentLanding.descEn || '') : (currentLanding.descDe || '')}
+                      onChange={(e) => updateLandingField(adminContentLang === 'en' ? 'descEn' : 'descDe', e.target.value)}
+                      className="w-full border rounded-xl px-3.5 py-2.5 text-[13.5px] focus:outline-none focus:border-[#d85c27]"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* 2. Hero Headline, Badge & Price */}
+              <div className="space-y-4 pt-4 border-t border-gray-100">
+                <h3 className="text-[14px] font-extrabold text-[#1e382f] uppercase tracking-wider">
+                  2. Hero Header & Pricing
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="sm:col-span-2">
+                    <label className="block text-[12px] font-bold text-[#333] mb-1">
+                      Main H1 Headline ({adminContentLang.toUpperCase()}) *
+                    </label>
+                    <input
+                      type="text"
+                      value={adminContentLang === 'en' ? (currentLanding.h1En || '') : (currentLanding.h1De || '')}
+                      onChange={(e) => updateLandingField(adminContentLang === 'en' ? 'h1En' : 'h1De', e.target.value)}
+                      className="w-full border rounded-xl px-3.5 py-2.5 text-[14px] font-bold focus:outline-none focus:border-[#d85c27]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[12px] font-bold text-[#333] mb-1">
+                      Category Badge Text ({adminContentLang.toUpperCase()})
+                    </label>
+                    <input
+                      type="text"
+                      value={adminContentLang === 'en' ? (currentLanding.badgeEn || '') : (currentLanding.badgeDe || '')}
+                      onChange={(e) => updateLandingField(adminContentLang === 'en' ? 'badgeEn' : 'badgeDe', e.target.value)}
+                      placeholder="e.g. SIGNATURE CREATION"
+                      className="w-full border rounded-xl px-3.5 py-2.5 text-[13.5px] focus:outline-none focus:border-[#d85c27]"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="sm:col-span-2">
+                    <label className="block text-[12px] font-bold text-[#333] mb-1">
+                      Intro Paragraph ({adminContentLang.toUpperCase()})
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={adminContentLang === 'en' ? (currentLanding.introEn || '') : (currentLanding.introDe || '')}
+                      onChange={(e) => updateLandingField(adminContentLang === 'en' ? 'introEn' : 'introDe', e.target.value)}
+                      className="w-full border rounded-xl px-3.5 py-2 text-[13px] focus:outline-none focus:border-[#d85c27] resize-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[12px] font-bold text-[#333] mb-1">
+                      Starting Price Tag ({adminContentLang.toUpperCase()})
+                    </label>
+                    <input
+                      type="text"
+                      value={adminContentLang === 'en' ? (currentLanding.priceEn || '') : (currentLanding.priceDe || '')}
+                      onChange={(e) => updateLandingField(adminContentLang === 'en' ? 'priceEn' : 'priceDe', e.target.value)}
+                      placeholder="e.g. from €10.50"
+                      className="w-full border rounded-xl px-3.5 py-2.5 text-[13.5px] font-bold text-[#d85c27] focus:outline-none focus:border-[#d85c27]"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. Highlighted Dishes */}
+              <div className="space-y-4 pt-4 border-t border-gray-100">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-[14px] font-extrabold text-[#1e382f] uppercase tracking-wider">
+                      3. Featured Category Highlights ({currentLanding.items?.length || 0})
+                    </h3>
+                    <p className="text-[12px] text-gray-500">Showcase cards displayed directly under the hero banner on this landing page.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={addLandingItem}
+                    className="bg-[#1e382f] hover:bg-[#2a4d41] text-white text-[12px] font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-all"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add Highlight Dish</span>
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  {(currentLanding.items || []).map((dish, dIdx) => (
+                    <div key={dIdx} className="bg-[#fcf8f3] rounded-2xl p-4 border border-[#ebdcd0] space-y-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-[11px] font-black text-[#d85c27] uppercase tracking-wider">
+                          Highlight #{dIdx + 1}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={dish.dietary || ''}
+                            onChange={(e) => updateLandingItem(dIdx, { ...dish, dietary: e.target.value })}
+                            placeholder="Dietary tag (e.g. Vegan)"
+                            className="text-[11px] font-bold border rounded-lg px-2.5 py-1 bg-white focus:outline-none focus:border-[#d85c27]"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => deleteLandingItem(dIdx)}
+                            className="p-1.5 text-gray-400 hover:text-rose-600 rounded-lg hover:bg-white"
+                            title="Delete highlight"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[11px] font-bold text-gray-600 mb-1">Dish Name ({adminContentLang.toUpperCase()})</label>
+                          <input
+                            type="text"
+                            value={adminContentLang === 'en' ? (dish.nameEn || '') : (dish.nameDe || '')}
+                            onChange={(e) => updateLandingItem(dIdx, adminContentLang === 'en' ? { ...dish, nameEn: e.target.value } : { ...dish, nameDe: e.target.value })}
+                            className="w-full border rounded-xl px-3 py-1.5 text-[13px] bg-white font-bold focus:outline-none focus:border-[#d85c27]"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-bold text-gray-600 mb-1">Ingredients & Description ({adminContentLang.toUpperCase()})</label>
+                          <input
+                            type="text"
+                            value={adminContentLang === 'en' ? (dish.descEn || '') : (dish.descDe || '')}
+                            onChange={(e) => updateLandingItem(dIdx, adminContentLang === 'en' ? { ...dish, descEn: e.target.value } : { ...dish, descDe: e.target.value })}
+                            className="w-full border rounded-xl px-3 py-1.5 text-[12.5px] bg-white focus:outline-none focus:border-[#d85c27]"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
+                <button
+                  type="submit"
+                  className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-7 py-3 rounded-full text-[14px] shadow-sm hover:shadow-md transition-all flex items-center gap-2"
+                >
+                  <Save className="w-4 h-4" /> Save Category Landing Pages
+                </button>
+                <Link
+                  to={`/menu/${selectedLandingKey}`}
+                  target="_blank"
+                  className="text-[12.5px] font-bold text-[#1e382f] hover:text-[#d85c27] flex items-center gap-1"
+                >
+                  <span>Preview /menu/{selectedLandingKey}</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+            </form>
+          );
+        })()}
+
+        {/* ═══════════════════════════════════════════════
+            TAB 16: TABLE RESERVATION SETTINGS
+        ═══════════════════════════════════════════════ */}
+        {activeTab === 'reservations' && (
+          <form onSubmit={handleSaveReservation} className="bg-[#fffdfa] rounded-[24px] p-6 sm:p-8 border border-[#ebdcd0] shadow-sm space-y-6 animate-fadeIn">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-5">
+              <div>
+                <h2 className="text-[20px] font-black text-[#1e382f] flex items-center gap-2.5">
+                  <Calendar className="w-5 h-5 text-[#d85c27]" />
+                  <span>Table Reservations & TheFork Widget Integration</span>
+                </h2>
+                <p className="text-[13px] text-[#666] mt-0.5">
+                  Manage the online table booking modal, TheFork restaurant identifier, contact phone, and group size limits.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-[#ebdcd0] self-start sm:self-auto shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setAdminContentLang('en')}
+                  className={`px-3 py-1.5 text-[12px] font-extrabold rounded-lg transition-all ${
+                    adminContentLang === 'en' ? 'bg-[#1e382f] text-white shadow-xs' : 'text-[#1e382f] hover:bg-gray-100'
+                  }`}
+                >
+                  English (EN)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAdminContentLang('de')}
+                  className={`px-3 py-1.5 text-[12px] font-extrabold rounded-lg transition-all ${
+                    adminContentLang === 'de' ? 'bg-[#1e382f] text-white shadow-xs' : 'text-[#1e382f] hover:bg-gray-100'
+                  }`}
+                >
+                  Deutsch (DE)
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Titles & Messages */}
+            <div className="space-y-4">
+              <h3 className="text-[14px] font-extrabold text-[#1e382f] uppercase tracking-wider">
+                1. Modal Headline & Instructions
+              </h3>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[12px] font-bold text-[#333] mb-1">
+                    Modal Title ({adminContentLang.toUpperCase()}) *
+                  </label>
+                  <input
+                    type="text"
+                    value={adminContentLang === 'en' ? (reservationContent.titleEn || '') : (reservationContent.titleDe || '')}
+                    onChange={(e) => _setReservationContent(adminContentLang === 'en' ? { ...reservationContent, titleEn: e.target.value } : { ...reservationContent, titleDe: e.target.value })}
+                    className="w-full border rounded-xl px-3.5 py-2.5 text-[13.5px] font-bold focus:outline-none focus:border-[#d85c27]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[12px] font-bold text-[#333] mb-1">
+                    Group Notice & Large Parties ({adminContentLang.toUpperCase()})
+                  </label>
+                  <input
+                    type="text"
+                    value={adminContentLang === 'en' ? (reservationContent.subtitleEn || '') : (reservationContent.subtitleDe || '')}
+                    onChange={(e) => _setReservationContent(adminContentLang === 'en' ? { ...reservationContent, subtitleEn: e.target.value } : { ...reservationContent, subtitleDe: e.target.value })}
+                    className="w-full border rounded-xl px-3.5 py-2.5 text-[13.5px] focus:outline-none focus:border-[#d85c27]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[12px] font-bold text-[#333] mb-1">
+                  Walk-In & Counter Order Footnote ({adminContentLang.toUpperCase()})
+                </label>
+                <textarea
+                  rows={2}
+                  value={adminContentLang === 'en' ? (reservationContent.noticeEn || '') : (reservationContent.noticeDe || '')}
+                  onChange={(e) => _setReservationContent(adminContentLang === 'en' ? { ...reservationContent, noticeEn: e.target.value } : { ...reservationContent, noticeDe: e.target.value })}
+                  className="w-full border rounded-xl px-3.5 py-2 text-[13px] focus:outline-none focus:border-[#d85c27] resize-none"
+                />
+              </div>
+            </div>
+
+            {/* TheFork Widget Settings */}
+            <div className="space-y-4 pt-4 border-t border-gray-100">
+              <h3 className="text-[14px] font-extrabold text-[#1e382f] uppercase tracking-wider">
+                2. TheFork Integration Parameters
+              </h3>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[12px] font-bold text-[#333] mb-1">
+                    TheFork Widget UUID (restaurantId) *
+                  </label>
+                  <input
+                    type="text"
+                    value={reservationContent.theforkWidgetId || ''}
+                    onChange={(e) => _setReservationContent({ ...reservationContent, theforkWidgetId: e.target.value })}
+                    placeholder="7beffe40-786f-496c-b196-48b939750c77"
+                    className="w-full font-mono border rounded-xl px-3.5 py-2.5 text-[13px] focus:outline-none focus:border-[#d85c27]"
+                  />
+                  <span className="text-[11px] text-gray-500 mt-1 block">Used to render the official embeddable booking iframe.</span>
+                </div>
+                <div>
+                  <label className="block text-[12px] font-bold text-[#333] mb-1">
+                    Direct TheFork Booking URL
+                  </label>
+                  <input
+                    type="text"
+                    value={reservationContent.theforkUrl || ''}
+                    onChange={(e) => _setReservationContent({ ...reservationContent, theforkUrl: e.target.value })}
+                    placeholder="https://www.thefork.com/restaurant/maati-kitchen-r938475"
+                    className="w-full border rounded-xl px-3.5 py-2.5 text-[13px] focus:outline-none focus:border-[#d85c27]"
+                  />
+                  <span className="text-[11px] text-gray-500 mt-1 block">Fallback link if a visitor's browser blocks third-party iframes.</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-[12px] font-bold text-[#333] mb-1">Max Online Party Size</label>
+                  <input
+                    type="number"
+                    value={reservationContent.maxPartySize || 8}
+                    onChange={(e) => _setReservationContent({ ...reservationContent, maxPartySize: parseInt(e.target.value) || 8 })}
+                    className="w-full border rounded-xl px-3.5 py-2.5 text-[13.5px] focus:outline-none focus:border-[#d85c27]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[12px] font-bold text-[#333] mb-1">Direct Phone Contact</label>
+                  <input
+                    type="text"
+                    value={reservationContent.phone || ''}
+                    onChange={(e) => _setReservationContent({ ...reservationContent, phone: e.target.value })}
+                    placeholder="+49 30 51891367"
+                    className="w-full border rounded-xl px-3.5 py-2.5 text-[13.5px] focus:outline-none focus:border-[#d85c27]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[12px] font-bold text-[#333] mb-1">Direct Email Contact</label>
+                  <input
+                    type="email"
+                    value={reservationContent.email || ''}
+                    onChange={(e) => _setReservationContent({ ...reservationContent, email: e.target.value })}
+                    placeholder="hello@maatikitchen.com"
+                    className="w-full border rounded-xl px-3.5 py-2.5 text-[13.5px] focus:outline-none focus:border-[#d85c27]"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-gray-100">
+              <button
+                type="submit"
+                className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-7 py-3 rounded-full text-[14px] shadow-sm hover:shadow-md transition-all flex items-center gap-2"
+              >
+                <Save className="w-4 h-4" /> Save Reservation Settings
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* ═══════════════════════════════════════════════
+            TAB 17: PRIVACY POLICY (DATENSCHUTZ)
+        ═══════════════════════════════════════════════ */}
+        {activeTab === 'privacy' && (() => {
+          const currentSections = legalContent.privacySections && legalContent.privacySections.length > 0
+            ? legalContent.privacySections
+            : DEFAULT_PRIVACY_SECTIONS;
+
+          const updateSection = (idx: number, updated: Partial<LegalSectionItem>) => {
+            const list = [...currentSections];
+            list[idx] = { ...list[idx], ...updated };
+            _setLegalContent({ ...legalContent, privacySections: list });
+          };
+
+          const deleteSection = (idx: number) => {
+            const list = currentSections.filter((_: LegalSectionItem, i: number) => i !== idx);
+            _setLegalContent({ ...legalContent, privacySections: list });
+          };
+
+          const addSection = () => {
+            const list = [
+              ...currentSections,
+              {
+                id: `sec-${Date.now()}`,
+                titleEn: `${currentSections.length + 1}. New Policy Clause`,
+                titleDe: `${currentSections.length + 1}. Neue Klausel`,
+                bodyEn: 'Insert detailed privacy declaration in English here...',
+                bodyDe: 'Fügen Sie hier die Datenschutzerklärung auf Deutsch ein...'
+              }
+            ];
+            _setLegalContent({ ...legalContent, privacySections: list });
+          };
+
+          return (
+            <form onSubmit={handleSaveLegal} className="bg-[#fffdfa] rounded-[24px] p-6 sm:p-8 border border-[#ebdcd0] shadow-sm space-y-6 animate-fadeIn">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-5">
+                <div>
+                  <h2 className="text-[20px] font-black text-[#1e382f] flex items-center gap-2.5">
+                    <Lock className="w-5 h-5 text-[#d85c27]" />
+                    <span>Privacy Policy &amp; DSGVO Data Protection</span>
+                  </h2>
+                  <p className="text-[13px] text-[#666] mt-0.5">
+                    Edit the GDPR privacy declaration sections displayed on <strong className="font-mono">/privacy</strong> and <strong className="font-mono">/de/datenschutz</strong>.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-[#ebdcd0]">
+                    <button
+                      type="button"
+                      onClick={() => setAdminContentLang('en')}
+                      className={`px-3 py-1.5 text-[12px] font-extrabold rounded-lg transition-all ${
+                        adminContentLang === 'en' ? 'bg-[#1e382f] text-white shadow-xs' : 'text-[#1e382f] hover:bg-gray-100'
+                      }`}
+                    >
+                      English (EN)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAdminContentLang('de')}
+                      className={`px-3 py-1.5 text-[12px] font-extrabold rounded-lg transition-all ${
+                        adminContentLang === 'de' ? 'bg-[#1e382f] text-white shadow-xs' : 'text-[#1e382f] hover:bg-gray-100'
+                      }`}
+                    >
+                      Deutsch (DE)
+                    </button>
+                  </div>
+                  <Link
+                    to="/privacy"
+                    target="_blank"
+                    className="p-2 text-gray-500 hover:text-[#d85c27] rounded-xl hover:bg-amber-50"
+                    title="View live privacy page"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                  </Link>
+                </div>
+              </div>
+
+              {/* General Intro Paragraph */}
+              <div>
+                <label className="block text-[12px] font-bold text-[#333] mb-1">
+                  General Privacy Statement ({adminContentLang.toUpperCase()})
+                </label>
+                <textarea
+                  rows={3}
+                  value={adminContentLang === 'en' ? (legalContent.privacyPolicyEn || '') : (legalContent.privacyPolicyDe || '')}
+                  onChange={(e) => _setLegalContent(adminContentLang === 'en' ? { ...legalContent, privacyPolicyEn: e.target.value } : { ...legalContent, privacyPolicyDe: e.target.value })}
+                  className="w-full border rounded-xl px-3.5 py-2.5 text-[13px] focus:outline-none focus:border-[#d85c27] resize-none"
+                />
+              </div>
+
+              {/* Sections List */}
+              <div className="space-y-4 pt-4 border-t border-gray-100">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-[14px] font-extrabold text-[#1e382f] uppercase tracking-wider">
+                    Privacy Policy Sections ({currentSections.length})
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={addSection}
+                    className="bg-[#1e382f] hover:bg-[#2a4d41] text-white text-[12px] font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-all"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add Policy Section</span>
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  {currentSections.map((sec: LegalSectionItem, idx: number) => (
+                    <div key={sec.id || idx} className="bg-[#fcf8f3] rounded-2xl p-4 border border-[#ebdcd0] space-y-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-[11px] font-black text-[#d85c27] uppercase tracking-wider">
+                          Section #{idx + 1}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => deleteSection(idx)}
+                          className="p-1.5 text-gray-400 hover:text-rose-600 rounded-lg hover:bg-white"
+                          title="Delete section"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-gray-600 mb-1">Section Title ({adminContentLang.toUpperCase()})</label>
+                        <input
+                          type="text"
+                          value={adminContentLang === 'en' ? sec.titleEn : sec.titleDe}
+                          onChange={(e) => updateSection(idx, adminContentLang === 'en' ? { titleEn: e.target.value } : { titleDe: e.target.value })}
+                          className="w-full border rounded-xl px-3 py-1.5 text-[13px] bg-white font-bold focus:outline-none focus:border-[#d85c27]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-gray-600 mb-1">Section Body Text ({adminContentLang.toUpperCase()})</label>
+                        <textarea
+                          rows={3}
+                          value={adminContentLang === 'en' ? sec.bodyEn : sec.bodyDe}
+                          onChange={(e) => updateSection(idx, adminContentLang === 'en' ? { bodyEn: e.target.value } : { bodyDe: e.target.value })}
+                          className="w-full border rounded-xl px-3 py-2 text-[12.5px] bg-white focus:outline-none focus:border-[#d85c27] resize-none"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-gray-100">
+                <button
+                  type="submit"
+                  className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-7 py-3 rounded-full text-[14px] shadow-sm hover:shadow-md transition-all flex items-center gap-2"
+                >
+                  <Save className="w-4 h-4" /> Save Privacy Policy
+                </button>
+              </div>
+            </form>
+          );
+        })()}
+
+        {/* ═══════════════════════════════════════════════
+            TAB 18: TERMS & CONDITIONS (AGB)
+        ═══════════════════════════════════════════════ */}
+        {activeTab === 'terms' && (() => {
+          const currentSections = legalContent.termsSections && legalContent.termsSections.length > 0
+            ? legalContent.termsSections
+            : DEFAULT_TERMS_SECTIONS;
+
+          const updateSection = (idx: number, updated: Partial<LegalSectionItem>) => {
+            const list = [...currentSections];
+            list[idx] = { ...list[idx], ...updated };
+            _setLegalContent({ ...legalContent, termsSections: list });
+          };
+
+          const deleteSection = (idx: number) => {
+            const list = currentSections.filter((_: LegalSectionItem, i: number) => i !== idx);
+            _setLegalContent({ ...legalContent, termsSections: list });
+          };
+
+          const addSection = () => {
+            const list = [
+              ...currentSections,
+              {
+                id: `terms-${Date.now()}`,
+                titleEn: `${currentSections.length + 1}. New Condition Clause`,
+                titleDe: `${currentSections.length + 1}. Neue Klausel`,
+                bodyEn: 'Insert detailed terms condition in English here...',
+                bodyDe: 'Fügen Sie hier die Allgemeinen Geschäftsbedingungen auf Deutsch ein...'
+              }
+            ];
+            _setLegalContent({ ...legalContent, termsSections: list });
+          };
+
+          return (
+            <form onSubmit={handleSaveLegal} className="bg-[#fffdfa] rounded-[24px] p-6 sm:p-8 border border-[#ebdcd0] shadow-sm space-y-6 animate-fadeIn">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-5">
+                <div>
+                  <h2 className="text-[20px] font-black text-[#1e382f] flex items-center gap-2.5">
+                    <Award className="w-5 h-5 text-[#d85c27]" />
+                    <span>Terms &amp; Conditions (Allgemeine Geschäftsbedingungen - AGB)</span>
+                  </h2>
+                  <p className="text-[13px] text-[#666] mt-0.5">
+                    Edit service conditions, catering contracts, cancellation rules, and legal jurisdiction on <strong className="font-mono">/terms</strong> and <strong className="font-mono">/de/agb</strong>.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-[#ebdcd0]">
+                    <button
+                      type="button"
+                      onClick={() => setAdminContentLang('en')}
+                      className={`px-3 py-1.5 text-[12px] font-extrabold rounded-lg transition-all ${
+                        adminContentLang === 'en' ? 'bg-[#1e382f] text-white shadow-xs' : 'text-[#1e382f] hover:bg-gray-100'
+                      }`}
+                    >
+                      English (EN)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAdminContentLang('de')}
+                      className={`px-3 py-1.5 text-[12px] font-extrabold rounded-lg transition-all ${
+                        adminContentLang === 'de' ? 'bg-[#1e382f] text-white shadow-xs' : 'text-[#1e382f] hover:bg-gray-100'
+                      }`}
+                    >
+                      Deutsch (DE)
+                    </button>
+                  </div>
+                  <Link
+                    to="/terms"
+                    target="_blank"
+                    className="p-2 text-gray-500 hover:text-[#d85c27] rounded-xl hover:bg-amber-50"
+                    title="View live terms page"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                  </Link>
+                </div>
+              </div>
+
+              {/* General Intro Paragraph */}
+              <div>
+                <label className="block text-[12px] font-bold text-[#333] mb-1">
+                  General Terms Intro ({adminContentLang.toUpperCase()})
+                </label>
+                <textarea
+                  rows={3}
+                  value={adminContentLang === 'en' ? (legalContent.termsEn || '') : (legalContent.termsDe || '')}
+                  onChange={(e) => _setLegalContent(adminContentLang === 'en' ? { ...legalContent, termsEn: e.target.value } : { ...legalContent, termsDe: e.target.value })}
+                  className="w-full border rounded-xl px-3.5 py-2.5 text-[13px] focus:outline-none focus:border-[#d85c27] resize-none"
+                />
+              </div>
+
+              {/* Sections List */}
+              <div className="space-y-4 pt-4 border-t border-gray-100">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-[14px] font-extrabold text-[#1e382f] uppercase tracking-wider">
+                    Terms &amp; Conditions Clauses ({currentSections.length})
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={addSection}
+                    className="bg-[#1e382f] hover:bg-[#2a4d41] text-white text-[12px] font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-all"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add Terms Clause</span>
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  {currentSections.map((sec: LegalSectionItem, idx: number) => (
+                    <div key={sec.id || idx} className="bg-[#fcf8f3] rounded-2xl p-4 border border-[#ebdcd0] space-y-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-[11px] font-black text-[#d85c27] uppercase tracking-wider">
+                          Clause #{idx + 1}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => deleteSection(idx)}
+                          className="p-1.5 text-gray-400 hover:text-rose-600 rounded-lg hover:bg-white"
+                          title="Delete clause"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-gray-600 mb-1">Clause Title ({adminContentLang.toUpperCase()})</label>
+                        <input
+                          type="text"
+                          value={adminContentLang === 'en' ? sec.titleEn : sec.titleDe}
+                          onChange={(e) => updateSection(idx, adminContentLang === 'en' ? { titleEn: e.target.value } : { titleDe: e.target.value })}
+                          className="w-full border rounded-xl px-3 py-1.5 text-[13px] bg-white font-bold focus:outline-none focus:border-[#d85c27]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-gray-600 mb-1">Clause Body Text ({adminContentLang.toUpperCase()})</label>
+                        <textarea
+                          rows={3}
+                          value={adminContentLang === 'en' ? sec.bodyEn : sec.bodyDe}
+                          onChange={(e) => updateSection(idx, adminContentLang === 'en' ? { bodyEn: e.target.value } : { bodyDe: e.target.value })}
+                          className="w-full border rounded-xl px-3 py-2 text-[12.5px] bg-white focus:outline-none focus:border-[#d85c27] resize-none"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-gray-100">
+                <button
+                  type="submit"
+                  className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-7 py-3 rounded-full text-[14px] shadow-sm hover:shadow-md transition-all flex items-center gap-2"
+                >
+                  <Save className="w-4 h-4" /> Save Terms &amp; Conditions
+                </button>
+              </div>
+            </form>
+          );
+        })()}
 
 
         {/* ═══════════════════════════════════════════════

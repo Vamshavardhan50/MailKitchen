@@ -94,7 +94,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => 
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="bg-white rounded-2xl sm:rounded-[24px] w-full max-w-[650px] overflow-hidden shadow-2xl border border-gray-100 flex flex-col max-h-[85vh]">
+      <div className="bg-white rounded-2xl sm:rounded-[24px] w-full max-w-[650px] overflow-hidden shadow-2xl border border-gray-100 flex flex-col max-h-[85vh] animate-pop-in">
 
         {/* Search Bar Input */}
         <div className="p-3.5 sm:p-4 border-b border-gray-100 flex items-center gap-2.5 sm:gap-3 bg-[#f5f0e8]">
@@ -118,7 +118,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => 
 
           <button
             onClick={onClose}
-            className="p-1.5 sm:p-2 rounded-full hover:bg-gray-200/60 text-gray-600 transition-colors shrink-0"
+            className="p-1.5 sm:p-2 rounded-full hover:bg-gray-200/60 text-gray-600 transition-colors shrink-0 active-press"
             aria-label="Close search"
           >
             <X className="w-5 h-5" />
@@ -140,7 +140,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => 
               <div
                 key={item.id}
                 onClick={() => handleItemClick(item.id)}
-                className="flex items-center gap-3 sm:gap-4 p-2.5 sm:p-3 rounded-xl hover:bg-[#fdf5f0] hover:border-[#d85c27]/30 transition-all border border-gray-100 cursor-pointer group"
+                className="flex items-center gap-3 sm:gap-4 p-2.5 sm:p-3 rounded-xl hover:bg-[#fdf5f0] hover:border-[#d85c27]/30 transition-all border border-gray-100 cursor-pointer group active-press"
               >
                 {item.img && (
                   <img

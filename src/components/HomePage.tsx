@@ -23,14 +23,15 @@ export const HomePage: React.FC<HomePageProps> = ({ lang, onOpenReservation }) =
   return (
     <div className="bg-[#f5f0e8] text-[#1a1a1a]">
       <SEO
-        title={isDe ? 'MAATI Kitchen | Fast Casual • Indische Küche | Berlin' : 'MAATI Kitchen | Fast Casual • Indian Soul | Berlin'}
+        title={isDe ? 'MAATI Kitchen | Indisches Restaurant & Café Berlin Mitte' : 'MAATI Kitchen | Modern Indian Restaurant & Café Berlin Mitte'}
         description={
           isDe
-            ? 'Frische, lebendige indische Zutaten in anpassbaren Bowls, Salaten und getoasteten Punjab Naan Pockets in der Zimmerstraße 56, 10117 Berlin.'
-            : 'Fresh, vibrant Indian ingredients in customizable Bowls, Salads, and Naan Pockets in Zimmerstraße 56, 10117 Berlin. Authentic spices, Modern style.'
+            ? 'Moderne indische Küche in Berlin Mitte: frische Bowls, Naan Pockets, Currys, Kaffee und Chai. Vegane Optionen. Zimmerstraße 56, nahe Checkpoint Charlie.'
+            : 'Modern Indian food in Berlin Mitte: fresh bowls, naan pockets, curries, specialty coffee and chai. Vegan options. Zimmerstraße 56, near Checkpoint Charlie.'
         }
-        canonicalUrl="https://maatikitchen.com"
+        canonicalUrl={isDe ? 'https://maatikitchen.com/de' : 'https://maatikitchen.com/'}
         lang={lang}
+        enPath=""
       />
 
       {/* ═══════════════════════════════════════════════
@@ -52,13 +53,18 @@ export const HomePage: React.FC<HomePageProps> = ({ lang, onOpenReservation }) =
             </div>
 
             {/* Headline */}
-            <h1 className="font-black leading-[1.05] mb-6 text-[#1a1a1a]" style={{ fontSize: 'clamp(40px,5vw,68px)' }}>
-              {(isDe ? content.heroTitle1De : content.heroTitle1En) || dict.hero_title_1}
+            <h1 className="font-black leading-[1.05] mb-3 text-[#1a1a1a]" style={{ fontSize: 'clamp(40px,5vw,68px)' }}>
+              Modern Indian Food.
               <br />
               <span className="text-[#d85c27]">
-                {(isDe ? content.heroTitle2De : content.heroTitle2En) || dict.hero_title_2}
+                Made for Berlin.
               </span>
             </h1>
+            <p className="text-[#1e382f] font-bold text-[15px] sm:text-[17px] mb-5 leading-snug">
+              {isDe
+                ? 'Indisches Restaurant & Café in Berlin Mitte, Zimmerstraße 56, nahe Checkpoint Charlie.'
+                : 'Indian restaurant & café in Berlin Mitte, Zimmerstraße 56, near Checkpoint Charlie.'}
+            </p>
 
             {/* Description */}
             <p className="text-[#555] text-[16px] md:text-[18px] leading-relaxed mb-8 max-w-[500px]">
@@ -66,20 +72,20 @@ export const HomePage: React.FC<HomePageProps> = ({ lang, onOpenReservation }) =
             </p>
 
             {/* CTAs */}
-            <div className="flex flex-wrap items-center gap-4 mb-8">
-              <Link
-                to="/menu"
-                className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-8 py-4 rounded-full text-[15px] shadow-sm hover:shadow-xl transition-all duration-300 hover:scale-105 inline-flex items-center gap-2"
-              >
-                {(isDe ? content.heroBtnMenuDe : content.heroBtnMenuEn) || dict.hero_btn_menu}
-                <ArrowRight className="w-4 h-4" />
-              </Link>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5 sm:gap-4 mb-8">
               <button
                 onClick={onOpenReservation}
-                className="border-2 border-[#1e382f] text-[#1e382f] hover:bg-[#1e382f] hover:text-white font-extrabold px-8 py-3.5 rounded-full text-[15px] transition-all duration-300"
+                className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-8 py-4 rounded-full text-[15px] shadow-sm hover:shadow-xl transition-all duration-300 hover:scale-105 inline-flex items-center justify-center gap-2 active-press"
               >
-                {(isDe ? content.heroBtnResDe : content.heroBtnResEn) || dict.hero_btn_res}
+                <span>{(isDe ? 'Tisch reservieren' : 'Book A Table')}</span>
+                <ArrowRight className="w-4 h-4" />
               </button>
+              <Link
+                to={isDe ? '/de/menu' : '/menu'}
+                className="border-2 border-[#1e382f] text-[#1e382f] hover:bg-[#1e382f] hover:text-white font-extrabold px-8 py-3.5 rounded-full text-[15px] transition-all duration-300 text-center active-press"
+              >
+                {(isDe ? content.heroBtnMenuDe : content.heroBtnMenuEn) || dict.hero_btn_menu}
+              </Link>
             </div>
 
             {/* Feature Pills */}
@@ -162,7 +168,7 @@ export const HomePage: React.FC<HomePageProps> = ({ lang, onOpenReservation }) =
                   return (
                     <div
                       key={s.id || idx}
-                      className="bg-[#d85c27] text-white rounded-[24px] p-6 sm:p-8 text-left shadow-sm hover:shadow-2xl transition-all duration-400 hover:-translate-y-2 flex flex-col justify-between"
+                      className="bg-[#d85c27] text-white rounded-[24px] p-6 sm:p-8 text-left shadow-sm hover:shadow-2xl transition-all duration-400 hover:-translate-y-2 flex flex-col justify-between hover-lift active-press"
                     >
                       <div>
                         <div className="w-10 h-10 rounded-full bg-white text-[#d85c27] flex items-center justify-center font-black text-[16px] mb-5 shadow-sm">
@@ -226,6 +232,17 @@ export const HomePage: React.FC<HomePageProps> = ({ lang, onOpenReservation }) =
               />
             </div>
           </div>
+
+          {/* Experience Inquire CTA */}
+          <div className="mt-8 text-center">
+            <Link
+              to={isDe ? '/de/events#enquiry-form' : '/events#enquiry-form'}
+              className="inline-flex items-center gap-2 bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-8 py-4 rounded-full text-[15px] shadow-sm hover:shadow-xl transition-all duration-300 hover:scale-105"
+            >
+              <span>{isDe ? 'Privates Event Anfragen' : 'Inquire for Private Events'}</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -247,18 +264,16 @@ export const HomePage: React.FC<HomePageProps> = ({ lang, onOpenReservation }) =
                 </h2>
               </div>
 
-              <div className="space-y-3 sm:space-y-4 text-[#555] text-[14px] sm:text-[16px] leading-relaxed">
+              <div className="space-y-3 sm:space-y-4 text-[#555] text-[15px] sm:text-[16px] leading-relaxed">
                 <p>
-                  {(isDe ? content.cateringDescDe : content.cateringDescEn) ||
-                    (isDe
-                      ? 'Von Team-Lunches bis hin zu großen Firmenfeiern — wir bringen frisch zubereitete Bowls, warme Naan-Taschen und Signature Drinks direkt in Ihr Büro.'
-                      : 'From team lunches to full corporate events — we bring freshly crafted bowls, warm naan pockets, and signature drinks directly to your office.')}
+                  {isDe
+                    ? 'Frisches indisches Catering für Büro-Lunches, Team-Meetings und Feiern in Berlin Mitte. Von 10 bis 200+ Personen liefern wir warme Bowls, getoastete Naan-Pockets und Lassis direkt zu Ihnen.'
+                    : 'Fresh Indian catering crafted for office lunches, team meetings, and celebrations in Berlin Mitte. From 10 to 200+ guests, we deliver warm wholesome bowls, toasted naan pockets, and signature drinks directly to your team.'}
                 </p>
                 <p>
-                  {(isDe ? content.cateringP2De : content.cateringP2En) ||
-                    (isDe
-                      ? 'Individuell zusammengestellt, unkompliziert geliefert. Auf Wunsch mit individuellem Setup vor Ort.'
-                      : 'Customized for your team, effortlessly delivered. Full setup available on request.')}
+                  {isDe
+                    ? 'Wählen Sie aus unseren transparenten Paketen ab €11,90 pro Person oder lassen Sie sich ein individuelles Buffet-Setup zusammenstellen.'
+                    : 'Choose from our confirmed transparent packages starting at €11.90 per person or request a tailored on-site buffet setup.'}
                 </p>
               </div>
 
@@ -266,30 +281,36 @@ export const HomePage: React.FC<HomePageProps> = ({ lang, onOpenReservation }) =
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 pt-2">
                 <div className="flex items-center gap-2.5 text-[#1e382f] font-extrabold text-[13px] sm:text-[14px]">
                   <span className="w-2 h-2 rounded-full bg-[#d85c27]" />
-                  <span>{(isDe ? content.cateringBullet1De : content.cateringBullet1En) || (isDe ? 'Perfekt für 10 bis 200+ Personen' : 'Perfect for 10 to 200+ people')}</span>
+                  <span>{isDe ? 'Pakete ab €11,90 p.P.' : 'Packages from €11.90 p.p.'}</span>
                 </div>
                 <div className="flex items-center gap-2.5 text-[#1e382f] font-extrabold text-[13px] sm:text-[14px]">
                   <span className="w-2 h-2 rounded-full bg-[#d85c27]" />
-                  <span>{(isDe ? content.cateringBullet2De : content.cateringBullet2En) || (isDe ? '100% Vegan & Veggie-freundlich' : '100% Vegan & Veggie friendly')}</span>
+                  <span>{isDe ? '100% Vegan & Veggie-freundlich' : '100% Vegan & Veggie friendly'}</span>
                 </div>
                 <div className="flex items-center gap-2.5 text-[#1e382f] font-extrabold text-[13px] sm:text-[14px]">
                   <span className="w-2 h-2 rounded-full bg-[#d85c27]" />
-                  <span>{(isDe ? content.cateringBullet3De : content.cateringBullet3En) || (isDe ? 'Pünktliche Berliner Lieferung' : 'On-time Berlin delivery')}</span>
+                  <span>{isDe ? 'Kostenlose Lieferung in Mitte (<5km)' : 'Free delivery in Mitte (<5km)'}</span>
                 </div>
                 <div className="flex items-center gap-2.5 text-[#1e382f] font-extrabold text-[13px] sm:text-[14px]">
                   <span className="w-2 h-2 rounded-full bg-[#d85c27]" />
-                  <span>{(isDe ? content.cateringBullet4De : content.cateringBullet4En) || (isDe ? 'Individuelle Firmenrechnung' : 'Custom corporate invoicing')}</span>
+                  <span>{isDe ? 'Individuelle Firmenrechnung' : 'Custom corporate invoicing'}</span>
                 </div>
               </div>
 
               {/* CTA Button */}
-              <div className="pt-2 sm:pt-4 flex flex-wrap items-center gap-4">
+              <div className="pt-2 sm:pt-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
                 <Link
-                  to="/locations"
-                  className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-7 sm:px-8 py-3.5 sm:py-4 rounded-full text-[14px] sm:text-[15px] shadow-sm hover:shadow-xl transition-all duration-300 hover:scale-105 inline-flex items-center gap-2"
+                  to={isDe ? '/de/catering#enquiry' : '/catering#enquiry'}
+                  className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-7 sm:px-8 py-3.5 sm:py-4 rounded-full text-[14px] sm:text-[15px] shadow-sm hover:shadow-xl transition-all duration-300 hover:scale-105 inline-flex items-center justify-center gap-2 active-press"
                 >
-                  <span>{(isDe ? content.cateringBtnDe : content.cateringBtnEn) || (isDe ? 'Catering Anfragen' : 'Get a Quote')}</span>
+                  <span>{isDe ? 'Catering Anfragen' : 'Get a Quote'}</span>
                   <ArrowRight className="w-4 h-4" />
+                </Link>
+                <Link
+                  to={isDe ? '/de/catering' : '/catering'}
+                  className="border-2 border-[#1e382f] text-[#1e382f] hover:bg-[#1e382f] hover:text-white font-extrabold px-7 sm:px-8 py-3.5 sm:py-4 rounded-full text-[14px] text-center transition-colors active-press"
+                >
+                  {isDe ? 'Alle Catering-Preise' : 'View Full Catering Menu'}
                 </Link>
               </div>
             </div>
@@ -316,7 +337,10 @@ export const HomePage: React.FC<HomePageProps> = ({ lang, onOpenReservation }) =
       <section className="bg-[#1e382f] text-white py-16 sm:py-20 px-5 sm:px-8 md:px-16 lg:px-24 text-center">
         <div className="max-w-[800px] mx-auto">
           <h2 className="text-[28px] sm:text-[36px] md:text-[48px] font-black leading-tight mb-3 sm:mb-4">
-            {(isDe ? content.ctaTitleDe : content.ctaTitleEn) || dict.ready_title || (isDe ? 'Besuchen Sie uns in Berlin Mitte' : 'Visit us in Berlin Mitte')}
+            {(isDe ? content.ctaTitleDe : content.ctaTitleEn) ||
+              (isDe
+                ? 'Besuchen Sie uns in der Zimmerstraße 56, 10117 Berlin - wo jeder Bissen eine Geschichte erzählt.'
+                : 'Visit us at Zimmerstr. 56, 10117 Berlin - where every bite tells a story.')}
           </h2>
           <p className="text-white/70 text-[14px] sm:text-[16px] md:text-[17px] mb-6 sm:mb-8 max-w-[500px] mx-auto">
             {(isDe ? content.ctaDescDe : content.ctaDescEn) ||
@@ -325,18 +349,18 @@ export const HomePage: React.FC<HomePageProps> = ({ lang, onOpenReservation }) =
                 : 'Experience modern Indian soul food in a cozy, welcoming atmosphere.')}
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4">
+            <button
+              onClick={onOpenReservation}
+              className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-8 py-4 rounded-full text-[15px] shadow-sm hover:shadow-xl transition-all duration-300 hover:scale-105 inline-flex items-center gap-2"
+            >
+              <span>{isDe ? 'Tisch reservieren' : 'Make a Reservation'}</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
             <Link
-              to="/menu"
-              className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-7 sm:px-8 py-3.5 sm:py-4 rounded-full text-[14px] sm:text-[15px] shadow-sm hover:shadow-xl transition-all duration-300 hover:scale-105 inline-flex items-center gap-2"
+              to={isDe ? '/de/menu' : '/menu'}
+              className="border-2 border-white/40 hover:border-white text-white font-extrabold px-8 py-3.5 rounded-full text-[15px] transition-all duration-300 hover:bg-white/10"
             >
               {(isDe ? content.ctaBtnMenuDe : content.ctaBtnMenuEn) || dict.ready_btn_menu || (isDe ? 'Speisekarte' : 'View Menu')}
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-            <Link
-              to="/locations"
-              className="border-2 border-white/40 hover:border-white text-white font-extrabold px-7 sm:px-8 py-3.5 rounded-full text-[14px] sm:text-[15px] transition-all duration-300 hover:bg-white/10"
-            >
-              {(isDe ? content.ctaBtnLocationsDe : content.ctaBtnLocationsEn) || (isDe ? 'Unsere Standorte' : 'Our Locations')}
             </Link>
           </div>
         </div>

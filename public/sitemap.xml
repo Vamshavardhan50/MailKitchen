@@ -1,51 +1,284 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <!-- ════════════ ENGLISH CORE PAGES ════════════ -->
   <url>
     <loc>https://maatikitchen.com/</loc>
-    <lastmod>2026-06-01</lastmod>
+    <lastmod>2026-10-18</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://maatikitchen.com/" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://maatikitchen.com/de" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://maatikitchen.com/" />
   </url>
   <url>
     <loc>https://maatikitchen.com/menu</loc>
-    <lastmod>2026-06-01</lastmod>
+    <lastmod>2026-10-18</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://maatikitchen.com/menu" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://maatikitchen.com/de/menu" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://maatikitchen.com/menu" />
+  </url>
+  <url>
+    <loc>https://maatikitchen.com/catering</loc>
+    <lastmod>2026-10-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://maatikitchen.com/catering" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://maatikitchen.com/de/catering" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://maatikitchen.com/catering" />
   </url>
   <url>
     <loc>https://maatikitchen.com/events</loc>
-    <lastmod>2026-06-01</lastmod>
+    <lastmod>2026-10-18</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://maatikitchen.com/about</loc>
-    <lastmod>2026-06-01</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://maatikitchen.com/events" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://maatikitchen.com/de/events" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://maatikitchen.com/events" />
   </url>
   <url>
     <loc>https://maatikitchen.com/locations</loc>
-    <lastmod>2026-06-01</lastmod>
+    <lastmod>2026-10-18</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://maatikitchen.com/locations" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://maatikitchen.com/de/locations" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://maatikitchen.com/locations" />
   </url>
   <url>
+    <loc>https://maatikitchen.com/contact</loc>
+    <lastmod>2026-10-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://maatikitchen.com/contact" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://maatikitchen.com/de/kontakt" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://maatikitchen.com/contact" />
+  </url>
+  <url>
+    <loc>https://maatikitchen.com/about</loc>
+    <lastmod>2026-08-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://maatikitchen.com/about" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://maatikitchen.com/de/about" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://maatikitchen.com/about" />
+  </url>
+  <url>
+    <loc>https://maatikitchen.com/jobs</loc>
+    <lastmod>2026-08-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://maatikitchen.com/jobs" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://maatikitchen.com/de/jobs" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://maatikitchen.com/jobs" />
+  </url>
+
+  <!-- ════════════ ENGLISH MENU CATEGORY LANDING PAGES ════════════ -->
+  <url>
+    <loc>https://maatikitchen.com/menu/naan-pockets</loc>
+    <lastmod>2026-08-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://maatikitchen.com/menu/naan-pockets" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://maatikitchen.com/de/menu/naan-pockets" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://maatikitchen.com/menu/naan-pockets" />
+  </url>
+  <url>
+    <loc>https://maatikitchen.com/menu/bowls</loc>
+    <lastmod>2026-08-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://maatikitchen.com/menu/bowls" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://maatikitchen.com/de/menu/bowls" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://maatikitchen.com/menu/bowls" />
+  </url>
+  <url>
+    <loc>https://maatikitchen.com/menu/breakfast</loc>
+    <lastmod>2026-08-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://maatikitchen.com/menu/breakfast" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://maatikitchen.com/de/menu/breakfast" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://maatikitchen.com/menu/breakfast" />
+  </url>
+  <url>
+    <loc>https://maatikitchen.com/menu/coffee-chai</loc>
+    <lastmod>2026-08-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://maatikitchen.com/menu/coffee-chai" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://maatikitchen.com/de/menu/coffee-chai" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://maatikitchen.com/menu/coffee-chai" />
+  </url>
+
+  <!-- ════════════ ENGLISH LEGAL & COMPLIANCE PAGES ════════════ -->
+  <url>
     <loc>https://maatikitchen.com/impressum</loc>
-    <lastmod>2026-06-01</lastmod>
+    <lastmod>2026-08-13</lastmod>
     <changefreq>yearly</changefreq>
-    <priority>0.3</priority>
+    <priority>0.4</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://maatikitchen.com/impressum" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://maatikitchen.com/de/impressum" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://maatikitchen.com/impressum" />
   </url>
   <url>
     <loc>https://maatikitchen.com/privacy</loc>
-    <lastmod>2026-06-01</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.3</priority>
+    <lastmod>2026-10-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://maatikitchen.com/privacy" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://maatikitchen.com/de/privacy" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://maatikitchen.com/privacy" />
   </url>
   <url>
     <loc>https://maatikitchen.com/terms</loc>
-    <lastmod>2026-06-01</lastmod>
+    <lastmod>2026-08-13</lastmod>
     <changefreq>yearly</changefreq>
-    <priority>0.3</priority>
+    <priority>0.4</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://maatikitchen.com/terms" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://maatikitchen.com/de/terms" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://maatikitchen.com/terms" />
+  </url>
+
+  <!-- ════════════ GERMAN CORE PAGES ════════════ -->
+  <url>
+    <loc>https://maatikitchen.com/de</loc>
+    <lastmod>2026-10-18</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://maatikitchen.com/" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://maatikitchen.com/de" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://maatikitchen.com/" />
+  </url>
+  <url>
+    <loc>https://maatikitchen.com/de/menu</loc>
+    <lastmod>2026-10-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://maatikitchen.com/menu" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://maatikitchen.com/de/menu" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://maatikitchen.com/menu" />
+  </url>
+  <url>
+    <loc>https://maatikitchen.com/de/catering</loc>
+    <lastmod>2026-10-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://maatikitchen.com/catering" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://maatikitchen.com/de/catering" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://maatikitchen.com/catering" />
+  </url>
+  <url>
+    <loc>https://maatikitchen.com/de/events</loc>
+    <lastmod>2026-10-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://maatikitchen.com/events" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://maatikitchen.com/de/events" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://maatikitchen.com/events" />
+  </url>
+  <url>
+    <loc>https://maatikitchen.com/de/locations</loc>
+    <lastmod>2026-10-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://maatikitchen.com/locations" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://maatikitchen.com/de/locations" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://maatikitchen.com/locations" />
+  </url>
+  <url>
+    <loc>https://maatikitchen.com/de/kontakt</loc>
+    <lastmod>2026-10-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://maatikitchen.com/contact" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://maatikitchen.com/de/kontakt" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://maatikitchen.com/contact" />
+  </url>
+  <url>
+    <loc>https://maatikitchen.com/de/about</loc>
+    <lastmod>2026-08-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://maatikitchen.com/about" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://maatikitchen.com/de/about" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://maatikitchen.com/about" />
+  </url>
+  <url>
+    <loc>https://maatikitchen.com/de/jobs</loc>
+    <lastmod>2026-08-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://maatikitchen.com/jobs" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://maatikitchen.com/de/jobs" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://maatikitchen.com/jobs" />
+  </url>
+
+  <!-- ════════════ GERMAN MENU CATEGORY LANDING PAGES ════════════ -->
+  <url>
+    <loc>https://maatikitchen.com/de/menu/naan-pockets</loc>
+    <lastmod>2026-08-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://maatikitchen.com/menu/naan-pockets" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://maatikitchen.com/de/menu/naan-pockets" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://maatikitchen.com/menu/naan-pockets" />
+  </url>
+  <url>
+    <loc>https://maatikitchen.com/de/menu/bowls</loc>
+    <lastmod>2026-08-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://maatikitchen.com/menu/bowls" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://maatikitchen.com/de/menu/bowls" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://maatikitchen.com/menu/bowls" />
+  </url>
+  <url>
+    <loc>https://maatikitchen.com/de/menu/breakfast</loc>
+    <lastmod>2026-08-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://maatikitchen.com/menu/breakfast" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://maatikitchen.com/de/menu/breakfast" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://maatikitchen.com/menu/breakfast" />
+  </url>
+  <url>
+    <loc>https://maatikitchen.com/de/menu/coffee-chai</loc>
+    <lastmod>2026-08-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://maatikitchen.com/menu/coffee-chai" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://maatikitchen.com/de/menu/coffee-chai" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://maatikitchen.com/menu/coffee-chai" />
+  </url>
+
+  <!-- ════════════ GERMAN LEGAL & COMPLIANCE PAGES ════════════ -->
+  <url>
+    <loc>https://maatikitchen.com/de/impressum</loc>
+    <lastmod>2026-08-13</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.4</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://maatikitchen.com/impressum" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://maatikitchen.com/de/impressum" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://maatikitchen.com/impressum" />
+  </url>
+  <url>
+    <loc>https://maatikitchen.com/de/privacy</loc>
+    <lastmod>2026-10-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://maatikitchen.com/privacy" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://maatikitchen.com/de/privacy" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://maatikitchen.com/privacy" />
+  </url>
+  <url>
+    <loc>https://maatikitchen.com/de/terms</loc>
+    <lastmod>2026-08-13</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.4</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://maatikitchen.com/terms" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://maatikitchen.com/de/terms" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://maatikitchen.com/terms" />
   </url>
 </urlset>
