@@ -109,6 +109,7 @@ import {
   compressImageFile
 } from '../data/galleryAssets';
 import { apiUrl } from '../lib/api';
+import { sanityClient, isSanityConfigured } from '../lib/sanity';
 
 const AVAILABLE_TAGS = [
   'Bowls & Mains',
