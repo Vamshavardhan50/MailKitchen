@@ -26,7 +26,18 @@ export const BREAKFAST_ITEMS: MenuItem[] = [
     price: '€4,9',
     badgeDe: 'VEGETARISCH',
     badgeEn: 'VEGETARIAN',
-    img: '/assets/croissant-green-chutney.jpg'
+    img: '/assets/wPT_69fdf67802a5542f2c8b6d21.jpg'
+  },
+  {
+    id: 'croissant-turmeric',
+    titleDe: 'Kurkuma & Hüttenkäse Croissant',
+    titleEn: 'Turmeric & Cottage Cheese Croissant',
+    descDe: 'Getoastetes Croissant gefüllt mit gewürztem indischem Paneer, Kurkuma, frischen Kräutern und Schwarzkümmel.',
+    descEn: 'Toasted croissant filled with spiced cottage cheese, turmeric, fresh herbs, and nigella seeds.',
+    price: '€4,9',
+    badgeDe: 'VEGETARISCH',
+    badgeEn: 'VEGETARIAN',
+    img: '/assets/wPT_69fdf67802a5542f2c8b6d23.jpg'
   },
   {
     id: 'granola-bio',
@@ -37,7 +48,7 @@ export const BREAKFAST_ITEMS: MenuItem[] = [
     price: '€5,5',
     badgeDe: 'VEGETARISCH',
     badgeEn: 'VEGETARIAN',
-    img: '/assets/wPT_69fdf67802a5542f2c8b6cf8.jpg'
+    img: '/assets/wPT_69fdf67802a5542f2c8b6d22.jpg'
   }
 ];
 
@@ -69,6 +80,17 @@ export const NAAN_POCKET_ITEM: MenuItem = {
 
 export const HAUSSPEZIALITAETEN_ITEMS: MenuItem[] = [
   {
+    id: 'delhi-butter-chicken',
+    titleDe: "Delhi 'Butter Chicken' Bowl",
+    titleEn: "Delhi 'Butter Chicken' Bowl",
+    descDe: 'Gegrilltes Hähnchen, Bulgur, Gurkensalat, gegrillte Paprika und eingelegte Zwiebeln, serviert mit einer cremigen Tomaten-Currysauce.',
+    descEn: 'Grilled chicken, bulgur, cucumber salad, grilled bell pepper and pickled onions, served with a creamy tomato curry sauce.',
+    price: '€11,5',
+    badgeDe: 'NON-VEGETARIAN',
+    badgeEn: 'NON-VEGETARIAN',
+    img: '/assets/wPT_69fdf67802a5542f2c8b6cf6.jpg'
+  },
+  {
     id: 'chettinad-spicy-chicken',
     titleDe: "Chettinad 'Spicy Chicken' Bowl",
     titleEn: "Chettinad 'Spicy Chicken' Bowl",
@@ -78,18 +100,7 @@ export const HAUSSPEZIALITAETEN_ITEMS: MenuItem[] = [
     badgeDe: 'NON-VEGETARIAN',
     badgeEn: 'NON-VEGETARIAN',
     isSpicy: true,
-    img: '/assets/Chettinad-D21PABvG.png'
-  },
-  {
-    id: 'delhi-butter-chicken',
-    titleDe: "Delhi 'Butter Chicken' Bowl",
-    titleEn: "Delhi 'Butter Chicken' Bowl",
-    descDe: 'Gegrilltes Hähnchen, Bulgur, Gurkensalat, gegrillte Paprika und eingelegte Zwiebeln, serviert mit einer cremigen Tomaten-Currysauce.',
-    descEn: 'Grilled chicken, bulgur, cucumber salad, grilled bell pepper and pickled onions, served with a creamy tomato curry sauce.',
-    price: '€11,5',
-    badgeDe: 'NON-VEGETARIAN',
-    badgeEn: 'NON-VEGETARIAN',
-    img: '/assets/Delhi-BteN_mdh.png'
+    img: '/assets/wPT_69fdf67802a5542f2c8b6cf8.jpg'
   },
   {
     id: 'kashmir-spinach-paneer',
@@ -100,7 +111,7 @@ export const HAUSSPEZIALITAETEN_ITEMS: MenuItem[] = [
     price: '€11,5',
     badgeDe: 'VEGETARISCH',
     badgeEn: 'VEGETARIAN',
-    img: '/assets/Kashmir-Z2M0N-Rm.png'
+    img: '/assets/wPT_69fdf67802a5542f2c8b6cf9.jpg'
   },
   {
     id: 'bihar-lentil-potato',
@@ -125,7 +136,7 @@ export const HAUSSPEZIALITAETEN_ITEMS: MenuItem[] = [
     priceEn: 'Chicken €12.5 | Prawns €14.5',
     badgeDe: 'NON-VEGETARIAN',
     badgeEn: 'NON-VEGETARIAN',
-    img: '/assets/Bengal-birKfnj1.png'
+    img: '/assets/wPT_69fdf67802a5542f2c8b6cf7.jpg'
   }
 ];
 
@@ -139,7 +150,7 @@ export const AUF_BESTELLUNG_ITEMS: MenuItem[] = [
     price: '€14,9',
     badgeDe: 'NON-VEGETARIAN',
     badgeEn: 'NON-VEGETARIAN',
-    img: '/assets/Goa-DLdcEMCP.png'
+    img: '/assets/wPT_69fdf67802a5542f2c8b6cfb.jpg'
   },
   {
     id: 'pondicherry-caesar-chicken',
@@ -162,7 +173,7 @@ export const AUF_BESTELLUNG_ITEMS: MenuItem[] = [
     badgeDe: 'VEGAN',
     badgeEn: 'VEGAN',
     isVeganLeaf: true,
-    img: '/assets/Rajasthan-DL_KoxiT.png'
+    img: '/assets/wPT_69fdf67802a5542f2c8b6cfa.jpg'
   },
   {
     id: 'bread-selection',
@@ -211,7 +222,7 @@ export const NACHTISCH_ITEMS: MenuItem[] = [
     price: '€3,9',
     badgeDe: 'VEGETARISCH',
     badgeEn: 'VEGETARIAN',
-    img: '/assets/circle-Bq5xyFQD.png'
+    img: '/assets/wPT_69fdf67802a5542f2c8b6cfd.jpg'
   }
 ];
 
@@ -225,7 +236,7 @@ export const COLD_DRINKS: MenuItem[] = [
     price: 'M €2,5 | L €3,5',
     badgeDe: 'VEGETARISCH',
     badgeEn: 'VEGETARIAN',
-    img: '/assets/Mango Lassi.png'
+    img: '/assets/wPT_69fdf67802a5542f2c8b6d1b.jpg'
   },
   {
     id: 'salted-lassi',
@@ -260,7 +271,7 @@ export const COLD_DRINKS: MenuItem[] = [
     badgeDe: 'VEGAN',
     badgeEn: 'VEGAN',
     isVeganLeaf: true,
-    img: '/assets/Lemonade.png'
+    img: '/assets/wPT_69fdf67802a5542f2c8b6d1f.jpg'
   },
   {
     id: 'zuckerrohrsaft',
@@ -283,7 +294,7 @@ export const COLD_DRINKS: MenuItem[] = [
     price: 'M €2,5 | L €3,5',
     badgeDe: 'VEGETARISCH',
     badgeEn: 'VEGETARIAN',
-    img: '/assets/Cafe Latte_Maati.png'
+    img: '/assets/wPT_69fdf67802a5542f2c8b6d0e.jpg'
   }
 ];
 

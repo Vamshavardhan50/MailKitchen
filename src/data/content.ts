@@ -30,21 +30,21 @@ export interface DrinkItem {
 
 export const LUNCH_ITEMS: LunchItem[] = [
   {
+    id: 'delhi',
+    title: "Delhi 'Butter Chicken' Bowl",
+    desc: 'Grilled chicken, bulgur, cucumber salad, grilled bell pepper and pickled onions, served with a creamy tomato curry sauce.',
+    price: '€11.5',
+    badge: 'NON-VEGETARIAN',
+    img: '/assets/wPT_69fdf67802a5542f2c8b6cf6.jpg'
+  },
+  {
     id: 'chettinad',
     title: "Chettinad 'Spicy Chicken' Bowl",
     desc: 'Grilled chicken, red rice, mixed salad, cucumber salad, grilled bell pepper and corn, served with a spicy Chettinad curry sauce.',
     price: '€12.5',
     badge: 'NON-VEGETARIAN',
     isSpicy: true,
-    img: '/assets/Chettinad-D21PABvG.png'
-  },
-  {
-    id: 'delhi',
-    title: "Delhi 'Butter Chicken' Bowl",
-    desc: 'Grilled chicken, bulgur, cucumber salad, grilled bell pepper and pickled onions, served with a creamy tomato curry sauce.',
-    price: '€11.5',
-    badge: 'NON-VEGETARIAN',
-    img: '/assets/Delhi-BteN_mdh.png'
+    img: '/assets/wPT_69fdf67802a5542f2c8b6cf8.jpg'
   },
   {
     id: 'bihar',
@@ -69,7 +69,7 @@ export const LUNCH_ITEMS: LunchItem[] = [
     desc: 'Flaky, buttery croissant toasted with mixed Cheddar and green coriander chutney.',
     price: '€4.0',
     badge: 'VEGETARIAN',
-    img: '/assets/croissant-green-chutney.jpg'
+    img: '/assets/wPT_69fdf67802a5542f2c8b6d21.jpg'
   },
   {
     id: 'empty-placeholder',
@@ -88,7 +88,7 @@ export const BREAKFAST_ITEMS: BreakfastItem[] = [
     desc: 'Mixed Cheddar, Green Coriander Chutney',
     price: '€4',
     badge: 'VEGETARIAN',
-    img: '/assets/wPT_69fdf67802a5542f2c8b6cf6.jpg'
+    img: '/assets/wPT_69fdf67802a5542f2c8b6d21.jpg'
   },
   {
     id: 'granola',
@@ -96,7 +96,7 @@ export const BREAKFAST_ITEMS: BreakfastItem[] = [
     desc: 'Oats, Cardomon, Coconut, Dates, Cashews, Honey over Yogurt & Fresh Fruits',
     price: '€4.5',
     badge: 'VEGTARIAN',
-    img: '/assets/wPT_69fdf67802a5542f2c8b6cf8.jpg'
+    img: '/assets/wPT_69fdf67802a5542f2c8b6d22.jpg'
   },
   {
     id: 'croissant-turmeric',
@@ -104,7 +104,7 @@ export const BREAKFAST_ITEMS: BreakfastItem[] = [
     desc: 'Cottage Cheese, Turmeric, Green Chili Cumin seeds, Nigella Seeds',
     price: '€4',
     badge: 'VEGETARIAN',
-    img: '/assets/wPT_69fdf67802a5542f2c8b6cf7.jpg'
+    img: '/assets/wPT_69fdf67802a5542f2c8b6d23.jpg'
   }
 ];
 
@@ -115,7 +115,7 @@ export const COLD_DRINKS: DrinkItem[] = [
     desc: "Fresh lemon, sparkling water, black salt, sugar, a hint of roasted cumin India's original electrolyte drink, pupularly known as Nimbu Pani.",
     badge: 'VEGAN',
     sizes: [{ label: 'M (0.2l)', price: '€2.5' }, { label: 'L (0.33l)', price: '€3.5' }],
-    img: '/assets/Lemonade.png'
+    img: '/assets/wPT_69fdf67802a5542f2c8b6d1f.jpg'
   },
   {
     id: 'mango-lassi',
@@ -123,7 +123,7 @@ export const COLD_DRINKS: DrinkItem[] = [
     desc: 'Chilled yogurt blended with fresh mangoes. Probiotic and cooling.',
     badge: 'VEGETARIAN',
     sizes: [{ label: 'M (0.2l)', price: '€2.9' }, { label: 'L (0.33l)', price: '€3.9' }],
-    img: '/assets/Mango Lassi.png'
+    img: '/assets/wPT_69fdf67802a5542f2c8b6d1b.jpg'
   },
   {
     id: 'rose-milk',
@@ -143,7 +143,7 @@ export const HOT_DRINKS: DrinkItem[] = [
     badge: 'VEGETARIAN',
     sizes: [{ label: 'M', price: '€2.9' }, { label: 'L', price: '€3.9' }],
     isHot: true,
-    img: '/assets/Cafe Latte_Maati.png'
+    img: '/assets/wPT_69fdf67802a5542f2c8b6d0e.jpg'
   },
   {
     id: 'golden-milk',

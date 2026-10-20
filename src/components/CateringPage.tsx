@@ -104,7 +104,7 @@ export const CateringPage: React.FC<CateringPageProps> = ({ lang = 'en' }) => {
         : 'Fresh baked naan pockets cut in half, filled with savory paneer makhani, spiced chicken, or smoky veggies. Zero mess, perfect for boardrooms.',
       tag: isDe ? 'Ideal für Meetings' : 'Meeting Essential',
       badge: 'VEGAN & VEGGIE',
-      img: '/assets/show1-Cg86629k.jpeg'
+      img: '/assets/punjab-naan-pocket.jpg'
     },
     {
       category: 'fingerfood',
@@ -144,7 +144,7 @@ export const CateringPage: React.FC<CateringPageProps> = ({ lang = 'en' }) => {
         : 'Individual glass jars layered with cardamom yogurt, mango coulis, homemade date-cashew toasted granola, and berries.',
       tag: isDe ? 'Süßer Abschluss' : 'Sweet Finish',
       badge: 'VEGETARIAN',
-      img: '/assets/wPT_69fdf67802a5542f2c8b6cf8.jpg'
+      img: '/assets/wPT_69fdf67802a5542f2c8b6d22.jpg'
     }
   ];
 
