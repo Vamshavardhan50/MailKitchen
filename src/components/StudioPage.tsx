@@ -292,6 +292,25 @@ export const StudioPage: React.FC = () => {
       // ignore
     }
 
+    // Direct Sanity Cloud fallback for 100% data reliability
+    try {
+      if (isSanityConfigured) {
+        const sanityInquiries = await sanityClient.fetch<any[]>(
+          `*[_type == "enquirySubmission"] | order(_createdAt desc)`
+        );
+        if (Array.isArray(sanityInquiries) && sanityInquiries.length > 0) {
+          const ids = new Set(combined.map((x) => x._id || x.id));
+          sanityInquiries.forEach((item: any) => {
+            if (!ids.has(item._id || item.id)) {
+              combined.push(item);
+            }
+          });
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+
     setInquiries(combined);
   };
 
@@ -314,6 +333,25 @@ export const StudioPage: React.FC = () => {
             combined.push(item);
           }
         });
+      }
+    } catch (e) {
+      // ignore
+    }
+
+    // Direct Sanity Cloud fallback for 100% data reliability
+    try {
+      if (isSanityConfigured) {
+        const sanityApps = await sanityClient.fetch<any[]>(
+          `*[_type == "jobApplication"] | order(_createdAt desc)`
+        );
+        if (Array.isArray(sanityApps) && sanityApps.length > 0) {
+          const ids = new Set(combined.map((x) => x._id || x.id));
+          sanityApps.forEach((item: any) => {
+            if (!ids.has(item._id || item.id)) {
+              combined.push(item);
+            }
+          });
+        }
       }
     } catch (e) {
       // ignore
@@ -494,17 +532,21 @@ export const StudioPage: React.FC = () => {
     let attempts = 0;
     let timerId: any = null;
 
+    const measureRect = (el: Element) => {
+      const rect = el.getBoundingClientRect();
+      setSpotlightRect({
+        top: rect.top,
+        left: rect.left,
+        width: rect.width,
+        height: rect.height,
+      });
+    };
+
     const updatePosition = () => {
       const el = document.querySelector(currentStep.selector);
       if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
-        const rect = el.getBoundingClientRect();
-        setSpotlightRect({
-          top: rect.top,
-          left: rect.left,
-          width: rect.width,
-          height: rect.height,
-        });
+        el.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'nearest' });
+        requestAnimationFrame(() => measureRect(el));
       } else {
         attempts++;
         if (attempts < 10) {
@@ -513,14 +555,21 @@ export const StudioPage: React.FC = () => {
       }
     };
 
-    timerId = setTimeout(updatePosition, 60);
-    window.addEventListener('resize', updatePosition);
-    window.addEventListener('scroll', updatePosition);
+    const handleScrollOrResize = () => {
+      const el = document.querySelector(currentStep.selector);
+      if (el) {
+        measureRect(el);
+      }
+    };
+
+    timerId = setTimeout(updatePosition, 50);
+    window.addEventListener('resize', handleScrollOrResize, { passive: true });
+    window.addEventListener('scroll', handleScrollOrResize, { passive: true });
 
     return () => {
       if (timerId) clearTimeout(timerId);
-      window.removeEventListener('resize', updatePosition);
-      window.removeEventListener('scroll', updatePosition);
+      window.removeEventListener('resize', handleScrollOrResize);
+      window.removeEventListener('scroll', handleScrollOrResize);
     };
   }, [isTourActive, currentTourIndex, activeTab]);
 
@@ -1796,7 +1845,7 @@ export const StudioPage: React.FC = () => {
                 className="bg-[#1e382f] hover:bg-[#d85c27] text-white font-extrabold px-5 py-2.5 rounded-xl text-[13.5px] flex items-center gap-2 shadow-xs hover:shadow-md transition-all cursor-pointer group"
               >
                 <ArrowLeft className="w-4 h-4 text-[#d85c27] group-hover:text-white transition-colors" />
-                <span>← Back to All Pages</span>
+                <span>Back to All Pages</span>
               </button>
 
               <div className="h-6 w-px bg-[#ebdcd0] hidden sm:block" />
