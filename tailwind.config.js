@@ -1,3 +1,5 @@
+import legacyTheme from './tailwind-legacy-theme.js';
+
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
@@ -6,6 +8,7 @@ export default {
   ],
   darkMode: 'class',
   theme: {
+    ...legacyTheme,
     extend: {
       colors: {
         themeBgMain: 'var(--theme-bg-main)',

@@ -4,6 +4,8 @@ import fs from 'node:fs';
 import ts from 'typescript';
 const compiled = ts.transpileModule(fs.readFileSync(new URL('../src/lib/menuRecovery.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.ESNext } }).outputText;
 const { recoverMissingCocktails } = await import(`data:text/javascript;base64,${Buffer.from(compiled).toString('base64')}`);
+const menuCompiled = ts.transpileModule(fs.readFileSync(new URL('../src/data/june2026MenuData.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.ESNext } }).outputText;
+const { COCKTAILS, BREAKFAST_ITEMS } = await import(`data:text/javascript;base64,${Buffer.from(menuCompiled).toString('base64')}`);
 const item = index => ({ _id: `cocktail-${index}`, id: `cocktail-${index}`, titleEn: `Cocktail ${index}`, price: '€7,5', img: 'correct-image', available: true });
 const category = items => ({ _id: 'cat-cocktails', name: 'Cocktails', items });
 
@@ -37,4 +39,13 @@ test('malformed storage is ignored and recovered cards keep availability', () =>
   assert.equal(result.added.length, 1);
   assert.equal(result.added[0].available, false);
   assert.equal(result.categories[0]._id, 'cat-cocktails');
+});
+
+test('the checked-in menu retains the ten historical cocktails and missing breakfast card', () => {
+  assert.equal(COCKTAILS.length, 10);
+  for (const id of ['mojito', 'negroni', 'moscow-mule', 'tequila-sunrise', 'long-island-tea', 'gin-tonic', 'nimbu-pani-julep', 'spicy-mango-martini']) {
+    assert.ok(COCKTAILS.some(item => item.id === id), `Missing restored cocktail: ${id}`);
+  }
+  assert.ok(BREAKFAST_ITEMS.some(item => item.id === 'croissant-turmeric'));
+  assert.ok(COCKTAILS.every(item => !/\/cocktail-\d+\.jpg$/.test(item.img || '')), 'Restaurant interior photos must never return as cocktail images');
 });

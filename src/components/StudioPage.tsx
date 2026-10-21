@@ -214,6 +214,7 @@ export const StudioPage: React.FC = () => {
   });
   const [passwordInput, setPasswordInput] = useState('');
   const [authError, setAuthError] = useState(false);
+  const [authServerError, setAuthServerError] = useState('');
 
   const { categories: initialCategories, revision: initialMenuRevision, loading: menuLoading, isFromSanity: menuFromSanity } = useSanityMenu();
   const menuRevision = useRef<string | undefined>(undefined);
@@ -815,8 +816,11 @@ export const StudioPage: React.FC = () => {
 
   useEffect(() => {
     fetch(apiUrl('/api/admin/session'), { credentials: 'include' })
-      .then(r => { if (!r.ok) { setIsAuthenticated(false); sessionStorage.removeItem('maati_admin_auth'); } })
-      .catch(() => setIsAuthenticated(false));
+      .then(r => {
+        if (!r.ok) { setIsAuthenticated(false); sessionStorage.removeItem('maati_admin_auth'); }
+        if (r.status === 404) setAuthServerError('Studio’s backend has not been updated. Restart the Node server running server.mjs on the VPS, and make sure /api/ points to it.');
+      })
+      .catch(() => { setIsAuthenticated(false); setAuthServerError('Cannot reach Studio’s backend. Check the Node server on the VPS.'); });
   }, []);
 
   // Login handler
@@ -827,13 +831,20 @@ export const StudioPage: React.FC = () => {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password: passwordInput }),
       });
-      const result = await response.json();
-      if (!response.ok || !result.success) { setAuthError(true); showToast(result.error || 'Sign-in failed.'); return; }
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.success) {
+        setAuthError(response.status === 401);
+        setAuthServerError(response.status === 404
+          ? 'Studio’s backend has not been updated. Restart the Node server running server.mjs on the VPS, and make sure /api/ points to it.'
+          : response.status === 401 ? '' : result.error || 'Cannot reach Studio’s publishing API.');
+        return;
+      }
       setIsAuthenticated(true);
       sessionStorage.setItem('maati_admin_auth', 'true');
       setAuthError(false);
+      setAuthServerError('');
       setPasswordInput('');
-    } catch { setAuthError(true); showToast('Cannot reach the admin server.'); }
+    } catch { setAuthError(false); setAuthServerError('Cannot reach Studio’s backend. Check the Node server on the VPS.'); }
   };
 
   const handleLogout = () => {
@@ -1668,6 +1679,7 @@ export const StudioPage: React.FC = () => {
             Staff access to update menu dishes, prices, photos, and homepage content.
           </p>
 
+          {authServerError && <p role="alert" className="text-red-700 mb-3">{authServerError}</p>}
           {toastMessage && <p role="alert" className="text-red-700 mb-3">{toastMessage}</p>}
           <form onSubmit={handleLogin} className="space-y-4 text-left">
             <div>

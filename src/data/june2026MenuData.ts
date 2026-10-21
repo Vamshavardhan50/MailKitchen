@@ -477,24 +477,96 @@ export const ALKOHOLISCHE_GETRAENKE: MenuItem[] = [
   }
 ];
 
+// Restored from 71d58f0: all ten cocktails, preserving the latest verified photos on existing cards.
 export const COCKTAILS: MenuItem[] = [
   {
-    id: 'aperol-spritz',
-    titleDe: 'Aperol Spritz',
-    titleEn: 'Aperol Spritz',
-    descDe: 'Prosecco, Aperol, Sodawasser oder Sprite, frische Orangenscheibe.',
-    descEn: 'Prosecco, Aperol, soda water or Sprite, fresh orange slice.',
-    price: '€7,5',
-    img: '/assets/aperol-spritz.png'
+    "id": "aperol-spritz",
+    "titleDe": "Aperol Spritz",
+    "titleEn": "Aperol Spritz",
+    "descDe": "Prosecco, Aperol, Sodawasser oder Sprite, frische Orangenscheibe.",
+    "descEn": "Prosecco, Aperol, soda water or Sprite, fresh orange slice.",
+    "price": "€7,5",
+    "img": "/assets/aperol-spritz.png"
   },
   {
-    id: 'old-fashioned',
-    titleDe: 'Old Fashioned',
-    titleEn: 'Old Fashioned',
-    descDe: 'Whiskey, feiner Zuckersirup, aromatische Orangen Bitters.',
-    descEn: 'Whiskey, sugar syrup, aromatic orange bitters.',
-    price: '€9,0',
-    img: '/assets/old-fashioned.png'
+    "id": "mojito",
+    "titleDe": "Mojito",
+    "titleEn": "Mojito",
+    "descDe": "Weißer Rum, Limettensaft, Minzblätter, Zucker, Sodawasser.",
+    "descEn": "White rum, lime juice, mint leaves, sugar, soda water.",
+    "price": "€7,5",
+    "img": ""
+  },
+  {
+    "id": "negroni",
+    "titleDe": "Negroni",
+    "titleEn": "Negroni",
+    "descDe": "Gin, Campari, roter Wermut, Orangenschale.",
+    "descEn": "Gin, Campari, sweet red vermouth, orange peel.",
+    "price": "€10",
+    "img": ""
+  },
+  {
+    "id": "moscow-mule",
+    "titleDe": "Moscow Mule",
+    "titleEn": "Moscow Mule",
+    "descDe": "Wodka, Ginger Beer, Limettensaft, Limettenspalte.",
+    "descEn": "Vodka, ginger beer, lime juice, lime wedge.",
+    "price": "€10",
+    "img": ""
+  },
+  {
+    "id": "tequila-sunrise",
+    "titleDe": "Tequila Sunrise",
+    "titleEn": "Tequila Sunrise",
+    "descDe": "Tequila, Orangensaft, Grenadine, Orangenscheibe.",
+    "descEn": "Tequila, orange juice, grenadine, orange slice.",
+    "price": "€10",
+    "img": ""
+  },
+  {
+    "id": "long-island-tea",
+    "titleDe": "Long Island Iced Tea",
+    "titleEn": "Long Island Iced Tea",
+    "descDe": "Weißer Rum, Limettensaft, Zuckersirup, Cola, Gin, Wodka, Tequila.",
+    "descEn": "White rum, lime juice, sugar syrup, cola, gin, vodka, tequila.",
+    "price": "€10",
+    "img": ""
+  },
+  {
+    "id": "gin-tonic",
+    "titleDe": "Gin und Tonic",
+    "titleEn": "Gin and Tonic",
+    "descDe": "Gin, Tonic Water, Zitronenzeste.",
+    "descEn": "Gin, tonic water, lemon zest.",
+    "price": "€10",
+    "img": ""
+  },
+  {
+    "id": "old-fashioned",
+    "titleDe": "Old Fashioned",
+    "titleEn": "Old Fashioned",
+    "descDe": "Whiskey, feiner Zuckersirup, aromatische Orangen Bitters.",
+    "descEn": "Whiskey, sugar syrup, aromatic orange bitters.",
+    "price": "€9,0",
+    "img": "/assets/old-fashioned.png"
+  },
+  {
+    "id": "nimbu-pani-julep",
+    "titleDe": "Nimbu Pani Julep",
+    "titleEn": "Nimbu Pani Julep",
+    "descDe": "Weißer Rum, Limettensaft, Minzblätter, Zuckersirup, Chaat Masala.",
+    "descEn": "White rum, lime juice, mint leaves, sugar syrup, chaat masala.",
+    "price": "€10",
+    "img": ""
+  },
+  {
+    "id": "spicy-mango-martini",
+    "titleDe": "Spicy Mango Martini",
+    "titleEn": "Spicy Mango Martini",
+    "descDe": "Tequila, Mangopüree, Limettensaft, Triple Sec, Tajín-Gewürzrand.",
+    "descEn": "Tequila, mango puree, lime juice, triple sec, Tajín spice rim.",
+    "price": "€10",
+    "img": ""
   }
 ];
-

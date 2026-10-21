@@ -31,7 +31,15 @@ Restart the existing Node process with the VPS process manager. For PM2, use `pm
 
 The reverse proxy must send `/api/` to this Node server. The public website and Studio should use the same origin. Verify `/api/health` reports `sanityConfigured: true`, open `/studio`, and sign in with `ADMIN_PASSWORD`. A missing password produces an explicit setup error.
 
-**Recover the 10 cocktail cards:** after deployment, open `/admin` in the same browser/profile where all 10 cards were visible. Do not clear that browser's site data. If 8 cards exist only in that browser, Studio lists their names in “Recover 8 unpublished cocktail cards.” Click “Publish missing cocktails to website.” This merges additions into the published menu under a revision guard and preserves corrected images and prices on existing cards. A fresh browser cannot access another browser's unpublished local data.
+All ten cocktails were recovered from Git version `71d58f0`; commit `c9133f5` had removed eight. The missing turmeric cottage-cheese croissant was also restored directly in Sanity. There are now 51 published menu cards. Existing cards, prices, and corrected images were preserved. The historical `cocktail-*.jpg` files show restaurant interiors, so the eight recovered cocktails use neutral placeholders until suitable photos are provided. Existing Aperol and Old Fashioned photos remain in place.
+
+If Studio opens but cannot sign in and `/api/admin/session` returns 404, the new frontend is talking to an older backend. Run `npm run vps:status` in the repository on the VPS to identify PM2 services and listening ports, then restart the existing service with the updated `server.mjs`. Ensure the reverse proxy sends `/api/` to that process. Do not replace the API with client-side Sanity write credentials.
+
+Browser recovery remains available for any additional unpublished cocktail cards. It merges additions while preserving published photos and prices.
+
+## Security dependencies
+
+The October 2026 security update upgrades Tailwind to v4 with its PostCSS integration and retains the existing palette, radii, shadows, and form defaults. It also patches Vite, Undici, and source-map-js through the lockfile. `npm audit` reports zero vulnerabilities for the verified lockfile. Build with a supported Node version compatible with the dependencies (Node 22.12+ or Node 24 is recommended). Tailwind v4 targets Safari 16.4+, Chrome 111+, and Firefox 128+.
 
 ## Publishing
 
