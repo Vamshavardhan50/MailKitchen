@@ -85,49 +85,12 @@ export const AboutSection: React.FC<AboutSectionProps> = ({ lang }) => {
           </div>
         </div>
 
-        {/* Pillars / Values Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white rounded-[28px] p-8 shadow-sm border border-gray-100 space-y-3">
-            <div className="w-12 h-12 rounded-2xl bg-[#d85c27]/10 flex items-center justify-center text-[#d85c27]">
-              <Leaf className="w-6 h-6" />
-            </div>
-            <h3 className="text-[20px] font-black text-[#1e382f]">
-              {isDe ? '100% Natürlich & Ehrlich' : '100% Wholesome & Honest'}
-            </h3>
-            <p className="text-[#666] text-[14.5px] leading-relaxed">
-              {isDe
-                ? 'Schonend gekochte ganze Gewürze, keine künstlichen Zusatzstoffe, reine Naturzutaten.'
-                : 'Slow-simmered whole spices, no artificial preservatives, zero refined fillers.'}
-            </p>
-          </div>
-
-          <div className="bg-white rounded-[28px] p-8 shadow-sm border border-gray-100 space-y-3">
-            <div className="w-12 h-12 rounded-2xl bg-[#1e382f]/10 flex items-center justify-center text-[#1e382f]">
-              <Heart className="w-6 h-6" />
-            </div>
-            <h3 className="text-[20px] font-black text-[#1e382f]">
-              {isDe ? 'Von Natur aus Vielfältig' : 'Inclusive by Nature'}
-            </h3>
-            <p className="text-[#666] text-[14.5px] leading-relaxed">
-              {isDe
-                ? 'Über 70% unserer Gerichte sind vegetarisch oder vegan, mit zertifizierten glutenfreien Optionen.'
-                : 'Over 70% of our menu is naturally vegetarian and vegan, with dedicated gluten-free options.'}
-            </p>
-          </div>
-
-          <div className="bg-white rounded-[28px] p-8 shadow-sm border border-gray-100 space-y-3">
-            <div className="w-12 h-12 rounded-2xl bg-[#d85c27]/10 flex items-center justify-center text-[#d85c27]">
-              <MapPin className="w-6 h-6" />
-            </div>
-            <h3 className="text-[20px] font-black text-[#1e382f]">
-              {isDe ? 'Herzliche Berliner Gastfreundschaft' : 'Warm Berlin Hospitality'}
-            </h3>
-            <p className="text-[#666] text-[14.5px] leading-relaxed">
-              {isDe
-                ? 'Ein lichtdurchfluteter Raum in der Zimmerstraße 56 für gemütliche Pausen und echte Begegnungen.'
-                : 'A warm, light-filled space at Zimmerstraße 56 designed for casual comfort and real connection.'}
-            </p>
-          </div>
+          {(content.values || []).map((value, index) => <div key={index} className="bg-white rounded-[28px] p-8 shadow-sm border border-gray-100 space-y-3">
+            <div className="w-12 h-12 rounded-2xl bg-[#d85c27]/10 flex items-center justify-center text-[#d85c27]"><Leaf className="w-6 h-6" /></div>
+            <h3 className="text-[20px] font-black text-[#1e382f]">{isDe ? value.titleDe : value.titleEn}</h3>
+            <p className="text-[#666] text-[14.5px] leading-relaxed">{isDe ? value.descDe : value.descEn}</p>
+          </div>)}
         </div>
 
         {/* Visual Impression Grid */}

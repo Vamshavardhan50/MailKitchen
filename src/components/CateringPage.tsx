@@ -152,9 +152,7 @@ export const CateringPage: React.FC<CateringPageProps> = ({ lang = 'en' }) => {
     ? SHOWCASE_ITEMS
     : SHOWCASE_ITEMS.filter((item) => item.category === activeCategory);
 
-  const rawPackages = ((cmsCatering?.packages && cmsCatering.packages.length > 0)
-    ? cmsCatering.packages
-    : DEFAULT_CATERING.packages) || [];
+  const rawPackages = (cmsCatering.packages ?? DEFAULT_CATERING.packages) || [];
 
   const PACKAGES = rawPackages.map((p) => ({
     id: p.id,
@@ -204,53 +202,12 @@ export const CateringPage: React.FC<CateringPageProps> = ({ lang = 'en' }) => {
     },
     {
       label: isDe ? 'Vorlaufzeit der Bestellung' : 'Order lead time',
-      value: isDe ? '24 – 48 Std.' : '24 – 48 hours',
+      value: (isDe ? cmsCatering.leadTimeDe : cmsCatering.leadTimeEn) || (isDe ? '24 – 48 Std.' : '24 – 48 hours'),
       detail: isDe ? 'Empfohlen für reibungslose Planung (kurzfristig auf Anfrage).' : 'Recommended lead time (express same-day on request).'
     }
   ];
 
-  const FAQS = [
-    {
-      q: isDe
-        ? 'Wie viele Tage im Voraus muss ich das Catering bestellen?'
-        : 'How far in advance do I need to book catering?',
-      a: isDe
-        ? 'Für Standard-Team-Lunches und Naan-Pocket-Platten bis zu 40 Personen empfehlen wir 24 bis 48 Stunden Vorlauf. Für große Buffets ab 50 Personen oder individuelle Menüs sind 3 bis 5 Tage ideal. Bei sehr kurzfristigen Anfragen rufen Sie uns bitte direkt an: +49 30 51891367.'
-        : 'For standard team lunch bowls and naan pocket platters up to 40 guests, 24 to 48 hours notice is recommended. For large buffets over 50 guests or bespoke menus, 3 to 5 days is ideal. For last-minute orders, give us a quick call at +49 30 51891367.'
-    },
-    {
-      q: isDe
-        ? 'Gibt es eine Mindestbestellmenge?'
-        : 'Is there a minimum order requirement?',
-      a: isDe
-        ? 'Unsere Catering-Pakete beginnen ab 10 Personen oder einem Mindestbestellwert von €100. Für kleinere Bestellungen unter 10 Personen können Sie Ihre Speisen bequem zur Abholung oder Einzellieferung in unserem Restaurant in der Zimmerstraße 56 vorbestellen.'
-        : 'Our catering packages start at a minimum of 10 people or €100 total. For smaller groups, you can easily place takeaway or delivery orders directly through our restaurant at Zimmerstraße 56.'
-    },
-    {
-      q: isDe
-        ? 'Wie werden die Speisen geliefert und warm gehalten?'
-        : 'How is the food delivered and kept warm?',
-      a: isDe
-        ? 'Unsere Bowls und Naan Pockets werden in isolierten Thermobehältern geliefert und bleiben garantiert bis zu 60 Minuten ofenfrisch warm. Für Buffets bringen wir professionelle Chafing Dishes (Warmhaltebehälter) mit, sodass das Essen über mehrere Stunden perfekt temperiert bleibt.'
-        : 'Bowls and naan pockets arrive in insulated thermal transport cases that keep food piping hot for up to 60 minutes. For buffet orders, we supply professional chafing stations that keep dishes perfectly hot for hours.'
-    },
-    {
-      q: isDe
-        ? 'Können wir auf Firmenrechnung mit Zahlungsziel zahlen?'
-        : 'Can corporate clients pay via invoice?',
-      a: isDe
-        ? 'Ja! Für registrierte Unternehmen, Agenturen und Institutionen bieten wir bequeme Zahlung auf Rechnung mit 14 Tagen Zahlungsziel inklusive ausgewiesener Mehrwertsteuer. Bei Erstbestellung genügt eine Bestätigung per E-Mail.'
-        : 'Yes! Registered companies, agencies, and institutions can pay comfortably via standard invoice with 14-day payment terms including clear VAT breakdown.'
-    },
-    {
-      q: isDe
-        ? 'Wie werden Allergien und Ernährungsformen (vegan, vegetarisch, glutenfrei) gehandhabt?'
-        : 'How do you handle dietary requirements (vegan, vegetarian, gluten-free)?',
-      a: isDe
-        ? 'Über 70% unserer Speisen sind von Natur aus vegan oder vegetarisch. Wir servieren zartes Hähnchen sowie rein pflanzliche Optionen (ohne Rind und ohne Schwein) und bieten glutenfreie Reis- und Salat-Bowls an. Jedes Gericht wird mit deutlichen Allergen- und Zutatenkarten gekennzeichnet.'
-        : 'Over 70% of our menu is naturally vegan or vegetarian. We serve tender chicken as well as plant-based creations (strictly no beef and no pork), along with dedicated gluten-free rice and salad bowls. Every tray and bowl is clearly marked with ingredient and allergen tags.'
-    }
-  ];
+  const FAQS = (cmsCatering.faqs ?? DEFAULT_CATERING.faqs ?? []).map(faq => ({ q: isDe ? faq.qDe : faq.qEn, a: isDe ? faq.aDe : faq.aEn }));
 
   return (
     <div className="bg-[#f5f0e8] min-h-screen pt-24 sm:pt-28 pb-20">
@@ -268,15 +225,15 @@ export const CateringPage: React.FC<CateringPageProps> = ({ lang = 'en' }) => {
         <div className="bg-[#1e382f] text-white rounded-[32px] sm:rounded-[44px] p-8 sm:p-14 lg:p-20 relative overflow-hidden shadow-2xl">
           <div className="max-w-[800px] relative z-10 space-y-6">
             <span className="bg-[#d85c27] text-white text-[11px] sm:text-[12px] font-black tracking-[0.2em] px-4 py-1.5 rounded-full uppercase inline-block">
-              {isDe ? 'MAATI CATERING BERLIN MITTE' : 'MAATI CATERING BERLIN MITTE'}
+              {(isDe ? cmsCatering.badgeDe : cmsCatering.badgeEn) || (isDe ? 'MAATI CATERING BERLIN MITTE' : 'MAATI CATERING BERLIN MITTE')}
             </span>
             <h1 className="text-[36px] sm:text-[48px] md:text-[60px] font-black leading-[1.08] tracking-tight text-white">
-              {isDe ? 'Business Catering für Teams & Events' : 'Corporate Catering That Brings Teams Together'}
+              {(isDe ? cmsCatering.heroTitleDe : cmsCatering.heroTitleEn) || (isDe ? 'Business Catering für Teams & Events' : 'Corporate Catering That Brings Teams Together')}
             </h1>
             <p className="text-white/85 text-[16px] sm:text-[19px] leading-relaxed max-w-[680px]">
-              {isDe
+              {(isDe ? cmsCatering.heroDescDe : cmsCatering.heroDescEn) || (isDe
                 ? 'Gesunde Bowls, getoastete Naan-Pockets und Sharing-Platten direkt aus unserer Küche in der Zimmerstraße zu Ihnen ins Büro geliefert. Frisch, unkompliziert und auf den Punkt.'
-                : 'Vibrant Indian bowls, toasted naan pockets, and sharing platters crafted for Berlin’s top offices. Delivered warm, on time, and effortlessly customized to every diet.'}
+                : 'Vibrant Indian bowls, toasted naan pockets, and sharing platters crafted for Berlin’s top offices. Delivered warm, on time, and effortlessly customized to every diet.')}
             </p>
 
             {/* Quick USPs Pills */}

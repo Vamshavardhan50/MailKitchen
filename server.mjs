@@ -1,3 +1,4 @@
+import { handleInboxApi } from './server/inbox-api.mjs';
 import { createAdminApi } from './server/admin-api.mjs';
 import http from 'http';
 import { createClient } from '@sanity/client';
@@ -88,7 +89,7 @@ const server = http.createServer(async (req, res) => {
   }
 
   // Helper: File paths for local persistence
-  const DATA_DIR = path.resolve(process.cwd(), 'src', 'data');
+  const DATA_DIR = path.resolve(process.env.DATA_DIR || path.join(__dirname, 'src', 'data'));
   if (!fs.existsSync(DATA_DIR)) {
     fs.mkdirSync(DATA_DIR, { recursive: true });
   }
@@ -102,17 +103,25 @@ const server = http.createServer(async (req, res) => {
       }
     } catch (e) {
       console.warn('Could not read', file, e.message);
+      throw e;
     }
     return [];
   };
 
   const writeJson = (file, data) => {
     try {
-      fs.writeFileSync(file, JSON.stringify(data, null, 2), 'utf8');
+      const temporaryFile = file + '.tmp';
+      fs.writeFileSync(temporaryFile, JSON.stringify(data, null, 2), 'utf8');
+      fs.renameSync(temporaryFile, file);
     } catch (e) {
       console.error('Could not write', file, e.message);
+      throw e;
     }
   };
+
+  if (await handleInboxApi(req, res, url.pathname, {
+    client: writeClient, files: { inquiries: ENQUIRIES_FILE, applications: APPLICATIONS_FILE }, readJson, writeJson,
+  })) return;
 
   // Enquiry Submission Endpoint (Events & Catering)
   if (url.pathname === '/api/enquiry' && req.method === 'POST') {
@@ -194,46 +203,6 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // Get Inquiries (for Studio / Admin dashboard)
-  if (url.pathname === '/api/inquiries' && req.method === 'GET') {
-    const list = readJson(ENQUIRIES_FILE);
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ success: true, inquiries: list }));
-    return;
-  }
-
-  // Update Inquiry Status / Notes
-  if (url.pathname === '/api/inquiries/status' && req.method === 'POST') {
-    let body = '';
-    req.on('data', (c) => { body += c; });
-    req.on('end', async () => {
-      try {
-        const { id, status, managerNotes } = JSON.parse(body || '{}');
-        const list = readJson(ENQUIRIES_FILE);
-        const item = list.find((i) => i._id === id || i.id === id);
-        if (item) {
-          if (status) item.status = status;
-          if (managerNotes !== undefined) item.managerNotes = managerNotes;
-          writeJson(ENQUIRIES_FILE, list);
-
-          if (writeClient) {
-            try {
-              await writeClient.patch(item._id).set({ status: item.status, managerNotes: item.managerNotes }).commit();
-            } catch (e) {
-              console.warn('[Sanity Patch Error]:', e.message);
-            }
-          }
-        }
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: true, item }));
-      } catch (e) {
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: false, error: e.message }));
-      }
-    });
-    return;
-  }
-
   // Job Application Submission Endpoint
   if (url.pathname === '/api/apply' && req.method === 'POST') {
     let body = '';
@@ -299,102 +268,6 @@ const server = http.createServer(async (req, res) => {
         console.error('[MAATI Careers Error]:', err);
         res.writeHead(500, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ success: false, error: 'Server could not process application' }));
-      }
-    });
-    return;
-  }
-
-  // Get Applications (for Studio / Admin dashboard)
-  if (url.pathname === '/api/applications' && req.method === 'GET') {
-    const list = readJson(APPLICATIONS_FILE);
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ success: true, applications: list }));
-    return;
-  }
-
-  // Update Application Status / HR Notes
-  if (url.pathname === '/api/applications/status' && req.method === 'POST') {
-    let body = '';
-    req.on('data', (c) => { body += c; });
-    req.on('end', async () => {
-      try {
-        const { id, status, hrNotes } = JSON.parse(body || '{}');
-        const list = readJson(APPLICATIONS_FILE);
-        const item = list.find((i) => i._id === id || i.id === id);
-        if (item) {
-          if (status) item.status = status;
-          if (hrNotes !== undefined) item.hrNotes = hrNotes;
-          writeJson(APPLICATIONS_FILE, list);
-
-          if (writeClient) {
-            try {
-              await writeClient.patch(item._id).set({ status: item.status, hrNotes: item.hrNotes }).commit();
-            } catch (e) {
-              console.warn('[Sanity Patch Error]:', e.message);
-            }
-          }
-        }
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: true, item }));
-      } catch (e) {
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: false, error: e.message }));
-      }
-    });
-    return;
-  }
-
-  // Delete Inquiry Endpoint
-  if (url.pathname === '/api/inquiries/delete' && req.method === 'POST') {
-    let body = '';
-    req.on('data', (c) => { body += c; });
-    req.on('end', async () => {
-      try {
-        const { id } = JSON.parse(body || '{}');
-        let list = readJson(ENQUIRIES_FILE);
-        list = list.filter((i) => i._id !== id && i.id !== id);
-        writeJson(ENQUIRIES_FILE, list);
-
-        if (writeClient) {
-          try {
-            await writeClient.delete(id);
-          } catch (e) {
-            console.warn('[Sanity Delete Warning]:', e.message);
-          }
-        }
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: true }));
-      } catch (e) {
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: false, error: e.message }));
-      }
-    });
-    return;
-  }
-
-  // Delete Job Application Endpoint
-  if (url.pathname === '/api/applications/delete' && req.method === 'POST') {
-    let body = '';
-    req.on('data', (c) => { body += c; });
-    req.on('end', async () => {
-      try {
-        const { id } = JSON.parse(body || '{}');
-        let list = readJson(APPLICATIONS_FILE);
-        list = list.filter((i) => i._id !== id && i.id !== id);
-        writeJson(APPLICATIONS_FILE, list);
-
-        if (writeClient) {
-          try {
-            await writeClient.delete(id);
-          } catch (e) {
-            console.warn('[Sanity Delete Warning]:', e.message);
-          }
-        }
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: true }));
-      } catch (e) {
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: false, error: e.message }));
       }
     });
     return;

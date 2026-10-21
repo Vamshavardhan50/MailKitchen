@@ -1,3 +1,9 @@
+import { usePublishedDocument } from '../lib/usePublishedDocument';
+import { StudioDialog } from './StudioDialog';
+import { StudioHome } from './StudioHome';
+import { studioRequest } from '../lib/studioRequest';
+import { updateMenuItem } from '../lib/menuEditing';
+import { refreshPublishedContent } from '../lib/cmsRefresh';
 import { usePublishedEditor } from '../lib/usePublishedEditor';
 import { recoverMissingCocktails } from '../lib/menuRecovery';
 import React, { useState, useEffect, useRef } from 'react';
@@ -100,8 +106,7 @@ import {
   saveAboutToSanity,
   saveLegalToSanity,
   saveLandingPagesToSanity,
-  saveReservationToSanity,
-  syncAllLocalToSanity
+  saveReservationToSanity
 } from '../lib/sanityService';
 
 
@@ -112,6 +117,8 @@ import {
 } from '../data/galleryAssets';
 import { apiUrl } from '../lib/api';
 import { sanityClient, isSanityConfigured } from '../lib/sanity';
+
+const DEFAULT_GALLERY_DOCUMENT = { items: DEFAULT_GALLERY_ASSETS };
 
 const AVAILABLE_TAGS = [
   'Bowls & Mains',
@@ -147,23 +154,23 @@ export type StudioTab =
   | 'applications';
 
 export const TAB_TITLES: Record<StudioTab, { title: string; route?: string; icon?: string }> = {
-  overview: { title: 'All Pages Directory' },
-  homepage: { title: 'Homepage Content', route: '/' },
-  items: { title: 'Menu Dishes & Pricing', route: '/menu' },
-  categories: { title: 'Menu Categories', route: '/menu' },
-  landingPages: { title: 'Category Showcase Landings', route: '/menu/naan-pockets' },
+  overview: { title: 'Dashboard' },
+  homepage: { title: 'Homepage', route: '/' },
+  items: { title: 'Menu & prices', route: '/menu' },
+  categories: { title: 'Menu sections', route: '/menu' },
+  landingPages: { title: 'Food & drink introduction pages', route: '/menu/naan-pockets' },
   catering: { title: 'Corporate & Event Catering', route: '/catering' },
   events: { title: 'Private Events & Venue Hire', route: '/events' },
   about: { title: 'Brand Story & About Us', route: '/about' },
   contact: { title: 'Location, Hours & Contact', route: '/contact' },
   reservations: { title: 'Table Reservations', route: '/contact' },
   jobs: { title: 'Careers & Job Openings', route: '/jobs' },
-  printMenu: { title: 'Print Menu & Cards', route: '/print-menu' },
+  printMenu: { title: 'Menu display settings', route: '/menu' },
   legal: { title: 'Impressum (§ 5 TMG)', route: '/impressum' },
   privacy: { title: 'Privacy Policy (Datenschutz)', route: '/privacy' },
   terms: { title: 'Terms & Conditions (AGB)', route: '/terms' },
-  gallery: { title: 'Photo Library & Media' },
-  settings: { title: 'Global SEO & Schema Info' },
+  gallery: { title: 'Photo library' },
+  settings: { title: 'Restaurant & social links' },
   inquiries: { title: 'Catering Inquiries Inbox' },
   applications: { title: 'Job Candidate Applications' },
 };
@@ -179,23 +186,23 @@ interface TourStep {
 const SPOTLIGHT_STEPS: TourStep[] = [
   {
     selector: '[data-tour="studio-header"]',
-    title: 'MAATI Studio Command Center',
+    title: 'Welcome to MAATI Studio',
     description: 'Welcome! This is your central hub for managing dishes, prices, catering quotes, job applicants, and all website pages in English and German.',
-    tip: 'Changes sync directly to your Sanity database and live VPS.',
+    tip: 'You do not need Git, code, or a server restart to publish content.',
     tab: 'overview',
   },
   {
     selector: '[data-tour="page-cards"]',
     title: 'Website Pages Directory',
     description: 'Every single page of your website is listed as an interactive card right here. Click on any card (e.g. Menu & Dishes, Catering, or Homepage) to jump into its dedicated editor.',
-    tip: 'Inside any page editor, click the top "← Back to All Pages" button to return to this directory.',
+    tip: 'Inside any page editor, click the top "← Back to dashboard" button to return to this directory.',
     tab: 'overview',
   },
   {
     selector: '[data-tour="cloud-sync"]',
-    title: 'Cloud Sync',
-    description: 'Whenever you make edits, click "Sync to Cloud" to push your changes live so visitors on phone or desktop immediately see your updates.',
-    tip: 'Use this button whenever you want your edits published live.',
+    title: 'Publishing changes',
+    description: 'Open a page, edit its content, then select "Save & publish". Wait for the published confirmation before leaving.',
+    tip: 'Refresh content loads the latest website version. It does not publish your open edits.',
     tab: 'overview',
   },
   {
@@ -209,18 +216,17 @@ const SPOTLIGHT_STEPS: TourStep[] = [
 
 export const StudioPage: React.FC = () => {
   // ── Authentication State ──
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    return sessionStorage.getItem('maati_admin_auth') === 'true';
-  });
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [passwordInput, setPasswordInput] = useState('');
   const [authError, setAuthError] = useState(false);
   const [authServerError, setAuthServerError] = useState('');
 
   const { categories: initialCategories, revision: initialMenuRevision, loading: menuLoading, isFromSanity: menuFromSanity } = useSanityMenu();
   const menuRevision = useRef<string | undefined>(undefined);
-  const menuVersion = useRef(0);
   const menuDirty = useRef(false);
-  const menuSaveQueue = useRef<Promise<void>>(Promise.resolve());
   const [legacyMenuDraft] = useState<unknown>(() => {
     try {
       const oldDraft = JSON.parse(localStorage.getItem('maati_admin_menu') || 'null');
@@ -230,46 +236,89 @@ export const StudioPage: React.FC = () => {
     catch { return null; }
   });
   const [isRecoveringCocktails, setIsRecoveringCocktails] = useState(false);
-  const { content: initialHomepage } = useHomepageContent();
-  const { settings: initialSettings } = useSiteSettings();
-  const { content: initialEvents } = useEventsContent();
-  const { content: initialContact } = useContactContent();
-  const { content: initialPrintMenu } = usePrintMenuContent();
-  const { content: initialCatering } = useCateringContent();
-  const { content: initialJobs } = useJobsContent();
-  const { content: initialAbout } = useAboutContent();
-  const { content: initialLegal } = useLegalContent();
-  const { content: initialLandingPages } = useLandingPagesContent();
-  const { content: initialReservation } = useReservationContent();
+  const homepageSource = useHomepageContent();
+  const { content: initialHomepage } = homepageSource;
+  const settingsSource = useSiteSettings();
+  const { settings: initialSettings } = settingsSource;
+  const eventsSource = useEventsContent();
+  const { content: initialEvents } = eventsSource;
+  const contactSource = useContactContent();
+  const { content: initialContact } = contactSource;
+  const printMenuSource = usePrintMenuContent();
+  const { content: initialPrintMenu } = printMenuSource;
+  const cateringSource = useCateringContent();
+  const { content: initialCatering } = cateringSource;
+  const jobsSource = useJobsContent();
+  const { content: initialJobs } = jobsSource;
+  const aboutSource = useAboutContent();
+  const { content: initialAbout } = aboutSource;
+  const legalSource = useLegalContent();
+  const { content: initialLegal } = legalSource;
+  const landingPagesSource = useLandingPagesContent();
+  const { content: initialLandingPages } = landingPagesSource;
+  const reservationsSource = useReservationContent();
+  const { content: initialReservation } = reservationsSource;
 
   const [activeTab, setActiveTab] = useState<StudioTab>('overview');
   const [categories, setCategories] = useState<SanityCategoryWithItems[]>([]);
   const [selectedCatId, setSelectedCatId] = useState<string>('all');
-  
+  useEffect(() => { setPublishFeedback(null); }, [activeTab]);
+
   // Site settings state
-  const [siteSettings, setSiteSettings] = usePublishedEditor(initialSettings);
+  const [siteSettings, setSiteSettings, settingsEditor] = usePublishedEditor(initialSettings);
   // Homepage state
-  const [homepageContent, _setHomepageContent] = usePublishedEditor<HomepageContent>(initialHomepage);
+  const [homepageContent, _setHomepageContent, homepageEditor] = usePublishedEditor<HomepageContent>(initialHomepage);
   // Events page state
-  const [eventsContent, _setEventsContent] = usePublishedEditor<EventsContent>(initialEvents);
+  const [eventsContent, _setEventsContent, eventsEditor] = usePublishedEditor<EventsContent>(initialEvents);
   // Contact page state
-  const [contactContent, _setContactContent] = usePublishedEditor<ContactContent>(initialContact);
+  const [contactContent, _setContactContent, contactEditor] = usePublishedEditor<ContactContent>(initialContact);
   // Catering page state
-  const [cateringContent, _setCateringContent] = usePublishedEditor<CateringContent>(initialCatering);
+  const [cateringContent, _setCateringContent, cateringEditor] = usePublishedEditor<CateringContent>(initialCatering);
   // Jobs page state
-  const [jobsContent, _setJobsContent] = usePublishedEditor<JobsContent>(initialJobs);
+  const [jobsContent, _setJobsContent, jobsEditor] = usePublishedEditor<JobsContent>(initialJobs);
   // About Us page state
-  const [aboutContent, _setAboutContent] = usePublishedEditor<AboutContent>(initialAbout);
+  const [aboutContent, _setAboutContent, aboutEditor] = usePublishedEditor<AboutContent>(initialAbout);
   // Legal & Impressum state
-  const [legalContent, _setLegalContent] = usePublishedEditor<LegalContent>(initialLegal);
+  const [legalContent, _setLegalContent, legalEditor] = usePublishedEditor<LegalContent>(initialLegal);
   // Category Landing Pages state
-  const [landingPagesContent, _setLandingPagesContent] = usePublishedEditor<LandingPagesContent>(initialLandingPages);
+  const [landingPagesContent, _setLandingPagesContent, landingPagesEditor] = usePublishedEditor<LandingPagesContent>(initialLandingPages);
   const [selectedLandingKey, setSelectedLandingKey] = useState<'naan-pockets' | 'bowls' | 'breakfast' | 'coffee-chai'>('naan-pockets');
   // Table Reservations state
-  const [reservationContent, _setReservationContent] = usePublishedEditor<ReservationContent>(initialReservation);
+  const [reservationContent, _setReservationContent, reservationsEditor] = usePublishedEditor<ReservationContent>(initialReservation);
 
   // Print / Visual Menu state
-  const [printMenuContent, _setPrintMenuContent] = usePublishedEditor<PrintMenuContent>(initialPrintMenu);
+  const [printMenuContent, _setPrintMenuContent, printMenuEditor] = usePublishedEditor<PrintMenuContent>(initialPrintMenu);
+
+
+  const [publishingSection, setPublishingSection] = useState<string | null>(null);
+  const publishingLock = useRef(false);
+  const [publishFeedback, setPublishFeedback] = useState<{ section: string; text: string; error: boolean } | null>(null);
+  const [menuHasChanges, setMenuHasChanges] = useState(false);
+  const pageSources = { homepage: homepageSource, settings: settingsSource, events: eventsSource, contact: contactSource, printMenu: printMenuSource, catering: cateringSource, jobs: jobsSource, about: aboutSource, legal: legalSource, privacy: legalSource, terms: legalSource, landingPages: landingPagesSource, reservations: reservationsSource };
+  const pageEditors = { homepage: homepageEditor, settings: settingsEditor, events: eventsEditor, contact: contactEditor, printMenu: printMenuEditor, catering: cateringEditor, jobs: jobsEditor, about: aboutEditor, legal: legalEditor, privacy: legalEditor, terms: legalEditor, landingPages: landingPagesEditor, reservations: reservationsEditor };
+  const runPublish = async (section: string, save: () => Promise<{ success: boolean; message: string }>) => {
+    if (publishingLock.current) return false;
+    publishingLock.current = true;
+    setPublishingSection(section);
+    setPublishFeedback(null);
+    try {
+      const result = await save();
+      if (!result.success) throw new Error(result.message);
+      setPublishFeedback({ section, text: section === 'gallery' ? 'Photo library updated. Choose a photo in a page, then save & publish that page.' : 'Published. Your changes are now on the website.', error: false });
+      return true;
+    } catch (error) {
+      setPublishFeedback({ section, text: error instanceof Error ? error.message : 'Could not publish. Please try again.', error: true });
+      return false;
+    } finally { publishingLock.current = false; setPublishingSection(null); }
+  };
+  const publishPage = async (section: keyof typeof pageSources, save: () => Promise<{ success: boolean; message: string }>) => {
+    const source = pageSources[section];
+    if (source.loading || source.error) {
+      setPublishFeedback({ section, text: 'Load the latest website content before publishing. Check your connection and select Refresh content.', error: true });
+      return false;
+    }
+    return runPublish(section, save);
+  };
 
   // Inquiries & Applications State
   const [inquiries, setInquiries] = useState<any[]>([]);
@@ -279,96 +328,14 @@ export const StudioPage: React.FC = () => {
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [noteDraft, setNoteDraft] = useState('');
 
+  const [inboxError, setInboxError] = useState('');
   const fetchInquiries = async () => {
-    let combined: any[] = [];
-    try {
-      const local = JSON.parse(localStorage.getItem('maati_stored_enquiries') || '[]');
-      if (Array.isArray(local)) combined = [...local];
-    } catch (e) {
-      // ignore
-    }
-
-    try {
-      const res = await fetch(apiUrl('/api/inquiries'));
-      const data = await res.json().catch(() => ({}));
-      if (data.success && Array.isArray(data.inquiries)) {
-        const ids = new Set(combined.map((x) => x._id || x.id));
-        data.inquiries.forEach((item: any) => {
-          if (!ids.has(item._id || item.id)) {
-            combined.push(item);
-          }
-        });
-      }
-    } catch (e) {
-      // ignore
-    }
-
-    // Direct Sanity Cloud fallback for 100% data reliability
-    try {
-      if (isSanityConfigured) {
-        const sanityInquiries = await sanityClient.fetch<any[]>(
-          `*[_type == "enquirySubmission"] | order(_createdAt desc)`
-        );
-        if (Array.isArray(sanityInquiries) && sanityInquiries.length > 0) {
-          const ids = new Set(combined.map((x) => x._id || x.id));
-          sanityInquiries.forEach((item: any) => {
-            if (!ids.has(item._id || item.id)) {
-              combined.push(item);
-            }
-          });
-        }
-      }
-    } catch (e) {
-      // ignore
-    }
-
-    setInquiries(combined);
+    try { const result = await studioRequest('/api/inquiries'); setInquiries(result.inquiries); setInboxError(''); }
+    catch (error) { setInboxError(error instanceof Error ? error.message : 'Could not load customer enquiries.'); }
   };
-
   const fetchApplications = async () => {
-    let combined: any[] = [];
-    try {
-      const local = JSON.parse(localStorage.getItem('maati_stored_applications') || '[]');
-      if (Array.isArray(local)) combined = [...local];
-    } catch (e) {
-      // ignore
-    }
-
-    try {
-      const res = await fetch(apiUrl('/api/applications'));
-      const data = await res.json().catch(() => ({}));
-      if (data.success && Array.isArray(data.applications)) {
-        const ids = new Set(combined.map((x) => x._id || x.id));
-        data.applications.forEach((item: any) => {
-          if (!ids.has(item._id || item.id)) {
-            combined.push(item);
-          }
-        });
-      }
-    } catch (e) {
-      // ignore
-    }
-
-    // Direct Sanity Cloud fallback for 100% data reliability
-    try {
-      if (isSanityConfigured) {
-        const sanityApps = await sanityClient.fetch<any[]>(
-          `*[_type == "jobApplication"] | order(_createdAt desc)`
-        );
-        if (Array.isArray(sanityApps) && sanityApps.length > 0) {
-          const ids = new Set(combined.map((x) => x._id || x.id));
-          sanityApps.forEach((item: any) => {
-            if (!ids.has(item._id || item.id)) {
-              combined.push(item);
-            }
-          });
-        }
-      }
-    } catch (e) {
-      // ignore
-    }
-
-    setApplications(combined);
+    try { const result = await studioRequest('/api/applications'); setApplications(result.applications); setInboxError(''); }
+    catch (error) { setInboxError(error instanceof Error ? error.message : 'Could not load job applications.'); }
   };
 
   useEffect(() => {
@@ -391,11 +358,7 @@ export const StudioPage: React.FC = () => {
 
   const handleUpdateInquiryStatus = async (id: string, newStatus: string) => {
     try {
-      await fetch(apiUrl('/api/inquiries/status'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, status: newStatus }),
-      });
+      await studioRequest('/api/inquiries/status', { id, status: newStatus });
       setInquiries((prev) =>
         prev.map((item) => (item._id === id || item.id === id ? { ...item, status: newStatus } : item))
       );
@@ -407,11 +370,7 @@ export const StudioPage: React.FC = () => {
 
   const handleSaveInquiryNote = async (id: string) => {
     try {
-      await fetch(apiUrl('/api/inquiries/status'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, managerNotes: noteDraft }),
-      });
+      await studioRequest('/api/inquiries/status', { id, managerNotes: noteDraft });
       setInquiries((prev) =>
         prev.map((item) => (item._id === id || item.id === id ? { ...item, managerNotes: noteDraft } : item))
       );
@@ -425,11 +384,7 @@ export const StudioPage: React.FC = () => {
 
   const handleUpdateApplicationStatus = async (id: string, newStatus: string) => {
     try {
-      await fetch(apiUrl('/api/applications/status'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, status: newStatus }),
-      });
+      await studioRequest('/api/applications/status', { id, status: newStatus });
       setApplications((prev) =>
         prev.map((item) => (item._id === id || item.id === id ? { ...item, status: newStatus } : item))
       );
@@ -441,11 +396,7 @@ export const StudioPage: React.FC = () => {
 
   const handleSaveApplicationNote = async (id: string) => {
     try {
-      await fetch(apiUrl('/api/applications/status'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, hrNotes: noteDraft }),
-      });
+      await studioRequest('/api/applications/status', { id, hrNotes: noteDraft });
       setApplications((prev) =>
         prev.map((item) => (item._id === id || item.id === id ? { ...item, hrNotes: noteDraft } : item))
       );
@@ -458,55 +409,24 @@ export const StudioPage: React.FC = () => {
   };
 
   const handleDeleteInquiry = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this customer inquiry?')) return;
+    if (!window.confirm('Delete this customer enquiry?')) return;
     try {
-      setInquiries((prev) => prev.filter((item) => item._id !== id && item.id !== id));
-      try {
-        const local = JSON.parse(localStorage.getItem('maati_stored_enquiries') || '[]');
-        const updated = local.filter((item: any) => item._id !== id && item.id !== id);
-        localStorage.setItem('maati_stored_enquiries', JSON.stringify(updated));
-      } catch (e) {
-        // ignore
-      }
-      await fetch(apiUrl('/api/inquiries/delete'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id }),
-      }).catch(() => null);
-      showToast('Inquiry deleted successfully! 🗑️');
-    } catch (e) {
-      showToast('Failed to delete inquiry');
-    }
+      await studioRequest('/api/inquiries/delete', { id });
+      setInquiries(prev => prev.filter(item => (item._id || item.id) !== id));
+      showToast('Enquiry deleted.');
+    } catch (error) { setInboxError(error instanceof Error ? error.message : 'The enquiry could not be deleted.'); }
   };
-
   const handleDeleteApplication = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this job application?')) return;
+    if (!window.confirm('Delete this job application?')) return;
     try {
-      setApplications((prev) => prev.filter((item) => item._id !== id && item.id !== id));
-      try {
-        const local = JSON.parse(localStorage.getItem('maati_stored_applications') || '[]');
-        const updated = local.filter((item: any) => item._id !== id && item.id !== id);
-        localStorage.setItem('maati_stored_applications', JSON.stringify(updated));
-      } catch (e) {
-        // ignore
-      }
-      await fetch(apiUrl('/api/applications/delete'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id }),
-      }).catch(() => null);
-      showToast('Job application deleted! 🗑️');
-    } catch (e) {
-      showToast('Failed to delete application');
-    }
+      await studioRequest('/api/applications/delete', { id });
+      setApplications(prev => prev.filter(item => (item._id || item.id) !== id));
+      showToast('Application deleted.');
+    } catch (error) { setInboxError(error instanceof Error ? error.message : 'The application could not be deleted.'); }
   };
 
-  // Auto-track changes
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const setHomepageContent = (val: HomepageContent | ((prev: HomepageContent) => HomepageContent)) => {
-    _setHomepageContent(val);
-    setHasUnsavedChanges(true);
-  };
+  const hasUnsavedChanges = homepageEditor.dirty;
+  const setHomepageContent = _setHomepageContent;
 
   // ── Interactive Spotlight Tour State ──
   const [isTourActive, setIsTourActive] = useState(false);
@@ -632,11 +552,14 @@ export const StudioPage: React.FC = () => {
   // Dynamic Gallery Assets with Delete & Custom Upload Management
   const [galleryAssets, setGalleryAssets] = useState<GalleryAssetItem[]>(DEFAULT_GALLERY_ASSETS);
   const galleryRevision = useRef<string | undefined>(undefined);
+  const gallerySource = usePublishedDocument<{ items: GalleryAssetItem[]; _rev?: string }>('galleryData', DEFAULT_GALLERY_DOCUMENT);
+  const galleryReady = !gallerySource.loading && !gallerySource.error;
   useEffect(() => {
-    sanityClient.fetch<any>('*[_id == "galleryData"][0]').then(doc => {
-      if (doc && Array.isArray(doc.items)) { setGalleryAssets(doc.items); galleryRevision.current = doc._rev; }
-    }).catch(() => undefined);
-  }, []);
+    if (galleryReady && !publishingLock.current && !isPhotoModalOpen) {
+      setGalleryAssets(gallerySource.content.items.map(asset => /\/cocktail-\d+\.jpg$/.test(asset.path) ? { ...asset, name: 'Restaurant ambience ' + (asset.path.match(/cocktail-(\d+)/)?.[1] || ''), category: 'Showcase & Ambience' } : asset));
+      galleryRevision.current = gallerySource.content._rev;
+    }
+  }, [gallerySource.content, galleryReady]);
   const [galleryFilterCat, setGalleryFilterCat] = useState<string>('All');
   const [gallerySearch, setGallerySearch] = useState<string>('');
 
@@ -657,24 +580,19 @@ export const StudioPage: React.FC = () => {
     path: '',
   });
 
-  const saveGalleryAssets = (updated: GalleryAssetItem[]) => {
-    setGalleryAssets(updated);
-    localStorage.setItem('maati_admin_gallery_v2', JSON.stringify(updated));
-    saveGalleryToSanity(updated, galleryRevision.current).then(result => {
-      if (result.success) galleryRevision.current = result.revision;
-      else showToast('Photo library not published: ' + result.message);
-    }).catch(err => showToast('Photo library not published: ' + err.message));
+  const saveGalleryAssets = async (updated: GalleryAssetItem[]) => {
+    if (!galleryReady) { showToast('Load the photo library before making changes.'); return false; }
+    return runPublish('gallery', async () => {
+      const result = await saveGalleryToSanity(updated, galleryRevision.current);
+      if (result.success) { galleryRevision.current = result.revision; setGalleryAssets(updated); }
+      return result;
+    });
   };
 
-
-  const handleDeleteGalleryImage = (e: React.MouseEvent, assetIdOrPath: string, assetName: string) => {
+  const handleDeleteGalleryImage = async (e: React.MouseEvent, assetIdOrPath: string, assetName: string) => {
     e.stopPropagation();
-    if (!window.confirm(`Are you sure you want to delete "${assetName}" from the photo library?`)) return;
-    const updated = galleryAssets.filter(
-      (a) => a.id !== assetIdOrPath && a.path !== assetIdOrPath
-    );
-    saveGalleryAssets(updated);
-    showToast(`Deleted "${assetName}" from photos`);
+    if (!window.confirm(`Remove "${assetName}" from the photo library? Photos already used on the website will stay in place.`)) return;
+    await saveGalleryAssets(galleryAssets.filter(a => a.id !== assetIdOrPath && a.path !== assetIdOrPath));
   };
 
   const handleOpenEditPhoto = (asset: GalleryAssetItem, e?: React.MouseEvent) => {
@@ -689,9 +607,19 @@ export const StudioPage: React.FC = () => {
     setIsPhotoModalOpen(true);
   };
 
-  const handleSavePhotoModal = (e: React.FormEvent) => {
+  const handleSavePhotoModal = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!photoModalData.path) return;
+    if (!photoModalData.path || publishingLock.current) return;
+    let photoPath = photoModalData.path;
+    if (photoPath.startsWith('data:')) {
+      const uploaded = await runPublish('gallery', async () => {
+        const result = await studioRequest('/api/admin/image', { dataUrl: photoPath, filename: photoModalData.name });
+        photoPath = result.url;
+        setPhotoModalData(prev => ({ ...prev, path: result.url }));
+        return { success: true, message: 'Photo uploaded' };
+      });
+      if (!uploaded) return;
+    }
 
     const assetId = photoModalData.id || ('custom_' + Date.now());
     const assetName = photoModalData.name.trim() || 'Uploaded Photo';
@@ -700,29 +628,29 @@ export const StudioPage: React.FC = () => {
     const updatedAsset: GalleryAssetItem = {
       id: assetId,
       name: assetName,
-      path: photoModalData.path,
+      path: photoPath,
       category: assetCategory,
       isCustom: true,
     };
 
-    const exists = galleryAssets.some((a) => a.id === assetId || a.path === photoModalData.path);
+    const exists = galleryAssets.some((a) => a.id === assetId || a.path === photoPath);
     let updatedList: GalleryAssetItem[];
     if (exists) {
       updatedList = galleryAssets.map((a) =>
-        a.id === assetId || a.path === photoModalData.path ? updatedAsset : a
+        a.id === assetId || a.path === photoPath ? updatedAsset : a
       );
     } else {
       updatedList = [updatedAsset, ...galleryAssets];
     }
 
-    saveGalleryAssets(updatedList);
+    if (!await saveGalleryAssets(updatedList)) return;
 
     if (photoModalData.callback) {
-      photoModalData.callback(photoModalData.path);
+      photoModalData.callback(photoPath);
     }
 
     setIsPhotoModalOpen(false);
-    showToast(`Photo "${assetName}" saved in "${assetCategory}"`);
+    showToast('Photo added to your library. Save & publish the page to use it on the website.');
   };
 
   // Item Form Fields
@@ -730,16 +658,16 @@ export const StudioPage: React.FC = () => {
   const [formTitleDe, setFormTitleDe] = useState('');
   const [formDescEn, setFormDescEn] = useState('');
   const [formDescDe, setFormDescDe] = useState('');
-  
+
   // Pricing Strategy (Single vs Double / Multi Pricing)
   const [priceType, setPriceType] = useState<'single' | 'double'>('single');
   const [formPrice, setFormPrice] = useState('€11,5');
-  
+
   // Double pricing options
   const [opt1LabelEn, setOpt1LabelEn] = useState('Chicken');
   const [opt1LabelDe, setOpt1LabelDe] = useState('Hähnchen');
   const [opt1Price, setOpt1Price] = useState('€12,5');
-  
+
   const [opt2LabelEn, setOpt2LabelEn] = useState('Prawns');
   const [opt2LabelDe, setOpt2LabelDe] = useState('Garnelen');
   const [opt2Price, setOpt2Price] = useState('€14,5');
@@ -808,24 +736,30 @@ export const StudioPage: React.FC = () => {
 
   // Sanity is authoritative. Browser backups are only for manual recovery.
   useEffect(() => {
-    if (!menuLoading && !menuDirty.current) {
+    if (!menuLoading && !menuDirty.current && !isModalOpen && !isCatModalOpen) {
       setCategories(initialCategories);
       menuRevision.current = initialMenuRevision;
     }
   }, [initialCategories, initialMenuRevision, menuLoading]);
 
   useEffect(() => {
-    fetch(apiUrl('/api/admin/session'), { credentials: 'include' })
-      .then(r => {
-        if (!r.ok) { setIsAuthenticated(false); sessionStorage.removeItem('maati_admin_auth'); }
-        if (r.status === 404) setAuthServerError('Studio’s backend has not been updated. Restart the Node server running server.mjs on the VPS, and make sure /api/ points to it.');
-      })
-      .catch(() => { setIsAuthenticated(false); setAuthServerError('Cannot reach Studio’s backend. Check the Node server on the VPS.'); });
+    const expired = () => { setIsAuthenticated(false); setAuthServerError('Your session has expired. Sign in again to continue. Your open edits are still here.'); };
+    window.addEventListener('maati_session_expired', expired);
+    fetch(apiUrl('/api/admin/session'), { credentials: 'include' }).then(async response => {
+      const data = await response.json().catch(() => ({}));
+      setIsAuthenticated(response.ok && data.success === true);
+      if (response.status === 404) setAuthServerError('The website server needs an update before staff can sign in. Please contact your website manager.');
+      else if (response.status !== 401 && !response.ok) setAuthServerError('Staff sign-in is temporarily unavailable. Please try again.');
+    }).catch(() => setAuthServerError('We could not connect. Check your internet connection and try again.')).finally(() => setCheckingSession(false));
+    return () => window.removeEventListener('maati_session_expired', expired);
   }, []);
 
   // Login handler
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoggingIn) return;
+    setIsLoggingIn(true);
+    setAuthServerError('');
     try {
       const response = await fetch(apiUrl('/api/admin/login'), {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
@@ -835,45 +769,36 @@ export const StudioPage: React.FC = () => {
       if (!response.ok || !result.success) {
         setAuthError(response.status === 401);
         setAuthServerError(response.status === 404
-          ? 'Studio’s backend has not been updated. Restart the Node server running server.mjs on the VPS, and make sure /api/ points to it.'
+          ? 'The website server needs an update before staff can sign in. Please contact your website manager.'
           : response.status === 401 ? '' : result.error || 'Cannot reach Studio’s publishing API.');
         return;
       }
       setIsAuthenticated(true);
-      sessionStorage.setItem('maati_admin_auth', 'true');
       setAuthError(false);
       setAuthServerError('');
       setPasswordInput('');
-    } catch { setAuthError(false); setAuthServerError('Cannot reach Studio’s backend. Check the Node server on the VPS.'); }
+    } catch { setAuthError(false); setAuthServerError('We could not connect. Check your internet connection and try again.'); }
+    finally { setIsLoggingIn(false); }
   };
 
   const handleLogout = () => {
     fetch(apiUrl('/api/admin/logout'), { method: 'POST', credentials: 'include' }).catch(() => undefined);
     setIsAuthenticated(false);
-    sessionStorage.removeItem('maati_admin_auth');
   };
 
-  const saveAllToLocal = (newCats: SanityCategoryWithItems[]) => {
-    if (menuLoading || !menuFromSanity) { showToast('Wait for the published menu to load from Sanity before editing.'); return; }
+  const saveAllToLocal = async (newCats: SanityCategoryWithItems[]) => {
+    if (menuLoading || !menuFromSanity || publishingLock.current) return false;
     menuDirty.current = true;
-    const version = ++menuVersion.current;
+    setMenuHasChanges(true);
     setCategories(newCats);
-    try { localStorage.setItem('maati_admin_menu_recovery', JSON.stringify(newCats)); } catch { /* Cloud saves still work when storage is full. */ }
-    showToast('Publishing menu to Sanity...');
-    menuSaveQueue.current = menuSaveQueue.current.then(async () => {
+    try { localStorage.setItem('maati_admin_menu_recovery', JSON.stringify(newCats)); } catch { /* Publishing does not depend on browser storage. */ }
+    const success = await runPublish('menu', async () => {
       const result = await saveMenuCategoriesToSanity(newCats, menuRevision.current);
-      if (!result.success) { showToast('Menu not published: ' + result.message); return; }
-      menuRevision.current = result.revision;
-      if (version === menuVersion.current) menuDirty.current = false;
-      showToast('Menu published to Sanity.');
-    }).catch(error => showToast('Menu not published: ' + error.message));
-  };
-
-  const showSuccessToast = () => {
-    setHasUnsavedChanges(false);
-    window.dispatchEvent(new CustomEvent('maati_homepage_updated', { detail: { forceLocal: true } }));
-    window.dispatchEvent(new StorageEvent('storage', { key: 'maati_admin_homepage' }));
-    showToast('Homepage changes saved live & synced! ✅');
+      if (result.success) menuRevision.current = result.revision;
+      return result;
+    });
+    if (success) { menuDirty.current = false; setMenuHasChanges(false); }
+    return success;
   };
 
   const cocktailRecovery = recoverMissingCocktails(categories, legacyMenuDraft);
@@ -985,9 +910,9 @@ export const StudioPage: React.FC = () => {
   };
 
   // Save Item (Create or Update)
-  const handleSaveItem = (e: React.FormEvent) => {
+  const handleSaveItem = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formTitleEn.trim()) return;
+    if (!formTitleEn.trim() || !formCatId) { showToast('Enter an English dish name and choose a menu section.'); return; }
 
     let computedPrice = formPrice;
     let computedOptions: { nameEn: string; nameDe?: string; price: string }[] | undefined = undefined;
@@ -1000,10 +925,11 @@ export const StudioPage: React.FC = () => {
       ];
     }
 
+    const itemId = editingItem?._id || `item-${Date.now()}`;
     const itemData: SanityMenuItem = {
       ...editingItem,
-      _id: editingItem ? editingItem._id : `item-${Date.now()}`,
-      id: editingItem ? editingItem.id || editingItem._id : `item-${Date.now()}`,
+      _id: itemId,
+      id: editingItem?.id || itemId,
       titleEn: formTitleEn.trim(),
       titleDe: formTitleDe.trim() || formTitleEn.trim(),
       descEn: formDescEn.trim(),
@@ -1019,25 +945,8 @@ export const StudioPage: React.FC = () => {
       isSpicy: formSpicy,
     };
 
-    let updated = categories.map((cat) => ({
-      ...cat,
-      items: cat.items.filter((it) => it._id !== itemData._id && it.id !== itemData._id),
-    }));
-
-    updated = updated.map((cat) => {
-      if (cat._id === formCatId) {
-        return {
-          ...cat,
-          items: editingItem
-            ? [...cat.items, itemData]
-            : [itemData, ...cat.items],
-        };
-      }
-      return cat;
-    });
-
-    saveAllToLocal(updated);
-    setIsModalOpen(false);
+    const updated = updateMenuItem(categories, itemData, formCatId);
+    if (await saveAllToLocal(updated)) setIsModalOpen(false);
   };
 
   // Delete Item
@@ -1079,11 +988,7 @@ export const StudioPage: React.FC = () => {
     });
 
     saveAllToLocal(updated);
-    showToast(
-      isNowAvailable
-        ? `"${foundTitle}" is now AVAILABLE`
-        : `"${foundTitle}" marked as SOLD OUT`
-    );
+
   };
 
   // Toggle Item Featured
@@ -1167,10 +1072,11 @@ export const StudioPage: React.FC = () => {
     setIsCatModalOpen(true);
   };
 
-  const handleSaveCategory = (e: React.FormEvent) => {
+  const handleSaveCategory = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!catNameEn.trim()) return;
 
+    let success = false;
     if (editingCategory) {
       const updated = categories.map((c) => {
         if (c._id === editingCategory._id) {
@@ -1184,7 +1090,7 @@ export const StudioPage: React.FC = () => {
         }
         return c;
       });
-      saveAllToLocal(updated);
+      success = await saveAllToLocal(updated);
     } else {
       const slugBase = catNameEn.toLowerCase().replace(/[^a-z0-9]+/g, '-');
       const newCategory: SanityCategoryWithItems = {
@@ -1196,9 +1102,9 @@ export const StudioPage: React.FC = () => {
         displayOrder: categories.length + 1,
         items: [],
       };
-      saveAllToLocal([...categories, newCategory]);
+      success = await saveAllToLocal([...categories, newCategory]);
     }
-    setIsCatModalOpen(false);
+    if (success) setIsCatModalOpen(false);
   };
 
   const handleDeleteCategory = (catId: string) => {
@@ -1251,179 +1157,78 @@ export const StudioPage: React.FC = () => {
 
     saveAllToLocal(updated);
     const targetCat = categories.find((c) => c._id === targetCatId);
-    showToast(`Moved "${item.titleEn}" to ${targetCat ? targetCat.name : 'category'}!`);
   };
 
   // Save Settings
-  const handleSaveSettings = async (e: React.FormEvent) => {
-    e.preventDefault();
-    localStorage.setItem('maati_admin_settings', JSON.stringify(siteSettings));
-    window.dispatchEvent(new CustomEvent('maati_settings_updated', { detail: { forceLocal: true } }));
-    window.dispatchEvent(new StorageEvent('storage', { key: 'maati_admin_settings' }));
-    const syncRes = await saveSettingsToSanity(siteSettings);
-    if (syncRes.success) {
-      showToast('Restaurant information saved & published to Sanity Cloud! 🚀');
-    } else {
-      showToast(`Saved locally, but Cloud Sync failed: ${syncRes.message} ⚠️`);
-    }
+  const handleSaveSettings = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    await publishPage('settings', () => saveSettingsToSanity(siteSettings));
   };
 
   // Save Homepage
-  const handleSaveHomepage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    localStorage.setItem('maati_admin_homepage', JSON.stringify(homepageContent));
-    const syncRes = await saveHomepageToSanity(homepageContent);
-    if (syncRes.success) {
-      setHasUnsavedChanges(false);
-      showToast('Homepage content saved & published to Sanity Cloud! 🚀');
-    } else {
-      showToast(`Saved locally, but Cloud Sync failed: ${syncRes.message} ⚠️`);
-    }
+  const handleSaveHomepage = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    await publishPage('homepage', () => saveHomepageToSanity(homepageContent));
   };
 
   // Save Events Page Content
-  const handleSaveEvents = async (e: React.FormEvent) => {
-    e.preventDefault();
-    localStorage.setItem('maati_admin_events', JSON.stringify(eventsContent));
-    window.dispatchEvent(new CustomEvent('maati_events_updated', { detail: { forceLocal: true } }));
-    window.dispatchEvent(new StorageEvent('storage', { key: 'maati_admin_events' }));
-    const syncRes = await saveEventsToSanity(eventsContent);
-    if (syncRes.success) {
-      showToast('Events page saved & published to Sanity Cloud! 🚀');
-    } else {
-      showToast(`Saved locally, but Cloud Sync failed: ${syncRes.message} ⚠️`);
-    }
+  const handleSaveEvents = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    await publishPage('events', () => saveEventsToSanity(eventsContent));
   };
 
   // Save Contact Us Page Content
-  const handleSaveContact = async (e: React.FormEvent) => {
-    e.preventDefault();
-    localStorage.setItem('maati_admin_contact', JSON.stringify(contactContent));
-    window.dispatchEvent(new CustomEvent('maati_contact_updated', { detail: { forceLocal: true } }));
-    window.dispatchEvent(new StorageEvent('storage', { key: 'maati_admin_contact' }));
-    const syncRes = await saveContactToSanity(contactContent);
-    if (syncRes.success) {
-      showToast('Contact information saved & published to Sanity Cloud! 🚀');
-    } else {
-      showToast(`Saved locally, but Cloud Sync failed: ${syncRes.message} ⚠️`);
-    }
+  const handleSaveContact = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    await publishPage('contact', () => saveContactToSanity(contactContent));
   };
 
   // Save Print / Visual Menu Content
-  const handleSavePrintMenu = async (e: React.FormEvent) => {
-    e.preventDefault();
-    localStorage.setItem('maati_admin_print_menu', JSON.stringify(printMenuContent));
-    window.dispatchEvent(new CustomEvent('maati_print_menu_updated', { detail: { forceLocal: true } }));
-    window.dispatchEvent(new StorageEvent('storage', { key: 'maati_admin_print_menu' }));
-    const syncRes = await savePrintMenuToSanity(printMenuContent);
-    if (syncRes.success) {
-      showToast('Visual Menu preview saved & published to Sanity Cloud! 🚀');
-    } else {
-      showToast(`Saved locally, but Cloud Sync failed: ${syncRes.message} ⚠️`);
-    }
+  const handleSavePrintMenu = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    await publishPage('printMenu', () => savePrintMenuToSanity(printMenuContent));
   };
 
   // Save Catering Page Content
-  const handleSaveCatering = async (e: React.FormEvent) => {
-    e.preventDefault();
-    localStorage.setItem('maati_admin_catering', JSON.stringify(cateringContent));
-    window.dispatchEvent(new CustomEvent('maati_catering_updated', { detail: { catering: cateringContent, forceLocal: true } }));
-    window.dispatchEvent(new StorageEvent('storage', { key: 'maati_admin_catering' }));
-    const syncRes = await saveCateringToSanity(cateringContent);
-    if (syncRes.success) {
-      showToast('Catering packages & pricing saved & published to Sanity Cloud! 🚀');
-    } else {
-      showToast(`Saved locally, but Cloud Sync failed: ${syncRes.message} ⚠️`);
-    }
+  const handleSaveCatering = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    await publishPage('catering', () => saveCateringToSanity(cateringContent));
   };
 
   // Save Jobs & Careers Page Content
-  const handleSaveJobs = async (e: React.FormEvent) => {
-    e.preventDefault();
-    localStorage.setItem('maati_admin_jobs', JSON.stringify(jobsContent));
-    window.dispatchEvent(new CustomEvent('maati_jobs_updated', { detail: { jobs: jobsContent, forceLocal: true } }));
-    window.dispatchEvent(new StorageEvent('storage', { key: 'maati_admin_jobs' }));
-    const syncRes = await saveJobsToSanity(jobsContent);
-    if (syncRes.success) {
-      showToast('Jobs & Careers page saved & published to Sanity Cloud! 🚀');
-    } else {
-      showToast(`Saved locally, but Cloud Sync failed: ${syncRes.message} ⚠️`);
-    }
+  const handleSaveJobs = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    await publishPage('jobs', () => saveJobsToSanity(jobsContent));
   };
 
   // Save About Us Page Content
-  const handleSaveAbout = async (e: React.FormEvent) => {
-    e.preventDefault();
-    localStorage.setItem('maati_admin_about', JSON.stringify(aboutContent));
-    window.dispatchEvent(new CustomEvent('maati_about_updated', { detail: { about: aboutContent, forceLocal: true } }));
-    window.dispatchEvent(new StorageEvent('storage', { key: 'maati_admin_about' }));
-    const syncRes = await saveAboutToSanity(aboutContent);
-    if (syncRes.success) {
-      showToast('About Us brand story saved & published to Sanity Cloud! 🚀');
-    } else {
-      showToast(`Saved locally, but Cloud Sync failed: ${syncRes.message} ⚠️`);
-    }
+  const handleSaveAbout = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    await publishPage('about', () => saveAboutToSanity(aboutContent));
   };
 
   // Save Legal & Impressum Content
-  const handleSaveLegal = async (e: React.FormEvent) => {
-    e.preventDefault();
-    localStorage.setItem('maati_admin_legal', JSON.stringify(legalContent));
-    window.dispatchEvent(new CustomEvent('maati_legal_updated', { detail: { legal: legalContent, forceLocal: true } }));
-    window.dispatchEvent(new StorageEvent('storage', { key: 'maati_admin_legal' }));
-    const syncRes = await saveLegalToSanity(legalContent);
-    if (syncRes.success) {
-      showToast('Legal & Impressum company details saved & published to Sanity Cloud! 🚀');
-    } else {
-      showToast(`Saved locally, but Cloud Sync failed: ${syncRes.message} ⚠️`);
-    }
+  const handleSaveLegal = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    await publishPage('legal', () => saveLegalToSanity(legalContent));
   };
 
   // Save Category Landing Pages Content
   const handleSaveLandingPages = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    localStorage.setItem('maati_admin_landing_pages', JSON.stringify(landingPagesContent));
-    window.dispatchEvent(new CustomEvent('maati_landing_pages_updated', { detail: { landingPages: landingPagesContent, forceLocal: true } }));
-    window.dispatchEvent(new StorageEvent('storage', { key: 'maati_admin_landing_pages' }));
-    const syncRes = await saveLandingPagesToSanity(landingPagesContent);
-    if (syncRes.success) {
-      showToast('Category Landing Pages saved & published to Sanity Cloud! 🚀');
-    } else {
-      showToast(`Saved locally, but Cloud Sync failed: ${syncRes.message} ⚠️`);
-    }
+    e?.preventDefault();
+    await publishPage('landingPages', () => saveLandingPagesToSanity(landingPagesContent));
   };
 
   // Save Reservation Settings Content
   const handleSaveReservation = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    localStorage.setItem('maati_admin_reservation', JSON.stringify(reservationContent));
-    window.dispatchEvent(new CustomEvent('maati_reservation_updated', { detail: { reservation: reservationContent, forceLocal: true } }));
-    window.dispatchEvent(new StorageEvent('storage', { key: 'maati_admin_reservation' }));
-    const syncRes = await saveReservationToSanity(reservationContent);
-    if (syncRes.success) {
-      showToast('Table Reservation settings saved & published to Sanity Cloud! 🚀');
-    } else {
-      showToast(`Saved locally, but Cloud Sync failed: ${syncRes.message} ⚠️`);
-    }
+    e?.preventDefault();
+    await publishPage('reservations', () => saveReservationToSanity(reservationContent));
   };
 
   // 1-Click Sync All Local Data to Sanity Cloud
-  const [isCloudSyncing, setIsCloudSyncing] = useState(false);
   const handleSyncAllToCloud = async () => {
-    setIsCloudSyncing(true);
-    showToast('Refreshing published Sanity content...');
-    try {
-      const res = await syncAllLocalToSanity();
-      if (res.success) {
-        showToast(res.message);
-      } else {
-        showToast(`Sync warning: ${res.message}`);
-      }
-    } catch (e: any) {
-      showToast(`Sync error: ${e?.message || 'Failed'}`);
-    } finally {
-      setIsCloudSyncing(false);
-    }
+    refreshPublishedContent();
+    showToast('Checking for the latest website content. Your open edits are kept.');
   };
 
 
@@ -1517,15 +1322,13 @@ export const StudioPage: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="relative flex-1">
             <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={gallerySearch}
+            <input aria-label="Search photo library" type="text" value={gallerySearch}
               onChange={(e) => setGallerySearch(e.target.value)}
               placeholder="Search photos (e.g. Bowl, Naan, Mango, Chai)..."
               className="w-full pl-9 pr-3 py-1.5 bg-white border border-gray-200 rounded-xl text-[12.5px] focus:outline-none focus:border-[#d85c27]"
             />
             {gallerySearch && (
-              <button
+              <button aria-label="Close"
                 type="button"
                 onClick={() => setGallerySearch('')}
                 className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
@@ -1602,7 +1405,7 @@ export const StudioPage: React.FC = () => {
               return (
                 <div
                   key={asset.id || asset.path}
-                  onClick={() => {
+                  role="button" tabIndex={0} aria-label={`Choose photo: ${asset.name}`} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelect(asset.path); onClose?.(); } }} onClick={() => {
                     onSelect(asset.path);
                     if (onClose) onClose();
                   }}
@@ -1627,7 +1430,7 @@ export const StudioPage: React.FC = () => {
                   )}
 
                   {/* Actions (Edit Tag & Delete) */}
-                  <div className="absolute top-1.5 right-1.5 z-10 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="absolute top-1.5 right-1.5 z-10 flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
                     <button
                       type="button"
                       onClick={(e) => handleOpenEditPhoto(asset, e)}
@@ -1660,14 +1463,36 @@ export const StudioPage: React.FC = () => {
     );
   };
 
+  useEffect(() => {
+    const warn = (event: BeforeUnloadEvent) => {
+      if (Object.values(pageEditors).some(editor => editor.dirty) || menuHasChanges || publishingLock.current || isModalOpen || isCatModalOpen || isPhotoModalOpen) { event.preventDefault(); event.returnValue = ''; }
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [pageEditors, menuHasChanges, isModalOpen, isCatModalOpen, isPhotoModalOpen]);
+
+  const currentPage = activeTab in pageSources ? activeTab as keyof typeof pageSources : null;
+  const currentSource = currentPage ? pageSources[currentPage] : null;
+  const currentEditor = currentPage ? pageEditors[currentPage] : null;
+  const dirtyPages = Object.entries(pageEditors).filter(([tab, editor]) => editor.dirty && !['privacy', 'terms'].includes(tab)).map(([tab]) => ({ tab: tab as StudioTab, title: TAB_TITLES[tab as StudioTab].title }));
+  if (menuHasChanges) dirtyPages.push({ tab: 'items', title: 'Menu & prices' });
+  const resetCurrentPage = () => {
+    if (!window.confirm('Discard the unpublished changes in this section and reload the website version?')) return;
+    if (currentEditor) currentEditor.reset();
+    if (activeTab === 'items' || activeTab === 'categories') { menuDirty.current = false; setMenuHasChanges(false); setCategories(initialCategories); menuRevision.current = initialMenuRevision; }
+    setPublishFeedback(null);
+    refreshPublishedContent();
+  };
+
   // ═══════════════════════════════════════════════
   // 1. LOGIN SCREEN
   // ═══════════════════════════════════════════════
+  if (checkingSession) return <div className="min-h-screen grid place-items-center text-[#1e382f]" role="status">Checking staff sign-in…</div>;
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-[#f5f0e8] flex items-center justify-center px-4 py-20">
         <div className="w-full max-w-[420px] bg-white rounded-[32px] p-8 md:p-10 shadow-2xl border border-[#ebdcd0] text-center animate-fadeInUp">
-          
+
           <div className="w-16 h-16 rounded-2xl bg-[#d85c27] text-white flex items-center justify-center mx-auto mb-5 shadow-md">
             <Lock className="w-8 h-8" />
           </div>
@@ -1684,34 +1509,39 @@ export const StudioPage: React.FC = () => {
           <form onSubmit={handleLogin} className="space-y-4 text-left">
             <div>
               <label className="block text-[11px] font-extrabold uppercase tracking-wider text-[#444] mb-1.5">
-                Passcode
+                Staff password
               </label>
-              <input
-                type="password"
+              <input aria-label={`Staff password`}
+                id="studio-password"
+                name="password"
+                autoComplete="current-password"
+                type={showPassword ? 'text' : 'password'}
                 value={passwordInput}
                 onChange={(e) => { setPasswordInput(e.target.value); setAuthError(false); }}
-                placeholder="Enter passcode..."
+                placeholder="Enter your staff password"
                 autoFocus
                 required
                 className="w-full border-2 border-[#ebdcd0] focus:border-[#d85c27] rounded-2xl px-4 py-3.5 text-[15px] font-bold focus:outline-none transition-colors"
               />
               {authError && (
                 <p className="text-rose-600 text-[12px] font-bold mt-1.5 animate-fadeIn">
-                  Incorrect passcode. Please try again.
+                  Incorrect password. Please try again.
                 </p>
               )}
             </div>
 
+            <label className="flex items-center gap-3 text-sm text-gray-600 py-2"><input type="checkbox" checked={showPassword} onChange={e => setShowPassword(e.target.checked)} />Show password</label>
             <button
               type="submit"
-              className="w-full bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold py-3.5 rounded-2xl text-[15px] shadow-md hover:shadow-lg transition-all transform hover:scale-[1.01]"
+              disabled={isLoggingIn || !passwordInput}
+              className="w-full disabled:opacity-50 bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold py-3.5 rounded-2xl text-[15px] shadow-md hover:shadow-lg transition-all transform hover:scale-[1.01]"
             >
-              Open Studio
+              {isLoggingIn ? 'Signing in…' : 'Sign in'}
             </button>
           </form>
 
           <div className="mt-8 pt-5 border-t border-gray-100 text-[11.5px] text-gray-500 font-medium">
-            MAATI Kitchen Berlin Mitte
+            <Link to="/" className="underline text-[#1e382f]">Back to website</Link>
           </div>
 
         </div>
@@ -1745,130 +1575,31 @@ export const StudioPage: React.FC = () => {
           </section>
         )}
 
-        {/* ── Top Header Bar with Tour Guide Button ── */}
-        <header
-          data-tour="studio-header"
-          className="bg-gradient-to-r from-[#142820] via-[#1e382f] to-[#172e25] rounded-[28px] p-5 sm:p-6 text-white shadow-xl border border-white/10 flex flex-col md:flex-row items-start md:items-center justify-between gap-5 relative overflow-hidden"
-        >
-          {/* Subtle Ambient Glow */}
-          <div className="absolute top-0 right-1/4 w-80 h-32 bg-[#d85c27]/15 rounded-full blur-3xl pointer-events-none" />
-
-          <div className="flex items-center gap-4 relative z-10">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#d85c27] to-[#b34415] text-white flex items-center justify-center shadow-md shrink-0 border border-amber-300/20">
-              <Sparkles className="w-6 h-6 text-amber-100" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2.5 flex-wrap">
-                <h1 className="text-[22px] sm:text-[26px] font-black text-white leading-tight tracking-tight">
-                  MAATI Studio
-                </h1>
-                <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 text-[11px] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1.5 shadow-xs">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  Live Production
-                </span>
-              </div>
-              <p className="text-white/70 text-[12.5px] mt-0.5 font-medium">
-                Unified Content &amp; Operations Command Center · Berlin Mitte
-              </p>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto justify-start md:justify-end relative z-10">
-            {/* Quick Inquiries Inbox Shortcut */}
-            <button
-              type="button"
-              onClick={() => setActiveTab('inquiries')}
-              title="Open Catering Inquiries Inbox"
-              className={`font-bold px-3.5 py-2.5 rounded-xl text-[12.5px] shadow-xs hover:shadow-sm transition-all flex items-center gap-2 cursor-pointer border ${
-                activeTab === 'inquiries'
-                  ? 'bg-amber-500 text-white border-amber-400'
-                  : 'bg-white/10 hover:bg-white/20 text-white border-white/15 backdrop-blur-xs'
-              }`}
-            >
-              <Inbox className="w-4 h-4 text-amber-300" />
-              <span>Inquiries</span>
-              {inquiries.length > 0 && (
-                <span className="bg-[#d85c27] text-white text-[11px] font-black px-2 py-0.2 rounded-full">
-                  {inquiries.length}
-                </span>
-              )}
-            </button>
-
-            {/* Quick Job Applications Inbox Shortcut */}
-            <button
-              type="button"
-              onClick={() => setActiveTab('applications')}
-              title="Open Job Applications Inbox"
-              className={`font-bold px-3.5 py-2.5 rounded-xl text-[12.5px] shadow-xs hover:shadow-sm transition-all flex items-center gap-2 cursor-pointer border ${
-                activeTab === 'applications'
-                  ? 'bg-emerald-600 text-white border-emerald-500'
-                  : 'bg-white/10 hover:bg-white/20 text-white border-white/15 backdrop-blur-xs'
-              }`}
-            >
-              <Briefcase className="w-4 h-4 text-emerald-300" />
-              <span>Applications</span>
-              {applications.length > 0 && (
-                <span className="bg-emerald-500 text-white text-[11px] font-black px-2 py-0.2 rounded-full">
-                  {applications.length}
-                </span>
-              )}
-            </button>
-
-            <button
-              type="button"
-              data-tour="tour-btn"
-              onClick={startSpotlightTour}
-              className="bg-white/10 hover:bg-white/20 text-amber-200 border border-white/15 font-bold px-3.5 py-2.5 rounded-xl text-[12.5px] shadow-xs hover:shadow-sm transition-all flex items-center gap-1.5 cursor-pointer backdrop-blur-xs"
-            >
-              <Compass className="w-4 h-4 text-amber-300" />
-              <span>Tour Guide</span>
-            </button>
-
-            <button
-              type="button"
-              data-tour="cloud-sync"
-              onClick={handleSyncAllToCloud}
-              disabled={isCloudSyncing}
-              title="Refresh published Sanity content. Use each editor’s Save button to publish edits."
-              className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-4 py-2.5 rounded-xl text-[13px] shadow-sm hover:shadow-md transition-all flex items-center gap-2 disabled:opacity-50 cursor-pointer"
-            >
-              <span className="text-[14px]">{isCloudSyncing ? '⏳' : '☁️'}</span>
-              <span>{isCloudSyncing ? 'Refreshing...' : 'Refresh from Sanity'}</span>
-            </button>
-
-            <Link
-              to="/"
-              target="_blank"
-              data-tour="view-site"
-              rel="noopener noreferrer"
-              className="bg-white/10 hover:bg-white/20 text-white border border-white/15 font-bold px-3.5 py-2.5 rounded-xl text-[12.5px] shadow-xs hover:shadow-sm transition-all flex items-center gap-1.5 backdrop-blur-xs"
-            >
-              <ExternalLink className="w-4 h-4 text-amber-300" />
-              <span>View Website</span>
-            </Link>
-
-            {activeTab === 'items' && (
-              <button
-                data-tour="add-dish"
-                onClick={() => handleOpenNewItem()}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold px-4 py-2.5 rounded-xl text-[13px] shadow-sm hover:shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Add Dish</span>
-              </button>
-            )}
-
-            <button
-              onClick={handleLogout}
-              title="Logout from Studio"
-              className="p-2.5 rounded-xl bg-white/10 hover:bg-rose-500/80 text-white/90 hover:text-white border border-white/15 transition-all cursor-pointer"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
+        <header data-tour="studio-header" className="bg-[#1e382f] text-white rounded-3xl p-5 sm:p-6 flex flex-wrap items-center justify-between gap-4">
+          <div><h1 className="text-2xl font-bold">MAATI Studio</h1><p className="text-sm text-white/75 mt-1">Update your restaurant website</p></div>
+          <div className="flex flex-wrap gap-2 text-sm">
+            <button onClick={startSpotlightTour} className="p-3 rounded-xl bg-white/10">How to use Studio</button>
+            <button data-tour="cloud-sync" onClick={handleSyncAllToCloud} disabled={!!publishingSection} className="p-3 rounded-xl bg-white/10 disabled:opacity-50">Refresh content</button>
+            <Link data-tour="view-site" to="/" target="_blank" rel="noopener noreferrer" className="p-3 rounded-xl bg-white/10">View website ↗</Link>
+            <button onClick={handleLogout} disabled={!!publishingSection} className="p-3 rounded-xl bg-white/10 disabled:opacity-50">Sign out</button>
           </div>
         </header>
+        <div className="sticky top-2 z-30 bg-white border border-[#ebdcd0] rounded-2xl p-4 shadow-md flex flex-wrap items-center justify-between gap-3" aria-label="Publishing controls">
+          <div className="min-w-0 flex-1" role={publishFeedback?.error ? 'alert' : 'status'} aria-live="polite">
+            <p className="font-bold text-sm text-[#1e382f]">{publishingSection ? 'Publishing… Please keep this page open.' : publishFeedback ? (publishFeedback.error ? 'Changes have not been published' : 'Published successfully') : currentEditor?.dirty || menuHasChanges ? 'You have unpublished changes' : 'Ready to edit'}</p>
+            <p className={publishFeedback?.error ? 'text-sm text-red-700 mt-1' : 'text-sm text-gray-600 mt-1'}>{publishFeedback?.text || (currentSource?.loading ? 'Loading the latest content…' : currentSource?.error || 'Edit a section, then select Save & publish to update the website.')}</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {(currentEditor?.dirty || ((activeTab === 'items' || activeTab === 'categories') && menuHasChanges)) && <button type="button" disabled={!!publishingSection} onClick={resetCurrentPage} className="p-3 rounded-xl border text-sm text-gray-700 disabled:opacity-50">Discard changes</button>}
+            {currentPage && <button type="submit" form={`studio-form-${activeTab}`} disabled={!!publishingSection || !!currentSource?.loading || !!currentSource?.error} className="p-3 bg-[#d85c27] text-white rounded-xl font-bold text-sm disabled:opacity-50">{publishingSection ? 'Publishing…' : 'Save & publish'}</button>}
+            {(activeTab === 'items' || activeTab === 'categories') && menuHasChanges && !isModalOpen && !isCatModalOpen && <button onClick={() => saveAllToLocal(categories)} disabled={!!publishingSection} className="p-3 rounded-xl bg-[#d85c27] text-white font-bold text-sm disabled:opacity-50">Retry publishing menu</button>}
+            {activeTab === 'items' && <button onClick={() => handleOpenNewItem()} disabled={!!publishingSection || !menuFromSanity || menuLoading} className="p-3 bg-[#1e382f] text-white rounded-xl font-bold text-sm disabled:opacity-50">+ Add dish or drink</button>}
+          </div>
+        </div>
 
-        {/* ── Sub-Header Bar when inside any Page Editor: Back to All Pages Button ── */}
+        {activeTab === 'gallery' && !galleryReady && <p role="alert" className="rounded-xl bg-amber-50 text-amber-900 p-4">{gallerySource.loading ? 'Loading your photo library…' : gallerySource.error} <button onClick={handleSyncAllToCloud} className="underline p-2">Refresh content</button></p>}
+        {['inquiries', 'applications'].includes(activeTab) && inboxError && <p role="alert" className="bg-red-50 text-red-800 rounded-xl p-4">{inboxError} <button onClick={() => activeTab === 'inquiries' ? fetchInquiries() : fetchApplications()} className="underline font-bold p-2">Try again</button></p>}
+        {/* ── Sub-Header Bar when inside any Page Editor: Back to dashboard Button ── */}
         {activeTab !== 'overview' && (
           <div className="bg-[#fffdfa] rounded-[24px] p-4 sm:p-5 border border-[#ebdcd0] shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-fadeIn">
             <div className="flex items-center gap-3">
@@ -1878,7 +1609,7 @@ export const StudioPage: React.FC = () => {
                 className="bg-[#1e382f] hover:bg-[#d85c27] text-white font-extrabold px-5 py-2.5 rounded-xl text-[13.5px] flex items-center gap-2 shadow-xs hover:shadow-md transition-all cursor-pointer group"
               >
                 <ArrowLeft className="w-4 h-4 text-[#d85c27] group-hover:text-white transition-colors" />
-                <span>Back to All Pages</span>
+                <span>Back to dashboard</span>
               </button>
 
               <div className="h-6 w-px bg-[#ebdcd0] hidden sm:block" />
@@ -1913,11 +1644,12 @@ export const StudioPage: React.FC = () => {
               )}
 
               <select
+                aria-label="Go to another section"
                 value={activeTab}
                 onChange={(e) => setActiveTab(e.target.value as StudioTab)}
                 className="border border-[#ebdcd0] rounded-xl px-3 py-2 text-[12.5px] font-bold text-[#1e382f] bg-white focus:outline-none focus:border-[#d85c27] shadow-xs cursor-pointer"
               >
-                <option value="overview">All Pages Directory</option>
+                <option value="overview">Dashboard</option>
 
                 <optgroup label="── Main Pages ──">
                   <option value="homepage">Homepage</option>
@@ -1927,9 +1659,9 @@ export const StudioPage: React.FC = () => {
                 </optgroup>
 
                 <optgroup label="── Food &amp; Menu ──">
-                  <option value="items">Menu Dishes &amp; Pricing</option>
+                  <option value="items">Menu &amp; prices</option>
                   <option value="categories">Menu Categories</option>
-                  <option value="landingPages">Category SEO Landings (Naan Pockets, Bowls...)</option>
+                  <option value="landingPages">Food & drink introduction pages</option>
                   <option value="printMenu">Printable Menu Cards</option>
                 </optgroup>
 
@@ -1948,8 +1680,8 @@ export const StudioPage: React.FC = () => {
                   <option value="legal">Impressum (§ 5 TMG)</option>
                   <option value="privacy">Privacy Policy (DSGVO)</option>
                   <option value="terms">Terms &amp; Conditions (AGB)</option>
-                  <option value="settings">Global SEO &amp; Restaurant Info</option>
-                  <option value="gallery">Photo Library &amp; Media</option>
+                  <option value="settings">Restaurant &amp; social links</option>
+                  <option value="gallery">Photo library</option>
                 </optgroup>
               </select>
             </div>
@@ -1959,757 +1691,7 @@ export const StudioPage: React.FC = () => {
         {/* ═══════════════════════════════════════════════
             TAB 0: ALL WEBSITE PAGES DIRECTORY
         ═══════════════════════════════════════════════ */}
-        {activeTab === 'overview' && (
-          <div className="space-y-6 animate-fadeIn">
-            {/* Mission Control Hub Banner */}
-            <div className="bg-[#fffdfa] rounded-[28px] p-6 sm:p-8 border border-[#ebdcd0] shadow-sm relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-              <div className="max-w-[780px] space-y-3 relative z-10">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="bg-[#1e382f] text-white text-[10.5px] font-black uppercase tracking-widest px-3 py-1 rounded-full inline-block">
-                    Architecture &amp; Pages Hub
-                  </span>
-                  <span className="bg-amber-100 text-amber-900 text-[11px] font-bold px-2.5 py-0.5 rounded-full border border-amber-200">
-                    18 Management Modules
-                  </span>
-                </div>
-                <h2 className="text-[24px] sm:text-[30px] font-black leading-tight text-[#1e382f]">
-                  Website Pages &amp; Content Directory
-                </h2>
-                <p className="text-[#666] text-[13.5px] leading-relaxed">
-                  Click any card below to open its dedicated editor. Update headlines, pricing, and ingredients in English &amp; German, upload photos, and keep your Google search results fresh.
-                </p>
-                <div className="flex flex-wrap items-center gap-2 pt-1 text-[11.5px]">
-                  <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-lg border border-gray-200 flex items-center gap-1.5 font-bold">
-                    <span>🌐</span> 24 Multilingual URLs Active
-                  </span>
-                  <span className="bg-emerald-50 text-emerald-800 px-3 py-1 rounded-lg border border-emerald-200 flex items-center gap-1.5 font-bold">
-                    <span>🍲</span> {allItemsWithCat.length} Dishes Live
-                  </span>
-                  <span className="bg-blue-50 text-blue-800 px-3 py-1 rounded-lg border border-blue-200 flex items-center gap-1.5 font-bold">
-                    <span>📁</span> {categories.length} Categories
-                  </span>
-                  <span className="bg-purple-50 text-purple-800 px-3 py-1 rounded-lg border border-purple-200 flex items-center gap-1.5 font-bold">
-                    <span>⚖️</span> Impressum &amp; GDPR Validated
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 relative z-10 shrink-0 w-full md:w-auto">
-                <button
-                  type="button"
-                  onClick={handleSyncAllToCloud}
-                  disabled={isCloudSyncing}
-                  className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-5 py-3 rounded-xl text-[13px] shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
-                >
-                  <Sparkles className="w-4 h-4 text-amber-200" />
-                  <span>{isCloudSyncing ? 'Refreshing...' : 'Refresh published pages'}</span>
-                </button>
-              </div>
-              <div className="absolute -bottom-16 -right-16 w-64 h-64 rounded-full bg-[#d85c27]/5 blur-3xl pointer-events-none" />
-            </div>
-
-            {/* Pages Grid */}
-            <div data-tour="page-cards" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-
-              {/* 1. Homepage */}
-              <div
-                onClick={() => setActiveTab('homepage')}
-                className="bg-[#fffdfa] rounded-[24px] p-6 border border-[#ebdcd0] shadow-sm hover:shadow-md hover:border-[#d85c27] transition-all flex flex-col justify-between space-y-4 group cursor-pointer"
-              >
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="w-10 h-10 rounded-xl bg-orange-100 text-[#d85c27] flex items-center justify-center font-black">
-                      <Home className="w-5 h-5" />
-                    </div>
-                    <span className="text-[11px] font-mono font-bold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-lg">/ and /de</span>
-                  </div>
-                  <div>
-                    <h3 className="text-[17px] font-black text-[#1e382f]">1. Homepage</h3>
-                    <p className="text-[12.5px] text-[#666] leading-relaxed mt-1">
-                      Hero headlines, "Treat Your Tastebuds" signature dishes, "The Maati Way" 5-step bowl builder, and catering callout.
-                    </p>
-                  </div>
-                </div>
-                <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); setActiveTab('homepage'); }}
-                    className="bg-[#1e382f] group-hover:bg-[#d85c27] text-white text-[12.5px] font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 transition-colors"
-                  >
-                    <Edit3 className="w-3.5 h-3.5 text-[#d85c27] group-hover:text-white" />
-                    <span>Edit Homepage</span>
-                  </button>
-                  <Link
-                    to="/"
-                    target="_blank"
-                    onClick={(e) => e.stopPropagation()}
-                    className="p-2 text-gray-400 hover:text-[#d85c27] transition-colors rounded-lg hover:bg-gray-50"
-                    title="View Live Page"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                  </Link>
-                </div>
-              </div>
-
-              {/* 2. Menu Dishes */}
-              <div
-                onClick={() => setActiveTab('items')}
-                className="bg-[#fffdfa] rounded-[24px] p-6 border border-[#ebdcd0] shadow-sm hover:shadow-md hover:border-[#d85c27] transition-all flex flex-col justify-between space-y-4 group cursor-pointer"
-              >
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-black">
-                      <Utensils className="w-5 h-5" />
-                    </div>
-                    <span className="text-[11px] font-mono font-bold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-lg">/menu and /de/menu</span>
-                  </div>
-                  <div>
-                    <h3 className="text-[17px] font-black text-[#1e382f]">2. Menu &amp; Dishes ({allItemsWithCat.length})</h3>
-                    <p className="text-[12.5px] text-[#666] leading-relaxed mt-1">
-                      Dishes list with single or variant pricing, ingredients, spicy/vegan badges, daily 1-click availability toggle, and category groupings.
-                    </p>
-                  </div>
-                </div>
-                <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); setActiveTab('items'); }}
-                    className="bg-[#1e382f] group-hover:bg-[#d85c27] text-white text-[12.5px] font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 transition-colors"
-                  >
-                    <Edit3 className="w-3.5 h-3.5 text-[#d85c27] group-hover:text-white" />
-                    <span>Manage Dishes</span>
-                  </button>
-                  <Link
-                    to="/menu"
-                    target="_blank"
-                    onClick={(e) => e.stopPropagation()}
-                    className="p-2 text-gray-400 hover:text-[#d85c27] transition-colors rounded-lg hover:bg-gray-50"
-                    title="View Live Page"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                  </Link>
-                </div>
-              </div>
-
-              {/* 3. Category Landing Pages */}
-              <div
-                onClick={() => setActiveTab('landingPages')}
-                className="bg-[#fffdfa] rounded-[24px] p-6 border border-[#ebdcd0] shadow-sm hover:shadow-md hover:border-[#d85c27] transition-all flex flex-col justify-between space-y-4 group cursor-pointer"
-              >
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-black">
-                      <Tag className="w-5 h-5" />
-                    </div>
-                    <span className="text-[11px] font-mono font-bold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-lg">4 SEO Pages</span>
-                  </div>
-                  <div>
-                    <h3 className="text-[17px] font-black text-[#1e382f]">3. Category Landing Pages</h3>
-                    <p className="text-[12.5px] text-[#666] leading-relaxed mt-1">
-                      Dedicated pages for Naan Pockets, Bowls, Breakfast, and Coffee/Chai with custom H1 headers, SEO descriptions, and highlighted food cards.
-                    </p>
-                  </div>
-                </div>
-                <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); setActiveTab('landingPages'); }}
-                    className="bg-[#1e382f] group-hover:bg-[#d85c27] text-white text-[12.5px] font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 transition-colors"
-                  >
-                    <Edit3 className="w-3.5 h-3.5 text-[#d85c27] group-hover:text-white" />
-                    <span>Edit Landings</span>
-                  </button>
-                  <Link
-                    to="/menu/naan-pockets"
-                    target="_blank"
-                    onClick={(e) => e.stopPropagation()}
-                    className="p-2 text-gray-400 hover:text-[#d85c27] transition-colors rounded-lg hover:bg-gray-50"
-                    title="View Naan Pockets Page"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                  </Link>
-                </div>
-              </div>
-
-              {/* 4. Catering Page */}
-              <div
-                onClick={() => setActiveTab('catering')}
-                className="bg-[#fffdfa] rounded-[24px] p-6 border border-[#ebdcd0] shadow-sm hover:shadow-md hover:border-[#d85c27] transition-all flex flex-col justify-between space-y-4 group cursor-pointer"
-              >
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-800 flex items-center justify-center font-black">
-                      <Layers className="w-5 h-5" />
-                    </div>
-                    <span className="text-[11px] font-mono font-bold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-lg">/catering</span>
-                  </div>
-                  <div>
-                    <h3 className="text-[17px] font-black text-[#1e382f]">4. Catering Page</h3>
-                    <p className="text-[12.5px] text-[#666] leading-relaxed mt-1">
-                      Corporate office packages (€11.90, €15.90, €19.90), min guests, feature bullet points in EN &amp; DE, lead time notice, and catering FAQs.
-                    </p>
-                  </div>
-                </div>
-                <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); setActiveTab('catering'); }}
-                    className="bg-[#1e382f] group-hover:bg-[#d85c27] text-white text-[12.5px] font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 transition-colors"
-                  >
-                    <Edit3 className="w-3.5 h-3.5 text-[#d85c27] group-hover:text-white" />
-                    <span>Edit Catering</span>
-                  </button>
-                  <Link
-                    to="/catering"
-                    target="_blank"
-                    onClick={(e) => e.stopPropagation()}
-                    className="p-2 text-gray-400 hover:text-[#d85c27] transition-colors rounded-lg hover:bg-gray-50"
-                    title="View Live Page"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                  </Link>
-                </div>
-              </div>
-
-              {/* 5. Events Page */}
-              <div
-                onClick={() => setActiveTab('events')}
-                className="bg-[#fffdfa] rounded-[24px] p-6 border border-[#ebdcd0] shadow-sm hover:shadow-md hover:border-[#d85c27] transition-all flex flex-col justify-between space-y-4 group cursor-pointer"
-              >
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-800 flex items-center justify-center font-black">
-                      <Calendar className="w-5 h-5" />
-                    </div>
-                    <span className="text-[11px] font-mono font-bold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-lg">/events</span>
-                  </div>
-                  <div>
-                    <h3 className="text-[17px] font-black text-[#1e382f]">5. Events &amp; Venue Hire</h3>
-                    <p className="text-[12.5px] text-[#666] leading-relaxed mt-1">
-                      Private venue buyout specs, standing capacity (60 guests), seating arrangements, AV/sound equipment perks, and enquiry form.
-                    </p>
-                  </div>
-                </div>
-                <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); setActiveTab('events'); }}
-                    className="bg-[#1e382f] group-hover:bg-[#d85c27] text-white text-[12.5px] font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 transition-colors"
-                  >
-                    <Edit3 className="w-3.5 h-3.5 text-[#d85c27] group-hover:text-white" />
-                    <span>Edit Events</span>
-                  </button>
-                  <Link
-                    to="/events"
-                    target="_blank"
-                    onClick={(e) => e.stopPropagation()}
-                    className="p-2 text-gray-400 hover:text-[#d85c27] transition-colors rounded-lg hover:bg-gray-50"
-                    title="View Live Page"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                  </Link>
-                </div>
-              </div>
-
-              {/* 6. About Us */}
-              <div
-                onClick={() => setActiveTab('about')}
-                className="bg-[#fffdfa] rounded-[24px] p-6 border border-[#ebdcd0] shadow-sm hover:shadow-md hover:border-[#d85c27] transition-all flex flex-col justify-between space-y-4 group cursor-pointer"
-              >
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="w-10 h-10 rounded-xl bg-teal-100 text-teal-800 flex items-center justify-center font-black">
-                      <Sparkles className="w-5 h-5" />
-                    </div>
-                    <span className="text-[11px] font-mono font-bold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-lg">/about</span>
-                  </div>
-                  <div>
-                    <h3 className="text-[17px] font-black text-[#1e382f]">6. About Us &amp; Story</h3>
-                    <p className="text-[12.5px] text-[#666] leading-relaxed mt-1">
-                      Brand heritage, traditional family recipes, philosophy of मिट्टी (clay &amp; soil), 3 core values, and restaurant photos.
-                    </p>
-                  </div>
-                </div>
-                <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); setActiveTab('about'); }}
-                    className="bg-[#1e382f] group-hover:bg-[#d85c27] text-white text-[12.5px] font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 transition-colors"
-                  >
-                    <Edit3 className="w-3.5 h-3.5 text-[#d85c27] group-hover:text-white" />
-                    <span>Edit About Us</span>
-                  </button>
-                  <Link
-                    to="/about"
-                    target="_blank"
-                    onClick={(e) => e.stopPropagation()}
-                    className="p-2 text-gray-400 hover:text-[#d85c27] transition-colors rounded-lg hover:bg-gray-50"
-                    title="View Live Page"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                  </Link>
-                </div>
-              </div>
-
-              {/* 7. Locations & Contact */}
-              <div
-                onClick={() => setActiveTab('contact')}
-                className="bg-[#fffdfa] rounded-[24px] p-6 border border-[#ebdcd0] shadow-sm hover:shadow-md hover:border-[#d85c27] transition-all flex flex-col justify-between space-y-4 group cursor-pointer"
-              >
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-800 flex items-center justify-center font-black">
-                      <Phone className="w-5 h-5" />
-                    </div>
-                    <span className="text-[11px] font-mono font-bold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-lg">/locations &amp; /contact</span>
-                  </div>
-                  <div>
-                    <h3 className="text-[17px] font-black text-[#1e382f]">7. Locations &amp; Contact</h3>
-                    <p className="text-[12.5px] text-[#666] leading-relaxed mt-1">
-                      Restaurant address (Zimmerstraße 56), weekly opening hours, direct phone number, email address, and Google Maps embed.
-                    </p>
-                  </div>
-                </div>
-                <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); setActiveTab('contact'); }}
-                    className="bg-[#1e382f] group-hover:bg-[#d85c27] text-white text-[12.5px] font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 transition-colors"
-                  >
-                    <Edit3 className="w-3.5 h-3.5 text-[#d85c27] group-hover:text-white" />
-                    <span>Edit Contact</span>
-                  </button>
-                  <Link
-                    to="/locations"
-                    target="_blank"
-                    onClick={(e) => e.stopPropagation()}
-                    className="p-2 text-gray-400 hover:text-[#d85c27] transition-colors rounded-lg hover:bg-gray-50"
-                    title="View Live Page"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                  </Link>
-                </div>
-              </div>
-
-              {/* 8. Table Reservations */}
-              <div
-                onClick={() => setActiveTab('reservations')}
-                className="bg-[#fffdfa] rounded-[24px] p-6 border border-[#ebdcd0] shadow-sm hover:shadow-md hover:border-[#d85c27] transition-all flex flex-col justify-between space-y-4 group cursor-pointer"
-              >
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="w-10 h-10 rounded-xl bg-teal-100 text-teal-800 flex items-center justify-center font-black">
-                      <Clock className="w-5 h-5" />
-                    </div>
-                    <span className="text-[11px] font-mono font-bold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-lg">Reservation Modal</span>
-                  </div>
-                  <div>
-                    <h3 className="text-[17px] font-black text-[#1e382f]">8. Table Reservations</h3>
-                    <p className="text-[12.5px] text-[#666] leading-relaxed mt-1">
-                      TheFork booking widget integration, modal title &amp; notice, max group size, and walk-in guidance for table bookings.
-                    </p>
-                  </div>
-                </div>
-                <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); setActiveTab('reservations'); }}
-                    className="bg-[#1e382f] group-hover:bg-[#d85c27] text-white text-[12.5px] font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 transition-colors"
-                  >
-                    <Edit3 className="w-3.5 h-3.5 text-[#d85c27] group-hover:text-white" />
-                    <span>Edit Reservations</span>
-                  </button>
-                  <span className="text-[11.5px] text-emerald-700 font-bold bg-emerald-50 px-2.5 py-1 rounded-lg">
-                    TheFork Active
-                  </span>
-                </div>
-              </div>
-
-              {/* 9. Careers / Jobs */}
-              <div
-                onClick={() => setActiveTab('jobs')}
-                className="bg-[#fffdfa] rounded-[24px] p-6 border border-[#ebdcd0] shadow-sm hover:shadow-md hover:border-[#d85c27] transition-all flex flex-col justify-between space-y-4 group cursor-pointer"
-              >
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-800 flex items-center justify-center font-black">
-                      <Briefcase className="w-5 h-5" />
-                    </div>
-                    <span className="text-[11px] font-mono font-bold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-lg">/jobs &amp; /careers</span>
-                  </div>
-                  <div>
-                    <h3 className="text-[17px] font-black text-[#1e382f]">9. Careers &amp; Jobs ({jobsContent.jobs?.length || 0})</h3>
-                    <p className="text-[12.5px] text-[#666] leading-relaxed mt-1">
-                      Post restaurant openings (Managers, Baristas, Line Cooks), edit job descriptions, perks, and review submitted candidate CVs.
-                    </p>
-                  </div>
-                </div>
-                <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); setActiveTab('jobs'); }}
-                    className="bg-[#1e382f] group-hover:bg-[#d85c27] text-white text-[12.5px] font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 transition-colors"
-                  >
-                    <Edit3 className="w-3.5 h-3.5 text-[#d85c27] group-hover:text-white" />
-                    <span>Edit Careers</span>
-                  </button>
-                  <Link
-                    to="/jobs"
-                    target="_blank"
-                    onClick={(e) => e.stopPropagation()}
-                    className="p-2 text-gray-400 hover:text-[#d85c27] transition-colors rounded-lg hover:bg-gray-50"
-                    title="View Live Page"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                  </Link>
-                </div>
-              </div>
-
-              {/* 10. Visual Menu Cards */}
-              <div
-                onClick={() => setActiveTab('printMenu')}
-                className="bg-[#fffdfa] rounded-[24px] p-6 border border-[#ebdcd0] shadow-sm hover:shadow-md hover:border-[#d85c27] transition-all flex flex-col justify-between space-y-4 group cursor-pointer"
-              >
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="w-10 h-10 rounded-xl bg-stone-100 text-stone-800 flex items-center justify-center font-black">
-                      <FileText className="w-5 h-5" />
-                    </div>
-                    <span className="text-[11px] font-mono font-bold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-lg">Menu Page Preview</span>
-                  </div>
-                  <div>
-                    <h3 className="text-[17px] font-black text-[#1e382f]">10. Visual Menu Cards</h3>
-                    <p className="text-[12.5px] text-[#666] leading-relaxed mt-1">
-                      Page 1 (Bowls &amp; Naan) and Page 2 (Lassis &amp; Drinks) high-resolution print menu graphic cards and inspect modal.
-                    </p>
-                  </div>
-                </div>
-                <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); setActiveTab('printMenu'); }}
-                    className="bg-[#1e382f] group-hover:bg-[#d85c27] text-white text-[12.5px] font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 transition-colors"
-                  >
-                    <Edit3 className="w-3.5 h-3.5 text-[#d85c27] group-hover:text-white" />
-                    <span>Edit Menu Cards</span>
-                  </button>
-                  <Link
-                    to="/menu"
-                    target="_blank"
-                    onClick={(e) => e.stopPropagation()}
-                    className="p-2 text-gray-400 hover:text-[#d85c27] transition-colors rounded-lg hover:bg-gray-50"
-                    title="View Live Page"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                  </Link>
-                </div>
-              </div>
-
-              {/* 11. Impressum */}
-              <div
-                onClick={() => setActiveTab('legal')}
-                className="bg-[#fffdfa] rounded-[24px] p-6 border border-[#ebdcd0] shadow-sm hover:shadow-md hover:border-[#d85c27] transition-all flex flex-col justify-between space-y-4 group cursor-pointer"
-              >
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="w-10 h-10 rounded-xl bg-gray-100 text-gray-800 flex items-center justify-center font-black">
-                      <ShieldCheck className="w-5 h-5" />
-                    </div>
-                    <span className="text-[11px] font-mono font-bold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-lg">/impressum</span>
-                  </div>
-                  <div>
-                    <h3 className="text-[17px] font-black text-[#1e382f]">11. Impressum (§ 5 TMG)</h3>
-                    <p className="text-[12.5px] text-[#666] leading-relaxed mt-1">
-                      Official German legal imprint: Unicorn Table UG, managing director (Naveen Prasad), Charlottenburg commercial register, and VAT ID.
-                    </p>
-                  </div>
-                </div>
-                <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); setActiveTab('legal'); }}
-                    className="bg-[#1e382f] group-hover:bg-[#d85c27] text-white text-[12.5px] font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 transition-colors"
-                  >
-                    <Edit3 className="w-3.5 h-3.5 text-[#d85c27] group-hover:text-white" />
-                    <span>Edit Impressum</span>
-                  </button>
-                  <Link
-                    to="/impressum"
-                    target="_blank"
-                    onClick={(e) => e.stopPropagation()}
-                    className="p-2 text-gray-400 hover:text-[#d85c27] transition-colors rounded-lg hover:bg-gray-50"
-                    title="View Live Page"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                  </Link>
-                </div>
-              </div>
-
-              {/* 12. Privacy Policy */}
-              <div
-                onClick={() => setActiveTab('privacy')}
-                className="bg-[#fffdfa] rounded-[24px] p-6 border border-[#ebdcd0] shadow-sm hover:shadow-md hover:border-[#d85c27] transition-all flex flex-col justify-between space-y-4 group cursor-pointer"
-              >
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="w-10 h-10 rounded-xl bg-sky-100 text-sky-800 flex items-center justify-center font-black">
-                      <Lock className="w-5 h-5" />
-                    </div>
-                    <span className="text-[11px] font-mono font-bold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-lg">/privacy &amp; /de/datenschutz</span>
-                  </div>
-                  <div>
-                    <h3 className="text-[17px] font-black text-[#1e382f]">12. Privacy Policy (Datenschutz)</h3>
-                    <p className="text-[12.5px] text-[#666] leading-relaxed mt-1">
-                      GDPR and DSGVO data protection statements, data processor disclosures, cookie policies, and visitor rights.
-                    </p>
-                  </div>
-                </div>
-                <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); setActiveTab('privacy'); }}
-                    className="bg-[#1e382f] group-hover:bg-[#d85c27] text-white text-[12.5px] font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 transition-colors"
-                  >
-                    <Edit3 className="w-3.5 h-3.5 text-[#d85c27] group-hover:text-white" />
-                    <span>Edit Privacy</span>
-                  </button>
-                  <Link
-                    to="/privacy"
-                    target="_blank"
-                    onClick={(e) => e.stopPropagation()}
-                    className="p-2 text-gray-400 hover:text-[#d85c27] transition-colors rounded-lg hover:bg-gray-50"
-                    title="View Live Page"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                  </Link>
-                </div>
-              </div>
-
-              {/* 13. Terms & Conditions */}
-              <div
-                onClick={() => setActiveTab('terms')}
-                className="bg-[#fffdfa] rounded-[24px] p-6 border border-[#ebdcd0] shadow-sm hover:shadow-md hover:border-[#d85c27] transition-all flex flex-col justify-between space-y-4 group cursor-pointer"
-              >
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-black">
-                      <Award className="w-5 h-5" />
-                    </div>
-                    <span className="text-[11px] font-mono font-bold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-lg">/terms &amp; /de/agb</span>
-                  </div>
-                  <div>
-                    <h3 className="text-[17px] font-black text-[#1e382f]">13. Terms &amp; Conditions (AGB)</h3>
-                    <p className="text-[12.5px] text-[#666] leading-relaxed mt-1">
-                      General terms of service, ordering policies, catering commitments, cancellation rules, and legal jurisdiction in Berlin.
-                    </p>
-                  </div>
-                </div>
-                <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); setActiveTab('terms'); }}
-                    className="bg-[#1e382f] group-hover:bg-[#d85c27] text-white text-[12.5px] font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 transition-colors"
-                  >
-                    <Edit3 className="w-3.5 h-3.5 text-[#d85c27] group-hover:text-white" />
-                    <span>Edit Terms</span>
-                  </button>
-                  <Link
-                    to="/terms"
-                    target="_blank"
-                    onClick={(e) => e.stopPropagation()}
-                    className="p-2 text-gray-400 hover:text-[#d85c27] transition-colors rounded-lg hover:bg-gray-50"
-                    title="View Live Page"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                  </Link>
-                </div>
-              </div>
-
-              {/* 14. Restaurant Info & Global SEO */}
-              <div
-                onClick={() => setActiveTab('settings')}
-                className="bg-[#fffdfa] rounded-[24px] p-6 border border-[#ebdcd0] shadow-sm hover:shadow-md hover:border-[#d85c27] transition-all flex flex-col justify-between space-y-4 group cursor-pointer"
-              >
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-800 flex items-center justify-center font-black">
-                      <Sliders className="w-5 h-5" />
-                    </div>
-                    <span className="text-[11px] font-mono font-bold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-lg">Global Schema &amp; SEO</span>
-                  </div>
-                  <div>
-                    <h3 className="text-[17px] font-black text-[#1e382f]">14. Restaurant Info &amp; SEO</h3>
-                    <p className="text-[12.5px] text-[#666] leading-relaxed mt-1">
-                      JSON-LD structured data (Restaurant, Catering, EventVenue), telephone numbers, coordinates, and social media URLs.
-                    </p>
-                  </div>
-                </div>
-                <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); setActiveTab('settings'); }}
-                    className="bg-[#1e382f] group-hover:bg-[#d85c27] text-white text-[12.5px] font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 transition-colors"
-                  >
-                    <Edit3 className="w-3.5 h-3.5 text-[#d85c27] group-hover:text-white" />
-                    <span>Edit SEO &amp; Info</span>
-                  </button>
-                  <span className="text-[11.5px] text-gray-500 font-semibold">
-                    100% Schema Validated
-                  </span>
-                </div>
-              </div>
-
-              {/* 15. Menu Categories */}
-              <div
-                onClick={() => setActiveTab('categories')}
-                className="bg-[#fffdfa] rounded-[24px] p-6 border border-[#ebdcd0] shadow-sm hover:shadow-md hover:border-[#d85c27] transition-all flex flex-col justify-between space-y-4 group cursor-pointer"
-              >
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="w-10 h-10 rounded-xl bg-lime-100 text-lime-800 flex items-center justify-center font-black">
-                      <FolderTree className="w-5 h-5" />
-                    </div>
-                    <span className="text-[11px] font-mono font-bold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-lg">Category Management</span>
-                  </div>
-                  <div>
-                    <h3 className="text-[17px] font-black text-[#1e382f]">15. Menu Categories</h3>
-                    <p className="text-[12.5px] text-[#666] leading-relaxed mt-1">
-                      Organize dishes into Signature Bowls, Punjab Naan Pockets, Chai &amp; Drinks, rearrange sorting order, and edit German category names.
-                    </p>
-                  </div>
-                </div>
-                <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); setActiveTab('categories'); }}
-                    className="bg-[#1e382f] group-hover:bg-[#d85c27] text-white text-[12.5px] font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 transition-colors"
-                  >
-                    <Edit3 className="w-3.5 h-3.5 text-[#d85c27] group-hover:text-white" />
-                    <span>Edit Categories</span>
-                  </button>
-                  <span className="text-[11.5px] text-gray-500 font-semibold">
-                    {categories.length} Categories Live
-                  </span>
-                </div>
-              </div>
-
-              {/* 16. Photo Library & Fast Uploads */}
-              <div
-                onClick={() => setActiveTab('gallery')}
-                className="bg-[#fffdfa] rounded-[24px] p-6 border border-[#ebdcd0] shadow-sm hover:shadow-md hover:border-[#d85c27] transition-all flex flex-col justify-between space-y-4 group cursor-pointer"
-              >
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="w-10 h-10 rounded-xl bg-pink-100 text-pink-800 flex items-center justify-center font-black">
-                      <ImageIcon className="w-5 h-5" />
-                    </div>
-                    <span className="text-[11px] font-mono font-bold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-lg">Media &amp; CDN</span>
-                  </div>
-                  <div>
-                    <h3 className="text-[17px] font-black text-[#1e382f]">16. Photo Library ({galleryAssets.length})</h3>
-                    <p className="text-[12.5px] text-[#666] leading-relaxed mt-1">
-                      Upload food photos from mobile or desktop. Automatically compressed to lightweight WebP, tagged by category, and easily deleted.
-                    </p>
-                  </div>
-                </div>
-                <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); setActiveTab('gallery'); }}
-                    className="bg-[#1e382f] group-hover:bg-[#d85c27] text-white text-[12.5px] font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 transition-colors"
-                  >
-                    <Edit3 className="w-3.5 h-3.5 text-[#d85c27] group-hover:text-white" />
-                    <span>Open Library</span>
-                  </button>
-                  <span className="text-[11.5px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-lg">
-                    Auto-WebP
-                  </span>
-                </div>
-              </div>
-
-              {/* 17. Customer Inquiries Inbox */}
-              <div
-                onClick={() => setActiveTab('inquiries')}
-                className="bg-[#fffdfa] rounded-[24px] p-6 border border-[#ebdcd0] shadow-sm hover:shadow-md hover:border-[#d85c27] transition-all flex flex-col justify-between space-y-4 group cursor-pointer"
-              >
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-black">
-                      <Inbox className="w-5 h-5" />
-                    </div>
-                    {inquiries.filter((i) => i.status === 'new').length > 0 ? (
-                      <span className="text-[11px] font-black bg-[#d85c27] text-white px-2.5 py-1 rounded-lg animate-pulse">
-                        {inquiries.filter((i) => i.status === 'new').length} New Enquiries
-                      </span>
-                    ) : (
-                      <span className="text-[11px] font-mono font-bold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-lg">Inbox</span>
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="text-[17px] font-black text-[#1e382f]">17. Catering Inquiries ({inquiries.length})</h3>
-                    <p className="text-[12.5px] text-[#666] leading-relaxed mt-1">
-                      Review customer quotes for office lunches and weddings. Update workflow status (New, Contacted, Confirmed) and internal notes.
-                    </p>
-                  </div>
-                </div>
-                <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); setActiveTab('inquiries'); }}
-                    className="bg-[#1e382f] group-hover:bg-[#d85c27] text-white text-[12.5px] font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 transition-colors"
-                  >
-                    <Edit3 className="w-3.5 h-3.5 text-[#d85c27] group-hover:text-white" />
-                    <span>View Inquiries</span>
-                  </button>
-                  <span className="text-[11.5px] text-gray-500 font-semibold">
-                    {inquiries.length} Total
-                  </span>
-                </div>
-              </div>
-
-              {/* 18. Job Applications Inbox */}
-              <div
-                onClick={() => setActiveTab('applications')}
-                className="bg-[#fffdfa] rounded-[24px] p-6 border border-[#ebdcd0] shadow-sm hover:shadow-md hover:border-[#d85c27] transition-all flex flex-col justify-between space-y-4 group cursor-pointer"
-              >
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="w-10 h-10 rounded-xl bg-violet-100 text-violet-800 flex items-center justify-center font-black">
-                      <Briefcase className="w-5 h-5" />
-                    </div>
-                    {applications.filter((a) => a.status === 'new').length > 0 ? (
-                      <span className="text-[11px] font-black bg-emerald-600 text-white px-2.5 py-1 rounded-lg">
-                        {applications.filter((a) => a.status === 'new').length} New Applicants
-                      </span>
-                    ) : (
-                      <span className="text-[11px] font-mono font-bold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-lg">HR Inbox</span>
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="text-[17px] font-black text-[#1e382f]">18. Job Applications ({applications.length})</h3>
-                    <p className="text-[12.5px] text-[#666] leading-relaxed mt-1">
-                      Candidate CVs submitted for Service, Kitchen, and Barista roles. Filter by status (Reviewing, Interview, Hired) with HR notes.
-                    </p>
-                  </div>
-                </div>
-                <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); setActiveTab('applications'); }}
-                    className="bg-[#1e382f] group-hover:bg-[#d85c27] text-white text-[12.5px] font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 transition-colors"
-                  >
-                    <Edit3 className="w-3.5 h-3.5 text-[#d85c27] group-hover:text-white" />
-                    <span>View Applications</span>
-                  </button>
-                  <span className="text-[11.5px] text-gray-500 font-semibold">
-                    {applications.length} Candidates
-                  </span>
-                </div>
-              </div>
-
-            </div>
-          </div>
-        )}
+        {activeTab === 'overview' && <StudioHome open={setActiveTab} items={allItemsWithCat.length} categories={categories.length} cocktails={categories.filter(cat => /cocktail/i.test(cat.name)).reduce((count, cat) => count + cat.items.length, 0)} ready={menuFromSanity && !menuLoading} dirtyPages={dirtyPages} />}
 
         {/* ═══════════════════════════════════════════════
             TAB 1: MENU DISHES
@@ -2771,7 +1753,7 @@ export const StudioPage: React.FC = () => {
                         <span className="text-[12.5px] font-bold text-[#1a1a1a] max-w-[130px] truncate">
                           {item.titleEn}
                         </span>
-                        
+
                         <div className="flex items-center gap-0.5 ml-1 border-l border-amber-200 pl-1">
                           <button
                             type="button"
@@ -2812,9 +1794,7 @@ export const StudioPage: React.FC = () => {
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
                 <div className="relative flex-1">
                   <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    value={adminSearchQuery}
+                  <input aria-label="Search menu items" type="text" value={adminSearchQuery}
                     onChange={(e) => setAdminSearchQuery(e.target.value)}
                     placeholder="Search dishes (e.g. Butter Chicken, Bowl, Lassi, Coffee)..."
                     className="w-full bg-white border border-[#ebdcd0] focus:border-[#d85c27] rounded-xl pl-10 pr-10 py-2 text-[13.5px] font-medium text-[#1a1a1a] focus:outline-none transition-colors"
@@ -3206,8 +2186,8 @@ export const StudioPage: React.FC = () => {
             TAB 3: HOMEPAGE CONTENT
         ═══════════════════════════════════════════════ */}
         {activeTab === 'homepage' && (
-          <form onSubmit={handleSaveHomepage} className="space-y-6">
-            
+          <form id={`studio-form-${activeTab}`} onSubmit={handleSaveHomepage} className="space-y-6"><fieldset disabled={!!publishingSection || !!currentSource?.loading || !!currentSource?.error} className="contents">
+
             {/* Language Banner */}
             <div className="bg-[#fffdfa] rounded-[24px] p-5 sm:p-6 border border-[#ebdcd0] shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
@@ -3265,7 +2245,7 @@ export const StudioPage: React.FC = () => {
                       <span className="bg-[#d85c27] text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase">Badge</span>
                       Top Orange Badge ({adminContentLang.toUpperCase()})
                     </label>
-                    <input
+                    <input aria-label={`Badge Top Orange Badge ( ${adminContentLang.toUpperCase()} )`}
                       type="text"
                       value={adminContentLang === 'en' ? (homepageContent.heroBadgeEn || '') : (homepageContent.heroBadgeDe || '')}
                       onChange={(e) => setHomepageContent(adminContentLang === 'en' ? { ...homepageContent, heroBadgeEn: e.target.value } : { ...homepageContent, heroBadgeDe: e.target.value })}
@@ -3277,7 +2257,7 @@ export const StudioPage: React.FC = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-[12px] font-bold text-[#333] mb-1">Headline Line 1</label>
-                      <input
+                      <input aria-label={`Headline Line 1`}
                         type="text"
                         value={adminContentLang === 'en' ? (homepageContent.heroTitle1En || '') : (homepageContent.heroTitle1De || '')}
                         onChange={(e) => setHomepageContent(adminContentLang === 'en' ? { ...homepageContent, heroTitle1En: e.target.value } : { ...homepageContent, heroTitle1De: e.target.value })}
@@ -3287,7 +2267,7 @@ export const StudioPage: React.FC = () => {
 
                     <div>
                       <label className="block text-[12px] font-bold text-[#333] mb-1">Headline Line 2 (Highlighted)</label>
-                      <input
+                      <input aria-label={`Headline Line 2 (Highlighted)`}
                         type="text"
                         value={adminContentLang === 'en' ? (homepageContent.heroTitle2En || '') : (homepageContent.heroTitle2De || '')}
                         onChange={(e) => setHomepageContent(adminContentLang === 'en' ? { ...homepageContent, heroTitle2En: e.target.value } : { ...homepageContent, heroTitle2De: e.target.value })}
@@ -3298,7 +2278,7 @@ export const StudioPage: React.FC = () => {
 
                   <div>
                     <label className="block text-[12px] font-bold text-[#333] mb-1">Description Tagline</label>
-                    <textarea
+                    <textarea aria-label={`Description Tagline`}
                       rows={2}
                       value={adminContentLang === 'en' ? (homepageContent.heroDescEn || '') : (homepageContent.heroDescDe || '')}
                       onChange={(e) => setHomepageContent(adminContentLang === 'en' ? { ...homepageContent, heroDescEn: e.target.value } : { ...homepageContent, heroDescDe: e.target.value })}
@@ -3374,7 +2354,7 @@ export const StudioPage: React.FC = () => {
                 <div className="p-5 sm:p-6 space-y-4 animate-fadeIn">
                   <div>
                     <label className="block text-[12px] font-bold text-[#333] mb-1">Section Headline</label>
-                    <input
+                    <input aria-label={`Section Headline`}
                       type="text"
                       value={adminContentLang === 'en' ? (homepageContent.lunchTitleEn || '') : (homepageContent.lunchTitleDe || '')}
                       onChange={(e) => setHomepageContent(adminContentLang === 'en' ? { ...homepageContent, lunchTitleEn: e.target.value } : { ...homepageContent, lunchTitleDe: e.target.value })}
@@ -3384,7 +2364,7 @@ export const StudioPage: React.FC = () => {
                   </div>
                   <div>
                     <label className="block text-[12px] font-bold text-[#333] mb-1">Section Description</label>
-                    <textarea
+                    <textarea aria-label={`Section Description`}
                       rows={2}
                       value={adminContentLang === 'en' ? (homepageContent.lunchDescEn || '') : (homepageContent.lunchDescDe || '')}
                       onChange={(e) => setHomepageContent(adminContentLang === 'en' ? { ...homepageContent, lunchDescEn: e.target.value } : { ...homepageContent, lunchDescDe: e.target.value })}
@@ -3418,7 +2398,7 @@ export const StudioPage: React.FC = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-[12px] font-bold text-[#333] mb-1">Section Title</label>
-                      <input
+                      <input aria-label={`Section Title`}
                         type="text"
                         value={adminContentLang === 'en' ? (homepageContent.maatiWayTitleEn || '') : (homepageContent.maatiWayTitleDe || '')}
                         onChange={(e) => setHomepageContent(adminContentLang === 'en' ? { ...homepageContent, maatiWayTitleEn: e.target.value } : { ...homepageContent, maatiWayTitleDe: e.target.value })}
@@ -3462,7 +2442,7 @@ export const StudioPage: React.FC = () => {
                             <div className="space-y-3 pt-2">
                               <div>
                                 <label className="block text-[11px] font-bold text-gray-600 mb-1">Step Card Title</label>
-                                <input
+                                <input aria-label={`Step Card Title`}
                                   type="text"
                                   value={titleVal}
                                   onChange={(e) => {
@@ -3482,7 +2462,7 @@ export const StudioPage: React.FC = () => {
                                 <label className="block text-[11px] font-bold text-gray-600 mb-1">
                                   Bullet Options (comma separated)
                                 </label>
-                                <input
+                                <input aria-label={`Bullet Options (comma separated)`}
                                   type="text"
                                   value={itemsVal.join(', ')}
                                   onChange={(e) => {
@@ -3538,7 +2518,7 @@ export const StudioPage: React.FC = () => {
                 <div className="p-5 sm:p-6 space-y-4 animate-fadeIn">
                   <div>
                     <label className="block text-[12px] font-bold text-[#333] mb-1">Headline</label>
-                    <input
+                    <input aria-label={`Headline`}
                       type="text"
                       value={adminContentLang === 'en' ? (homepageContent.experienceTitleEn || '') : (homepageContent.experienceTitleDe || '')}
                       onChange={(e) => setHomepageContent(adminContentLang === 'en' ? { ...homepageContent, experienceTitleEn: e.target.value } : { ...homepageContent, experienceTitleDe: e.target.value })}
@@ -3548,7 +2528,7 @@ export const StudioPage: React.FC = () => {
 
                   <div>
                     <label className="block text-[12px] font-bold text-[#333] mb-1">Description</label>
-                    <textarea
+                    <textarea aria-label={`Description`}
                       rows={2}
                       value={adminContentLang === 'en' ? (homepageContent.experienceDescEn || '') : (homepageContent.experienceDescDe || '')}
                       onChange={(e) => setHomepageContent(adminContentLang === 'en' ? { ...homepageContent, experienceDescEn: e.target.value } : { ...homepageContent, experienceDescDe: e.target.value })}
@@ -3643,7 +2623,7 @@ export const StudioPage: React.FC = () => {
                 <div className="p-5 sm:p-6 space-y-4 animate-fadeIn">
                   <div>
                     <label className="block text-[12px] font-bold text-[#333] mb-1">Headline</label>
-                    <input
+                    <input aria-label={`Headline`}
                       type="text"
                       value={adminContentLang === 'en' ? (homepageContent.cateringTitleEn || '') : (homepageContent.cateringTitleDe || '')}
                       onChange={(e) => setHomepageContent(adminContentLang === 'en' ? { ...homepageContent, cateringTitleEn: e.target.value } : { ...homepageContent, cateringTitleDe: e.target.value })}
@@ -3653,7 +2633,7 @@ export const StudioPage: React.FC = () => {
 
                   <div>
                     <label className="block text-[12px] font-bold text-[#333] mb-1">Description</label>
-                    <textarea
+                    <textarea aria-label={`Description`}
                       rows={2}
                       value={adminContentLang === 'en' ? (homepageContent.cateringDescEn || '') : (homepageContent.cateringDescDe || '')}
                       onChange={(e) => setHomepageContent(adminContentLang === 'en' ? { ...homepageContent, cateringDescEn: e.target.value } : { ...homepageContent, cateringDescDe: e.target.value })}
@@ -3716,7 +2696,7 @@ export const StudioPage: React.FC = () => {
                 <div className="p-5 sm:p-6 space-y-4 animate-fadeIn">
                   <div>
                     <label className="block text-[12px] font-bold text-[#333] mb-1">Headline / CTA Title</label>
-                    <input
+                    <input aria-label={`Headline / CTA Title`}
                       type="text"
                       value={adminContentLang === 'en' ? (homepageContent.ctaTitleEn || '') : (homepageContent.ctaTitleDe || '')}
                       onChange={(e) => setHomepageContent(adminContentLang === 'en' ? { ...homepageContent, ctaTitleEn: e.target.value } : { ...homepageContent, ctaTitleDe: e.target.value })}
@@ -3726,7 +2706,7 @@ export const StudioPage: React.FC = () => {
                   </div>
                   <div>
                     <label className="block text-[12px] font-bold text-[#333] mb-1">Subheadline / Description</label>
-                    <textarea
+                    <textarea aria-label={`Subheadline / Description`}
                       rows={2}
                       value={adminContentLang === 'en' ? (homepageContent.ctaDescEn || '') : (homepageContent.ctaDescDe || '')}
                       onChange={(e) => setHomepageContent(adminContentLang === 'en' ? { ...homepageContent, ctaDescEn: e.target.value } : { ...homepageContent, ctaDescDe: e.target.value })}
@@ -3737,7 +2717,7 @@ export const StudioPage: React.FC = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-[12px] font-bold text-[#333] mb-1">Button 1 Label (View Menu)</label>
-                      <input
+                      <input aria-label={`Button 1 Label (View Menu)`}
                         type="text"
                         value={adminContentLang === 'en' ? (homepageContent.ctaBtnMenuEn || '') : (homepageContent.ctaBtnMenuDe || '')}
                         onChange={(e) => setHomepageContent(adminContentLang === 'en' ? { ...homepageContent, ctaBtnMenuEn: e.target.value } : { ...homepageContent, ctaBtnMenuDe: e.target.value })}
@@ -3747,7 +2727,7 @@ export const StudioPage: React.FC = () => {
                     </div>
                     <div>
                       <label className="block text-[12px] font-bold text-[#333] mb-1">Button 2 Label (Locations)</label>
-                      <input
+                      <input aria-label={`Button 2 Label (Locations)`}
                         type="text"
                         value={adminContentLang === 'en' ? (homepageContent.ctaBtnLocationsEn || '') : (homepageContent.ctaBtnLocationsDe || '')}
                         onChange={(e) => setHomepageContent(adminContentLang === 'en' ? { ...homepageContent, ctaBtnLocationsEn: e.target.value } : { ...homepageContent, ctaBtnLocationsDe: e.target.value })}
@@ -3769,13 +2749,13 @@ export const StudioPage: React.FC = () => {
                     type="submit"
                     className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-black px-5 py-2 rounded-full text-[13px] shadow-sm transition-all"
                   >
-                    Save All Changes
+                    Save & publish
                   </button>
                 </div>
               </div>
             )}
 
-          </form>
+          </fieldset></form>
         )}
 
         {/* ═══════════════════════════════════════════════
@@ -3810,15 +2790,13 @@ export const StudioPage: React.FC = () => {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="relative flex-1 max-w-[420px]">
                 <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  value={gallerySearch}
+                <input aria-label="Search photo library" type="text" value={gallerySearch}
                   onChange={(e) => setGallerySearch(e.target.value)}
                   placeholder="Search photos by name (e.g. Bowl, Naan, Mango, Chai)..."
                   className="w-full pl-10 pr-3 py-2 bg-white border border-[#ebdcd0] rounded-xl text-[13px] focus:outline-none focus:border-[#d85c27]"
                 />
                 {gallerySearch && (
-                  <button
+                  <button aria-label="Close"
                     type="button"
                     onClick={() => setGallerySearch('')}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
@@ -3896,9 +2874,9 @@ export const StudioPage: React.FC = () => {
                           loading="lazy"
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />
-                        
+
                         {/* Action buttons on card */}
-                        <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
                           <button
                             type="button"
                             onClick={(e) => handleOpenEditPhoto(asset, e)}
@@ -3947,45 +2925,30 @@ export const StudioPage: React.FC = () => {
             TAB 5: RESTAURANT INFO
         ═══════════════════════════════════════════════ */}
         {activeTab === 'settings' && (
-          <form onSubmit={handleSaveSettings} className="bg-[#fffdfa] rounded-[24px] p-6 sm:p-8 border border-[#ebdcd0] shadow-sm space-y-6">
+          <form id={`studio-form-${activeTab}`} onSubmit={handleSaveSettings} className="bg-[#fffdfa] rounded-[24px] p-6 sm:p-8 border border-[#ebdcd0] shadow-sm space-y-6"><fieldset disabled={!!publishingSection || !!currentSource?.loading || !!currentSource?.error} className="contents">
             <div>
               <h2 className="text-[20px] font-black text-[#1e382f]">Restaurant Information</h2>
               <p className="text-[13px] text-[#666] mt-0.5">
-                Contact information and address displayed on the website.
+                Restaurant name and social links displayed on the website.
               </p>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
                 <label className="block text-[12px] font-bold text-[#333] mb-1">Restaurant Name</label>
-                <input
+                <input aria-label={`Restaurant Name`}
                   type="text"
                   value={siteSettings.restaurantName || ''}
                   onChange={(e) => setSiteSettings({ ...siteSettings, restaurantName: e.target.value })}
                   className="w-full border rounded-xl px-3.5 py-2.5 text-[14px] focus:outline-none focus:border-[#d85c27]"
                 />
               </div>
-              <div>
-                <label className="block text-[12px] font-bold text-[#333] mb-1">Phone Number</label>
-                <input
-                  type="text"
-                  value={siteSettings.phone || ''}
-                  onChange={(e) => setSiteSettings({ ...siteSettings, phone: e.target.value })}
-                  className="w-full border rounded-xl px-3.5 py-2.5 text-[14px] focus:outline-none focus:border-[#d85c27]"
-                />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-[12px] font-bold text-[#333] mb-1">Street Address</label>
-                <input
-                  type="text"
-                  value={siteSettings.address || ''}
-                  onChange={(e) => setSiteSettings({ ...siteSettings, address: e.target.value })}
-                  className="w-full border rounded-xl px-3.5 py-2.5 text-[14px] focus:outline-none focus:border-[#d85c27]"
-                />
-              </div>
+
+
             </div>
 
 
+            <p className="text-sm rounded-xl bg-amber-50 p-4 text-amber-900">To change the phone, email, address or opening hours, use <button type="button" onClick={() => setActiveTab('contact')} className="underline font-bold">Opening hours &amp; contact</button>. Those details update the contact page and website footer together.</p>
             {/* Social Media URLs */}
             <div className="pt-2 border-t border-gray-100">
               <h3 className="text-[15px] font-black text-[#1e382f] mb-4 flex items-center gap-2">
@@ -3999,7 +2962,7 @@ export const StudioPage: React.FC = () => {
                       style={{ background: 'linear-gradient(135deg, #f09433, #dc2743, #bc1888)' }}>IG</span>
                     Instagram URL
                   </label>
-                  <input
+                  <input aria-label={`IG Instagram URL`}
                     type="url"
                     value={siteSettings.instagram || ''}
                     onChange={(e) => setSiteSettings({ ...siteSettings, instagram: e.target.value })}
@@ -4012,7 +2975,7 @@ export const StudioPage: React.FC = () => {
                     <span className="w-5 h-5 rounded-md bg-[#1877F2] flex items-center justify-center text-white text-[9px]">FB</span>
                     Facebook URL
                   </label>
-                  <input
+                  <input aria-label={`FB Facebook URL`}
                     type="url"
                     value={siteSettings.facebook || ''}
                     onChange={(e) => setSiteSettings({ ...siteSettings, facebook: e.target.value })}
@@ -4025,7 +2988,7 @@ export const StudioPage: React.FC = () => {
                     <span className="w-5 h-5 rounded-md bg-[#010101] flex items-center justify-center text-white text-[9px]">TK</span>
                     TikTok URL
                   </label>
-                  <input
+                  <input aria-label={`TK TikTok URL`}
                     type="url"
                     value={siteSettings.tiktok || ''}
                     onChange={(e) => setSiteSettings({ ...siteSettings, tiktok: e.target.value })}
@@ -4033,19 +2996,7 @@ export const StudioPage: React.FC = () => {
                     className="w-full border rounded-xl px-3.5 py-2.5 text-[13.5px] focus:outline-none focus:border-[#d85c27]"
                   />
                 </div>
-                <div>
-                  <label className="block text-[12px] font-bold text-[#333] mb-1 flex items-center gap-1.5">
-                    <span className="w-5 h-5 rounded-md bg-[#d85c27] flex items-center justify-center text-white text-[9px]">✉</span>
-                    Business Email
-                  </label>
-                  <input
-                    type="email"
-                    value={siteSettings.email || ''}
-                    onChange={(e) => setSiteSettings({ ...siteSettings, email: e.target.value })}
-                    placeholder="hello@maatikitchen.com"
-                    className="w-full border rounded-xl px-3.5 py-2.5 text-[13.5px] focus:outline-none focus:border-[#d85c27]"
-                  />
-                </div>
+
               </div>
             </div>
 
@@ -4054,17 +3005,17 @@ export const StudioPage: React.FC = () => {
                 type="submit"
                 className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-6 py-3 rounded-full text-[14px] shadow-sm hover:shadow-md transition-all flex items-center gap-2"
               >
-                <Save className="w-4 h-4" /> Save Information
+                <Save className="w-4 h-4" /> Save &amp; publish
               </button>
             </div>
-          </form>
+          </fieldset></form>
         )}
 
         {/* ═══════════════════════════════════════════════
             TAB 6: EVENTS PAGE CONTENT
         ═══════════════════════════════════════════════ */}
         {activeTab === 'events' && (
-          <form onSubmit={handleSaveEvents} className="bg-[#fffdfa] rounded-[24px] p-6 sm:p-8 border border-[#ebdcd0] shadow-sm space-y-6">
+          <form id={`studio-form-${activeTab}`} onSubmit={handleSaveEvents} className="bg-[#fffdfa] rounded-[24px] p-6 sm:p-8 border border-[#ebdcd0] shadow-sm space-y-6"><fieldset disabled={!!publishingSection || !!currentSource?.loading || !!currentSource?.error} className="contents">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-5">
               <div>
                 <h2 className="text-[20px] font-black text-[#1e382f] flex items-center gap-2.5">
@@ -4103,7 +3054,7 @@ export const StudioPage: React.FC = () => {
             {/* Headline */}
             <div>
               <label className="block text-[12px] font-bold text-[#333] mb-1">Page Headline ({adminContentLang.toUpperCase()})</label>
-              <input
+              <input aria-label={`Page Headline ( ${adminContentLang.toUpperCase()} )`}
                 type="text"
                 value={adminContentLang === 'en' ? (eventsContent.headlineEn || '') : (eventsContent.headlineDe || '')}
                 onChange={(e) => _setEventsContent(adminContentLang === 'en' ? { ...eventsContent, headlineEn: e.target.value } : { ...eventsContent, headlineDe: e.target.value })}
@@ -4115,7 +3066,7 @@ export const StudioPage: React.FC = () => {
             {/* Description */}
             <div>
               <label className="block text-[12px] font-bold text-[#333] mb-1">Description Tagline ({adminContentLang.toUpperCase()})</label>
-              <textarea
+              <textarea aria-label={`Description Tagline ( ${adminContentLang.toUpperCase()} )`}
                 rows={3}
                 value={adminContentLang === 'en' ? (eventsContent.descEn || '') : (eventsContent.descDe || '')}
                 onChange={(e) => _setEventsContent(adminContentLang === 'en' ? { ...eventsContent, descEn: e.target.value } : { ...eventsContent, descDe: e.target.value })}
@@ -4130,7 +3081,7 @@ export const StudioPage: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-[11px] font-bold text-gray-500 mb-1">Bullet Point 1</label>
-                  <input
+                  <input aria-label={`Bullet Point 1`}
                     type="text"
                     value={adminContentLang === 'en' ? (eventsContent.bullet1En || '') : (eventsContent.bullet1De || '')}
                     onChange={(e) => _setEventsContent(adminContentLang === 'en' ? { ...eventsContent, bullet1En: e.target.value } : { ...eventsContent, bullet1De: e.target.value })}
@@ -4140,7 +3091,7 @@ export const StudioPage: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-[11px] font-bold text-gray-500 mb-1">Bullet Point 2</label>
-                  <input
+                  <input aria-label={`Bullet Point 2`}
                     type="text"
                     value={adminContentLang === 'en' ? (eventsContent.bullet2En || '') : (eventsContent.bullet2De || '')}
                     onChange={(e) => _setEventsContent(adminContentLang === 'en' ? { ...eventsContent, bullet2En: e.target.value } : { ...eventsContent, bullet2De: e.target.value })}
@@ -4150,7 +3101,7 @@ export const StudioPage: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-[11px] font-bold text-gray-500 mb-1">Bullet Point 3</label>
-                  <input
+                  <input aria-label={`Bullet Point 3`}
                     type="text"
                     value={adminContentLang === 'en' ? (eventsContent.bullet3En || '') : (eventsContent.bullet3De || '')}
                     onChange={(e) => _setEventsContent(adminContentLang === 'en' ? { ...eventsContent, bullet3En: e.target.value } : { ...eventsContent, bullet3De: e.target.value })}
@@ -4165,7 +3116,7 @@ export const StudioPage: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2 border-t border-gray-100">
               <div>
                 <label className="block text-[12px] font-bold text-[#333] mb-1">CTA Button Label</label>
-                <input
+                <input aria-label={`CTA Button Label`}
                   type="text"
                   value={adminContentLang === 'en' ? (eventsContent.ctaBtnEn || '') : (eventsContent.ctaBtnDe || '')}
                   onChange={(e) => _setEventsContent(adminContentLang === 'en' ? { ...eventsContent, ctaBtnEn: e.target.value } : { ...eventsContent, ctaBtnDe: e.target.value })}
@@ -4222,17 +3173,17 @@ export const StudioPage: React.FC = () => {
                 type="submit"
                 className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-7 py-3 rounded-full text-[14px] shadow-sm hover:shadow-md transition-all flex items-center gap-2"
               >
-                <Save className="w-4 h-4" /> Save Events Page Content
+                <Save className="w-4 h-4" /> Save &amp; publish
               </button>
             </div>
-          </form>
+          </fieldset></form>
         )}
 
         {/* ═══════════════════════════════════════════════
             TAB 7: CONTACT US CONTENT
         ═══════════════════════════════════════════════ */}
         {activeTab === 'contact' && (
-          <form onSubmit={handleSaveContact} className="bg-[#fffdfa] rounded-[24px] p-6 sm:p-8 border border-[#ebdcd0] shadow-sm space-y-6">
+          <form id={`studio-form-${activeTab}`} onSubmit={handleSaveContact} className="bg-[#fffdfa] rounded-[24px] p-6 sm:p-8 border border-[#ebdcd0] shadow-sm space-y-6"><fieldset disabled={!!publishingSection || !!currentSource?.loading || !!currentSource?.error} className="contents">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-5">
               <div>
                 <h2 className="text-[20px] font-black text-[#1e382f] flex items-center gap-2.5">
@@ -4240,7 +3191,7 @@ export const StudioPage: React.FC = () => {
                   <span>Contact Us & Table Reservation</span>
                 </h2>
                 <p className="text-[13px] text-[#666] mt-0.5">
-                  Configure contact details, address, opening hours, and TheFork reservation widget.
+                  Update the contact page and website footer. Booking settings are in Table bookings.
                 </p>
               </div>
 
@@ -4282,7 +3233,7 @@ export const StudioPage: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[11.5px] font-bold text-[#333] mb-1">Headline (English)</label>
-                  <input
+                  <input aria-label={`Headline (English)`}
                     type="text"
                     value={contactContent.locationHeadlineEn || ''}
                     onChange={(e) => _setContactContent({ ...contactContent, locationHeadlineEn: e.target.value })}
@@ -4292,7 +3243,7 @@ export const StudioPage: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-[11.5px] font-bold text-[#333] mb-1">Headline (German)</label>
-                  <input
+                  <input aria-label={`Headline (German)`}
                     type="text"
                     value={contactContent.locationHeadlineDe || ''}
                     onChange={(e) => _setContactContent({ ...contactContent, locationHeadlineDe: e.target.value })}
@@ -4307,7 +3258,7 @@ export const StudioPage: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
                 <label className="block text-[12px] font-bold text-[#333] mb-1">Page Sub-Headline ({adminContentLang.toUpperCase()})</label>
-                <input
+                <input aria-label={`Page Sub-Headline ( ${adminContentLang.toUpperCase()} )`}
                   type="text"
                   value={adminContentLang === 'en' ? (contactContent.headlineEn || '') : (contactContent.headlineDe || '')}
                   onChange={(e) => _setContactContent(adminContentLang === 'en' ? { ...contactContent, headlineEn: e.target.value } : { ...contactContent, headlineDe: e.target.value })}
@@ -4320,7 +3271,7 @@ export const StudioPage: React.FC = () => {
                 <label className="block text-[12px] font-bold text-[#333] mb-1">
                   Opening Hours ({adminContentLang.toUpperCase()}) <span className="text-gray-400 font-normal">— one line per day</span>
                 </label>
-                <textarea
+                <textarea aria-label={`Opening Hours ( ${adminContentLang.toUpperCase()} )`}
                   rows={3}
                   value={adminContentLang === 'en' ? (contactContent.openingHoursEn || '') : (contactContent.openingHoursDe || '')}
                   onChange={(e) => _setContactContent(adminContentLang === 'en' ? { ...contactContent, openingHoursEn: e.target.value } : { ...contactContent, openingHoursDe: e.target.value })}
@@ -4331,7 +3282,7 @@ export const StudioPage: React.FC = () => {
 
               <div className="md:col-span-2">
                 <label className="block text-[12px] font-bold text-[#333] mb-1">Description Text ({adminContentLang.toUpperCase()})</label>
-                <textarea
+                <textarea aria-label={`Description Text ( ${adminContentLang.toUpperCase()} )`}
                   rows={2}
                   value={adminContentLang === 'en' ? (contactContent.descEn || '') : (contactContent.descDe || '')}
                   onChange={(e) => _setContactContent(adminContentLang === 'en' ? { ...contactContent, descEn: e.target.value } : { ...contactContent, descDe: e.target.value })}
@@ -4347,7 +3298,7 @@ export const StudioPage: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[12px] font-bold text-[#333] mb-1">Phone Number</label>
-                  <input
+                  <input aria-label={`Phone Number`}
                     type="text"
                     value={contactContent.phone || ''}
                     onChange={(e) => _setContactContent({ ...contactContent, phone: e.target.value })}
@@ -4357,7 +3308,7 @@ export const StudioPage: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-[12px] font-bold text-[#333] mb-1">Email Address</label>
-                  <input
+                  <input aria-label={`Email Address`}
                     type="email"
                     value={contactContent.email || ''}
                     onChange={(e) => _setContactContent({ ...contactContent, email: e.target.value })}
@@ -4367,7 +3318,7 @@ export const StudioPage: React.FC = () => {
                 </div>
                 <div className="md:col-span-2">
                   <label className="block text-[12px] font-bold text-[#333] mb-1">Full Street Address</label>
-                  <input
+                  <input aria-label={`Full Street Address`}
                     type="text"
                     value={contactContent.address || ''}
                     onChange={(e) => _setContactContent({ ...contactContent, address: e.target.value })}
@@ -4379,32 +3330,17 @@ export const StudioPage: React.FC = () => {
             </div>
 
             {/* TheFork Integration */}
-            <div className="pt-2 border-t border-gray-100">
-              <h3 className="text-[14px] font-bold text-[#1e382f] mb-2 flex items-center gap-2">
-                <span className="w-5 h-5 rounded bg-[#00A680] text-white text-[10px] font-black flex items-center justify-center">TF</span>
-                <span>TheFork Widget ID</span>
-              </h3>
-              <p className="text-[12px] text-gray-500 mb-2">
-                TheFork restaurant UUID embedded in the online reservation popup.
-              </p>
-              <input
-                type="text"
-                value={contactContent.theforkWidgetId || ''}
-                onChange={(e) => _setContactContent({ ...contactContent, theforkWidgetId: e.target.value })}
-                placeholder="7beffe40-786f-496c-b196-48b939750c77"
-                className="w-full font-mono text-[13px] border rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-[#d85c27]"
-              />
-            </div>
+            <p className="rounded-xl bg-amber-50 p-4 text-sm text-amber-900">Manage the booking widget in <button type="button" onClick={() => setActiveTab('reservations')} className="underline font-bold">Table bookings</button>.</p>
 
             <div className="pt-3 border-t border-gray-100">
               <button
                 type="submit"
                 className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-7 py-3 rounded-full text-[14px] shadow-sm hover:shadow-md transition-all flex items-center gap-2"
               >
-                <Save className="w-4 h-4" /> Save Contact Information
+                <Save className="w-4 h-4" /> Save &amp; publish
               </button>
             </div>
-          </form>
+          </fieldset></form>
         )}
 
 
@@ -4412,7 +3348,7 @@ export const StudioPage: React.FC = () => {
             TAB 8: PRINT / VISUAL MENU CARDS
         ═══════════════════════════════════════════════ */}
         {activeTab === 'printMenu' && (
-          <form onSubmit={handleSavePrintMenu} className="bg-[#fffdfa] rounded-[24px] p-6 sm:p-8 border border-[#ebdcd0] shadow-sm space-y-6">
+          <form id={`studio-form-${activeTab}`} onSubmit={handleSavePrintMenu} className="bg-[#fffdfa] rounded-[24px] p-6 sm:p-8 border border-[#ebdcd0] shadow-sm space-y-6"><fieldset disabled={!!publishingSection || !!currentSource?.loading || !!currentSource?.error} className="contents">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-5">
               <div>
                 <h2 className="text-[20px] font-black text-[#1e382f] flex items-center gap-2.5">
@@ -4452,7 +3388,7 @@ export const StudioPage: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-[12px] font-bold text-[#333] mb-1">Badge Title ({adminContentLang.toUpperCase()})</label>
-                <input
+                <input aria-label={`Badge Title ( ${adminContentLang.toUpperCase()} )`}
                   type="text"
                   value={adminContentLang === 'en' ? (printMenuContent.badgeEn || '') : (printMenuContent.badgeDe || '')}
                   onChange={(e) => _setPrintMenuContent(adminContentLang === 'en' ? { ...printMenuContent, badgeEn: e.target.value } : { ...printMenuContent, badgeDe: e.target.value })}
@@ -4463,7 +3399,7 @@ export const StudioPage: React.FC = () => {
 
               <div>
                 <label className="block text-[12px] font-bold text-[#333] mb-1">Section Title ({adminContentLang.toUpperCase()})</label>
-                <input
+                <input aria-label={`Section Title ( ${adminContentLang.toUpperCase()} )`}
                   type="text"
                   value={adminContentLang === 'en' ? (printMenuContent.titleEn || '') : (printMenuContent.titleDe || '')}
                   onChange={(e) => _setPrintMenuContent(adminContentLang === 'en' ? { ...printMenuContent, titleEn: e.target.value } : { ...printMenuContent, titleDe: e.target.value })}
@@ -4474,7 +3410,7 @@ export const StudioPage: React.FC = () => {
 
               <div className="md:col-span-2">
                 <label className="block text-[12px] font-bold text-[#333] mb-1">Section Description ({adminContentLang.toUpperCase()})</label>
-                <textarea
+                <textarea aria-label={`Section Description ( ${adminContentLang.toUpperCase()} )`}
                   rows={2}
                   value={adminContentLang === 'en' ? (printMenuContent.descEn || '') : (printMenuContent.descDe || '')}
                   onChange={(e) => _setPrintMenuContent(adminContentLang === 'en' ? { ...printMenuContent, descEn: e.target.value } : { ...printMenuContent, descDe: e.target.value })}
@@ -4486,7 +3422,7 @@ export const StudioPage: React.FC = () => {
 
             {/* Menu Cards Editor (Page 1 & Page 2) */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-2 border-t border-gray-100">
-              
+
               {/* ── Page 1: Bowls & Naan ── */}
               <div className="bg-[#fcf8f3] border border-[#ebdcd0] rounded-2xl p-5 space-y-4">
                 <div className="flex items-center justify-between">
@@ -4505,7 +3441,7 @@ export const StudioPage: React.FC = () => {
 
                 <div>
                   <label className="block text-[11.5px] font-bold text-gray-700 mb-1">Card Title ({adminContentLang.toUpperCase()})</label>
-                  <input
+                  <input aria-label={`Card Title ( ${adminContentLang.toUpperCase()} )`}
                     type="text"
                     value={adminContentLang === 'en' ? (printMenuContent.page1TitleEn || '') : (printMenuContent.page1TitleDe || '')}
                     onChange={(e) => _setPrintMenuContent(adminContentLang === 'en' ? { ...printMenuContent, page1TitleEn: e.target.value } : { ...printMenuContent, page1TitleDe: e.target.value })}
@@ -4516,7 +3452,7 @@ export const StudioPage: React.FC = () => {
 
                 <div>
                   <label className="block text-[11.5px] font-bold text-gray-700 mb-1">Card Description ({adminContentLang.toUpperCase()})</label>
-                  <textarea
+                  <textarea aria-label={`Card Description ( ${adminContentLang.toUpperCase()} )`}
                     rows={2}
                     value={adminContentLang === 'en' ? (printMenuContent.page1DescEn || '') : (printMenuContent.page1DescDe || '')}
                     onChange={(e) => _setPrintMenuContent(adminContentLang === 'en' ? { ...printMenuContent, page1DescEn: e.target.value } : { ...printMenuContent, page1DescDe: e.target.value })}
@@ -4579,7 +3515,7 @@ export const StudioPage: React.FC = () => {
 
                 <div>
                   <label className="block text-[11.5px] font-bold text-gray-700 mb-1">Card Title ({adminContentLang.toUpperCase()})</label>
-                  <input
+                  <input aria-label={`Card Title ( ${adminContentLang.toUpperCase()} )`}
                     type="text"
                     value={adminContentLang === 'en' ? (printMenuContent.page2TitleEn || '') : (printMenuContent.page2TitleDe || '')}
                     onChange={(e) => _setPrintMenuContent(adminContentLang === 'en' ? { ...printMenuContent, page2TitleEn: e.target.value } : { ...printMenuContent, page2TitleDe: e.target.value })}
@@ -4590,7 +3526,7 @@ export const StudioPage: React.FC = () => {
 
                 <div>
                   <label className="block text-[11.5px] font-bold text-gray-700 mb-1">Card Description ({adminContentLang.toUpperCase()})</label>
-                  <textarea
+                  <textarea aria-label={`Card Description ( ${adminContentLang.toUpperCase()} )`}
                     rows={2}
                     value={adminContentLang === 'en' ? (printMenuContent.page2DescEn || '') : (printMenuContent.page2DescDe || '')}
                     onChange={(e) => _setPrintMenuContent(adminContentLang === 'en' ? { ...printMenuContent, page2DescEn: e.target.value } : { ...printMenuContent, page2DescDe: e.target.value })}
@@ -4642,10 +3578,10 @@ export const StudioPage: React.FC = () => {
                 type="submit"
                 className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-7 py-3 rounded-full text-[14px] shadow-sm hover:shadow-md transition-all flex items-center gap-2"
               >
-                <Save className="w-4 h-4" /> Save Visual Menu Cards
+                <Save className="w-4 h-4" /> Save &amp; publish
               </button>
             </div>
-          </form>
+          </fieldset></form>
         )}
 
         {/* ═══════════════════════════════════════════════
@@ -4796,7 +3732,7 @@ export const StudioPage: React.FC = () => {
                           <div className="flex-1 md:max-w-[420px]">
                             {editingNoteId === (item._id || item.id) ? (
                               <div className="flex items-center gap-2">
-                                <input
+                                <input aria-label="Add manager internal note (e.g. sent quote €45/head)..."
                                   type="text"
                                   value={noteDraft}
                                   onChange={(e) => setNoteDraft(e.target.value)}
@@ -5005,7 +3941,7 @@ export const StudioPage: React.FC = () => {
                           <div className="flex-1 md:max-w-[420px]">
                             {editingNoteId === (item._id || item.id) ? (
                               <div className="flex items-center gap-2">
-                                <input
+                                <input aria-label="Add HR / interview feedback note..."
                                   type="text"
                                   value={noteDraft}
                                   onChange={(e) => setNoteDraft(e.target.value)}
@@ -5059,7 +3995,7 @@ export const StudioPage: React.FC = () => {
             TAB 11: CATERING PAGE CONTENT & PACKAGES
         ═══════════════════════════════════════════════ */}
         {activeTab === 'catering' && (
-          <form onSubmit={handleSaveCatering} className="bg-[#fffdfa] rounded-[24px] p-6 sm:p-8 border border-[#ebdcd0] shadow-sm space-y-6">
+          <form id={`studio-form-${activeTab}`} onSubmit={handleSaveCatering} className="bg-[#fffdfa] rounded-[24px] p-6 sm:p-8 border border-[#ebdcd0] shadow-sm space-y-6"><fieldset disabled={!!publishingSection || !!currentSource?.loading || !!currentSource?.error} className="contents">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-5">
               <div>
                 <h2 className="text-[20px] font-black text-[#1e382f] flex items-center gap-2.5">
@@ -5101,7 +4037,7 @@ export const StudioPage: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[12px] font-bold text-[#333] mb-1">Badge / Tagline ({adminContentLang.toUpperCase()})</label>
-                  <input
+                  <input aria-label={`Badge / Tagline ( ${adminContentLang.toUpperCase()} )`}
                     type="text"
                     value={adminContentLang === 'en' ? (cateringContent.badgeEn || '') : (cateringContent.badgeDe || '')}
                     onChange={(e) => _setCateringContent(adminContentLang === 'en' ? { ...cateringContent, badgeEn: e.target.value } : { ...cateringContent, badgeDe: e.target.value })}
@@ -5111,7 +4047,7 @@ export const StudioPage: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-[12px] font-bold text-[#333] mb-1">Lead Time Notice ({adminContentLang.toUpperCase()})</label>
-                  <input
+                  <input aria-label={`Lead Time Notice ( ${adminContentLang.toUpperCase()} )`}
                     type="text"
                     value={adminContentLang === 'en' ? (cateringContent.leadTimeEn || '') : (cateringContent.leadTimeDe || '')}
                     onChange={(e) => _setCateringContent(adminContentLang === 'en' ? { ...cateringContent, leadTimeEn: e.target.value } : { ...cateringContent, leadTimeDe: e.target.value })}
@@ -5123,7 +4059,7 @@ export const StudioPage: React.FC = () => {
 
               <div>
                 <label className="block text-[12px] font-bold text-[#333] mb-1">Hero Title ({adminContentLang.toUpperCase()})</label>
-                <input
+                <input aria-label={`Hero Title ( ${adminContentLang.toUpperCase()} )`}
                   type="text"
                   value={adminContentLang === 'en' ? (cateringContent.heroTitleEn || '') : (cateringContent.heroTitleDe || '')}
                   onChange={(e) => _setCateringContent(adminContentLang === 'en' ? { ...cateringContent, heroTitleEn: e.target.value } : { ...cateringContent, heroTitleDe: e.target.value })}
@@ -5134,7 +4070,7 @@ export const StudioPage: React.FC = () => {
 
               <div>
                 <label className="block text-[12px] font-bold text-[#333] mb-1">Hero Description ({adminContentLang.toUpperCase()})</label>
-                <textarea
+                <textarea aria-label={`Hero Description ( ${adminContentLang.toUpperCase()} )`}
                   rows={2}
                   value={adminContentLang === 'en' ? (cateringContent.heroDescEn || '') : (cateringContent.heroDescDe || '')}
                   onChange={(e) => _setCateringContent(adminContentLang === 'en' ? { ...cateringContent, heroDescEn: e.target.value } : { ...cateringContent, heroDescDe: e.target.value })}
@@ -5188,7 +4124,7 @@ export const StudioPage: React.FC = () => {
                         <span className="w-6 h-6 rounded-full bg-[#d85c27] text-white text-[11px] font-black flex items-center justify-center">
                           {idx + 1}
                         </span>
-                        <input
+                        <input aria-label="Package Name"
                           type="text"
                           value={adminContentLang === 'en' ? pkg.name : (pkg.nameDe || pkg.name)}
                           onChange={(e) => {
@@ -5240,7 +4176,7 @@ export const StudioPage: React.FC = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div>
                         <label className="block text-[11px] font-bold text-gray-600 mb-1">Price Per Person (€)</label>
-                        <input
+                        <input aria-label={`Price Per Person (€)`}
                           type="number"
                           step="0.1"
                           value={pkg.pricePerPerson}
@@ -5259,7 +4195,7 @@ export const StudioPage: React.FC = () => {
                       </div>
                       <div>
                         <label className="block text-[11px] font-bold text-gray-600 mb-1">Min Guests</label>
-                        <input
+                        <input aria-label={`Min Guests`}
                           type="number"
                           value={pkg.minGuests || 10}
                           onChange={(e) => {
@@ -5272,7 +4208,7 @@ export const StudioPage: React.FC = () => {
                       </div>
                       <div>
                         <label className="block text-[11px] font-bold text-gray-600 mb-1">Suitable For Tag ({adminContentLang.toUpperCase()})</label>
-                        <input
+                        <input aria-label={`Suitable For Tag ( ${adminContentLang.toUpperCase()} )`}
                           type="text"
                           value={adminContentLang === 'en' ? (pkg.suitableForEn || '') : (pkg.suitableForDe || '')}
                           onChange={(e) => {
@@ -5384,7 +4320,7 @@ export const StudioPage: React.FC = () => {
                 {(cateringContent.faqs || []).map((faq, fIdx) => (
                   <div key={fIdx} className="bg-white rounded-xl p-4 border border-[#ebdcd0] space-y-2">
                     <div className="flex items-center justify-between gap-2">
-                      <input
+                      <input aria-label="Question"
                         type="text"
                         value={adminContentLang === 'en' ? faq.qEn : faq.qDe}
                         onChange={(e) => {
@@ -5397,7 +4333,7 @@ export const StudioPage: React.FC = () => {
                         placeholder="Question"
                         className="font-bold text-[13.5px] text-[#1e382f] w-full border-b border-gray-200 pb-1 focus:outline-none focus:border-[#d85c27]"
                       />
-                      <button
+                      <button aria-label="Remove item"
                         type="button"
                         onClick={() => {
                           const updated = (cateringContent.faqs || []).filter((_, i) => i !== fIdx);
@@ -5408,7 +4344,7 @@ export const StudioPage: React.FC = () => {
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
-                    <textarea
+                    <textarea aria-label="Answer"
                       rows={2}
                       value={adminContentLang === 'en' ? faq.aEn : faq.aDe}
                       onChange={(e) => {
@@ -5431,17 +4367,17 @@ export const StudioPage: React.FC = () => {
                 type="submit"
                 className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-7 py-3 rounded-full text-[14px] shadow-sm hover:shadow-md transition-all flex items-center gap-2"
               >
-                <Save className="w-4 h-4" /> Save Catering Content & Pricing
+                <Save className="w-4 h-4" /> Save &amp; publish
               </button>
             </div>
-          </form>
+          </fieldset></form>
         )}
 
         {/* ═══════════════════════════════════════════════
             TAB 12: CAREERS / JOBS PAGE CONTENT
         ═══════════════════════════════════════════════ */}
         {activeTab === 'jobs' && (
-          <form onSubmit={handleSaveJobs} className="bg-[#fffdfa] rounded-[24px] p-6 sm:p-8 border border-[#ebdcd0] shadow-sm space-y-6">
+          <form id={`studio-form-${activeTab}`} onSubmit={handleSaveJobs} className="bg-[#fffdfa] rounded-[24px] p-6 sm:p-8 border border-[#ebdcd0] shadow-sm space-y-6"><fieldset disabled={!!publishingSection || !!currentSource?.loading || !!currentSource?.error} className="contents">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-5">
               <div>
                 <h2 className="text-[20px] font-black text-[#1e382f] flex items-center gap-2.5">
@@ -5483,7 +4419,7 @@ export const StudioPage: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[12px] font-bold text-[#333] mb-1">Badge ({adminContentLang.toUpperCase()})</label>
-                  <input
+                  <input aria-label={`Badge ( ${adminContentLang.toUpperCase()} )`}
                     type="text"
                     value={adminContentLang === 'en' ? (jobsContent.badgeEn || '') : (jobsContent.badgeDe || '')}
                     onChange={(e) => _setJobsContent(adminContentLang === 'en' ? { ...jobsContent, badgeEn: e.target.value } : { ...jobsContent, badgeDe: e.target.value })}
@@ -5493,7 +4429,7 @@ export const StudioPage: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-[12px] font-bold text-[#333] mb-1">Culture Section Title ({adminContentLang.toUpperCase()})</label>
-                  <input
+                  <input aria-label={`Culture Section Title ( ${adminContentLang.toUpperCase()} )`}
                     type="text"
                     value={adminContentLang === 'en' ? (jobsContent.cultureTitleEn || '') : (jobsContent.cultureTitleDe || '')}
                     onChange={(e) => _setJobsContent(adminContentLang === 'en' ? { ...jobsContent, cultureTitleEn: e.target.value } : { ...jobsContent, cultureTitleDe: e.target.value })}
@@ -5505,7 +4441,7 @@ export const StudioPage: React.FC = () => {
 
               <div>
                 <label className="block text-[12px] font-bold text-[#333] mb-1">Hero Title ({adminContentLang.toUpperCase()})</label>
-                <input
+                <input aria-label={`Hero Title ( ${adminContentLang.toUpperCase()} )`}
                   type="text"
                   value={adminContentLang === 'en' ? (jobsContent.heroTitleEn || '') : (jobsContent.heroTitleDe || '')}
                   onChange={(e) => _setJobsContent(adminContentLang === 'en' ? { ...jobsContent, heroTitleEn: e.target.value } : { ...jobsContent, heroTitleDe: e.target.value })}
@@ -5516,7 +4452,7 @@ export const StudioPage: React.FC = () => {
 
               <div>
                 <label className="block text-[12px] font-bold text-[#333] mb-1">Hero Tagline ({adminContentLang.toUpperCase()})</label>
-                <textarea
+                <textarea aria-label={`Hero Tagline ( ${adminContentLang.toUpperCase()} )`}
                   rows={2}
                   value={adminContentLang === 'en' ? (jobsContent.heroDescEn || '') : (jobsContent.heroDescDe || '')}
                   onChange={(e) => _setJobsContent(adminContentLang === 'en' ? { ...jobsContent, heroDescEn: e.target.value } : { ...jobsContent, heroDescDe: e.target.value })}
@@ -5599,7 +4535,7 @@ export const StudioPage: React.FC = () => {
                           {job.active ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
                           <span>{job.active ? 'Active (Live)' : 'Draft (Hidden)'}</span>
                         </button>
-                        <input
+                        <input aria-label="Job Title"
                           type="text"
                           value={adminContentLang === 'en' ? job.titleEn : job.titleDe}
                           onChange={(e) => {
@@ -5633,7 +4569,7 @@ export const StudioPage: React.FC = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div>
                         <label className="block text-[11px] font-bold text-gray-600 mb-1">Department</label>
-                        <select
+                        <select aria-label={`Department`}
                           value={job.department}
                           onChange={(e) => {
                             const val = e.target.value as any;
@@ -5663,7 +4599,7 @@ export const StudioPage: React.FC = () => {
 
                       <div>
                         <label className="block text-[11px] font-bold text-gray-600 mb-1">Type ({adminContentLang.toUpperCase()})</label>
-                        <input
+                        <input aria-label={`Type ( ${adminContentLang.toUpperCase()} )`}
                           type="text"
                           value={adminContentLang === 'en' ? job.typeEn : job.typeDe}
                           onChange={(e) => {
@@ -5680,7 +4616,7 @@ export const StudioPage: React.FC = () => {
 
                       <div>
                         <label className="block text-[11px] font-bold text-gray-600 mb-1">Location</label>
-                        <input
+                        <input aria-label={`Location`}
                           type="text"
                           value={job.location || 'Berlin Mitte (Zimmerstraße 56)'}
                           onChange={(e) => {
@@ -5695,7 +4631,7 @@ export const StudioPage: React.FC = () => {
 
                     <div>
                       <label className="block text-[11px] font-bold text-gray-600 mb-1">Short Summary ({adminContentLang.toUpperCase()})</label>
-                      <input
+                      <input aria-label={`Short Summary ( ${adminContentLang.toUpperCase()} )`}
                         type="text"
                         value={adminContentLang === 'en' ? (job.summaryEn || '') : (job.summaryDe || '')}
                         onChange={(e) => {
@@ -5711,7 +4647,7 @@ export const StudioPage: React.FC = () => {
 
                     <div>
                       <label className="block text-[11px] font-bold text-gray-600 mb-1">What We Offer / Perks ({adminContentLang.toUpperCase()})</label>
-                      <input
+                      <input aria-label={`What We Offer / Perks ( ${adminContentLang.toUpperCase()} )`}
                         type="text"
                         value={adminContentLang === 'en' ? (job.offerEn || '') : (job.offerDe || '')}
                         onChange={(e) => {
@@ -5794,17 +4730,17 @@ export const StudioPage: React.FC = () => {
                 type="submit"
                 className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-7 py-3 rounded-full text-[14px] shadow-sm hover:shadow-md transition-all flex items-center gap-2"
               >
-                <Save className="w-4 h-4" /> Save Careers Page & Job Postings
+                <Save className="w-4 h-4" /> Save &amp; publish
               </button>
             </div>
-          </form>
+          </fieldset></form>
         )}
 
         {/* ═══════════════════════════════════════════════
             TAB 13: ABOUT US & BRAND STORY CONTENT
         ═══════════════════════════════════════════════ */}
         {activeTab === 'about' && (
-          <form onSubmit={handleSaveAbout} className="bg-[#fffdfa] rounded-[24px] p-6 sm:p-8 border border-[#ebdcd0] shadow-sm space-y-6">
+          <form id={`studio-form-${activeTab}`} onSubmit={handleSaveAbout} className="bg-[#fffdfa] rounded-[24px] p-6 sm:p-8 border border-[#ebdcd0] shadow-sm space-y-6"><fieldset disabled={!!publishingSection || !!currentSource?.loading || !!currentSource?.error} className="contents">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-5">
               <div>
                 <h2 className="text-[20px] font-black text-[#1e382f] flex items-center gap-2.5">
@@ -5845,7 +4781,7 @@ export const StudioPage: React.FC = () => {
               <h3 className="text-[14px] font-extrabold text-[#1e382f] uppercase tracking-wider">1. Hero Section</h3>
               <div>
                 <label className="block text-[12px] font-bold text-[#333] mb-1">Headline ({adminContentLang.toUpperCase()})</label>
-                <input
+                <input aria-label={`Headline ( ${adminContentLang.toUpperCase()} )`}
                   type="text"
                   value={adminContentLang === 'en' ? (aboutContent.heroTitleEn || '') : (aboutContent.heroTitleDe || '')}
                   onChange={(e) => _setAboutContent(adminContentLang === 'en' ? { ...aboutContent, heroTitleEn: e.target.value } : { ...aboutContent, heroTitleDe: e.target.value })}
@@ -5855,7 +4791,7 @@ export const StudioPage: React.FC = () => {
               </div>
               <div>
                 <label className="block text-[12px] font-bold text-[#333] mb-1">Hero Subtitle ({adminContentLang.toUpperCase()})</label>
-                <textarea
+                <textarea aria-label={`Hero Subtitle ( ${adminContentLang.toUpperCase()} )`}
                   rows={2}
                   value={adminContentLang === 'en' ? (aboutContent.heroSubtitleEn || '') : (aboutContent.heroSubtitleDe || '')}
                   onChange={(e) => _setAboutContent(adminContentLang === 'en' ? { ...aboutContent, heroSubtitleEn: e.target.value } : { ...aboutContent, heroSubtitleDe: e.target.value })}
@@ -5869,7 +4805,7 @@ export const StudioPage: React.FC = () => {
               <h3 className="text-[14px] font-extrabold text-[#1e382f] uppercase tracking-wider">2. Our Story Section</h3>
               <div>
                 <label className="block text-[12px] font-bold text-[#333] mb-1">Section Title ({adminContentLang.toUpperCase()})</label>
-                <input
+                <input aria-label={`Section Title ( ${adminContentLang.toUpperCase()} )`}
                   type="text"
                   value={adminContentLang === 'en' ? (aboutContent.storyTitleEn || '') : (aboutContent.storyTitleDe || '')}
                   onChange={(e) => _setAboutContent(adminContentLang === 'en' ? { ...aboutContent, storyTitleEn: e.target.value } : { ...aboutContent, storyTitleDe: e.target.value })}
@@ -5880,7 +4816,7 @@ export const StudioPage: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[12px] font-bold text-[#333] mb-1">Story Paragraph 1 ({adminContentLang.toUpperCase()})</label>
-                  <textarea
+                  <textarea aria-label={`Story Paragraph 1 ( ${adminContentLang.toUpperCase()} )`}
                     rows={4}
                     value={adminContentLang === 'en' ? (aboutContent.storyP1En || '') : (aboutContent.storyP1De || '')}
                     onChange={(e) => _setAboutContent(adminContentLang === 'en' ? { ...aboutContent, storyP1En: e.target.value } : { ...aboutContent, storyP1De: e.target.value })}
@@ -5889,7 +4825,7 @@ export const StudioPage: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-[12px] font-bold text-[#333] mb-1">Story Paragraph 2 ({adminContentLang.toUpperCase()})</label>
-                  <textarea
+                  <textarea aria-label={`Story Paragraph 2 ( ${adminContentLang.toUpperCase()} )`}
                     rows={4}
                     value={adminContentLang === 'en' ? (aboutContent.storyP2En || '') : (aboutContent.storyP2De || '')}
                     onChange={(e) => _setAboutContent(adminContentLang === 'en' ? { ...aboutContent, storyP2En: e.target.value } : { ...aboutContent, storyP2De: e.target.value })}
@@ -5904,7 +4840,7 @@ export const StudioPage: React.FC = () => {
               <h3 className="text-[14px] font-extrabold text-[#1e382f] uppercase tracking-wider">3. The Meaning of "Maati" (मिट्टी)</h3>
               <div>
                 <label className="block text-[12px] font-bold text-[#333] mb-1">Box Title ({adminContentLang.toUpperCase()})</label>
-                <input
+                <input aria-label={`Box Title ( ${adminContentLang.toUpperCase()} )`}
                   type="text"
                   value={adminContentLang === 'en' ? (aboutContent.maatiMeaningTitleEn || '') : (aboutContent.maatiMeaningTitleDe || '')}
                   onChange={(e) => _setAboutContent(adminContentLang === 'en' ? { ...aboutContent, maatiMeaningTitleEn: e.target.value } : { ...aboutContent, maatiMeaningTitleDe: e.target.value })}
@@ -5915,7 +4851,7 @@ export const StudioPage: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[12px] font-bold text-[#333] mb-1">Explanation Part 1 ({adminContentLang.toUpperCase()})</label>
-                  <textarea
+                  <textarea aria-label={`Explanation Part 1 ( ${adminContentLang.toUpperCase()} )`}
                     rows={3}
                     value={adminContentLang === 'en' ? (aboutContent.maatiMeaningP1En || '') : (aboutContent.maatiMeaningP1De || '')}
                     onChange={(e) => _setAboutContent(adminContentLang === 'en' ? { ...aboutContent, maatiMeaningP1En: e.target.value } : { ...aboutContent, maatiMeaningP1De: e.target.value })}
@@ -5924,7 +4860,7 @@ export const StudioPage: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-[12px] font-bold text-[#333] mb-1">Explanation Part 2 ({adminContentLang.toUpperCase()})</label>
-                  <textarea
+                  <textarea aria-label={`Explanation Part 2 ( ${adminContentLang.toUpperCase()} )`}
                     rows={3}
                     value={adminContentLang === 'en' ? (aboutContent.maatiMeaningP2En || '') : (aboutContent.maatiMeaningP2De || '')}
                     onChange={(e) => _setAboutContent(adminContentLang === 'en' ? { ...aboutContent, maatiMeaningP2En: e.target.value } : { ...aboutContent, maatiMeaningP2De: e.target.value })}
@@ -6049,17 +4985,17 @@ export const StudioPage: React.FC = () => {
                 type="submit"
                 className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-7 py-3 rounded-full text-[14px] shadow-sm hover:shadow-md transition-all flex items-center gap-2"
               >
-                <Save className="w-4 h-4" /> Save About Us Content
+                <Save className="w-4 h-4" /> Save &amp; publish
               </button>
             </div>
-          </form>
+          </fieldset></form>
         )}
 
         {/* ═══════════════════════════════════════════════
             TAB 14: LEGAL, IMPRESSUM & PRIVACY
         ═══════════════════════════════════════════════ */}
         {activeTab === 'legal' && (
-          <form onSubmit={handleSaveLegal} className="bg-[#fffdfa] rounded-[24px] p-6 sm:p-8 border border-[#ebdcd0] shadow-sm space-y-6">
+          <form id={`studio-form-${activeTab}`} onSubmit={handleSaveLegal} className="bg-[#fffdfa] rounded-[24px] p-6 sm:p-8 border border-[#ebdcd0] shadow-sm space-y-6"><fieldset disabled={!!publishingSection || !!currentSource?.loading || !!currentSource?.error} className="contents">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-5">
               <div>
                 <h2 className="text-[20px] font-black text-[#1e382f] flex items-center gap-2.5">
@@ -6077,11 +5013,11 @@ export const StudioPage: React.FC = () => {
               <h3 className="text-[14px] font-extrabold text-[#1e382f] uppercase tracking-wider">
                 1. Impressum (§ 5 TMG Angaben)
               </h3>
-              
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[12px] font-bold text-[#333] mb-1">Company Legal Name *</label>
-                  <input
+                  <input aria-label={`Company Legal Name *`}
                     type="text"
                     value={legalContent.impressumCompanyName || ''}
                     onChange={(e) => _setLegalContent({ ...legalContent, impressumCompanyName: e.target.value })}
@@ -6091,7 +5027,7 @@ export const StudioPage: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-[12px] font-bold text-[#333] mb-1">Managing Director / Vertreten durch *</label>
-                  <input
+                  <input aria-label={`Managing Director / Vertreten durch *`}
                     type="text"
                     value={legalContent.impressumManagingDirector || ''}
                     onChange={(e) => _setLegalContent({ ...legalContent, impressumManagingDirector: e.target.value })}
@@ -6103,7 +5039,7 @@ export const StudioPage: React.FC = () => {
 
               <div>
                 <label className="block text-[12px] font-bold text-[#333] mb-1">Registered Address *</label>
-                <input
+                <input aria-label={`Registered Address *`}
                   type="text"
                   value={legalContent.impressumAddress || ''}
                   onChange={(e) => _setLegalContent({ ...legalContent, impressumAddress: e.target.value })}
@@ -6115,7 +5051,7 @@ export const StudioPage: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[12px] font-bold text-[#333] mb-1">Register Court & Number *</label>
-                  <input
+                  <input aria-label={`Register Court & Number *`}
                     type="text"
                     value={legalContent.impressumRegisterCourt || ''}
                     onChange={(e) => _setLegalContent({ ...legalContent, impressumRegisterCourt: e.target.value })}
@@ -6125,7 +5061,7 @@ export const StudioPage: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-[12px] font-bold text-[#333] mb-1">VAT ID / USt-IdNr.</label>
-                  <input
+                  <input aria-label={`VAT ID / USt-IdNr.`}
                     type="text"
                     value={legalContent.impressumVatId || ''}
                     onChange={(e) => _setLegalContent({ ...legalContent, impressumVatId: e.target.value })}
@@ -6138,7 +5074,7 @@ export const StudioPage: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[12px] font-bold text-[#333] mb-1">Official Legal Email</label>
-                  <input
+                  <input aria-label={`Official Legal Email`}
                     type="email"
                     value={legalContent.impressumEmail || ''}
                     onChange={(e) => _setLegalContent({ ...legalContent, impressumEmail: e.target.value })}
@@ -6148,7 +5084,7 @@ export const StudioPage: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-[12px] font-bold text-[#333] mb-1">Official Legal Phone</label>
-                  <input
+                  <input aria-label={`Official Legal Phone`}
                     type="text"
                     value={legalContent.impressumPhone || ''}
                     onChange={(e) => _setLegalContent({ ...legalContent, impressumPhone: e.target.value })}
@@ -6168,7 +5104,7 @@ export const StudioPage: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[12px] font-bold text-[#333] mb-1">Privacy Policy Intro (English)</label>
-                  <textarea
+                  <textarea aria-label={`Privacy Policy Intro (English)`}
                     rows={3}
                     value={legalContent.privacyPolicyEn || ''}
                     onChange={(e) => _setLegalContent({ ...legalContent, privacyPolicyEn: e.target.value })}
@@ -6177,7 +5113,7 @@ export const StudioPage: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-[12px] font-bold text-[#333] mb-1">Privacy Policy Intro (Deutsch)</label>
-                  <textarea
+                  <textarea aria-label={`Privacy Policy Intro (Deutsch)`}
                     rows={3}
                     value={legalContent.privacyPolicyDe || ''}
                     onChange={(e) => _setLegalContent({ ...legalContent, privacyPolicyDe: e.target.value })}
@@ -6189,7 +5125,7 @@ export const StudioPage: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[12px] font-bold text-[#333] mb-1">Terms & Conditions (English)</label>
-                  <textarea
+                  <textarea aria-label={`Terms & Conditions (English)`}
                     rows={3}
                     value={legalContent.termsEn || ''}
                     onChange={(e) => _setLegalContent({ ...legalContent, termsEn: e.target.value })}
@@ -6198,7 +5134,7 @@ export const StudioPage: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-[12px] font-bold text-[#333] mb-1">Terms & Conditions (Deutsch)</label>
-                  <textarea
+                  <textarea aria-label={`Terms & Conditions (Deutsch)`}
                     rows={3}
                     value={legalContent.termsDe || ''}
                     onChange={(e) => _setLegalContent({ ...legalContent, termsDe: e.target.value })}
@@ -6213,10 +5149,10 @@ export const StudioPage: React.FC = () => {
                 type="submit"
                 className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-7 py-3 rounded-full text-[14px] shadow-sm hover:shadow-md transition-all flex items-center gap-2"
               >
-                <Save className="w-4 h-4" /> Save Legal & Impressum Details
+                <Save className="w-4 h-4" /> Save &amp; publish
               </button>
             </div>
-          </form>
+          </fieldset></form>
         )}
 
         {/* ═══════════════════════════════════════════════
@@ -6224,7 +5160,7 @@ export const StudioPage: React.FC = () => {
         ═══════════════════════════════════════════════ */}
         {activeTab === 'landingPages' && (() => {
           const currentLanding = landingPagesContent[selectedLandingKey] || DEFAULT_LANDING_PAGES[selectedLandingKey];
-          
+
           const updateLandingField = (field: keyof LandingCategoryConfig, value: any) => {
             _setLandingPagesContent((prev) => ({
               ...prev,
@@ -6266,7 +5202,7 @@ export const StudioPage: React.FC = () => {
           ];
 
           return (
-            <form onSubmit={handleSaveLandingPages} className="bg-[#fffdfa] rounded-[24px] p-6 sm:p-8 border border-[#ebdcd0] shadow-sm space-y-6 animate-fadeIn">
+            <form id={`studio-form-${activeTab}`} onSubmit={handleSaveLandingPages} className="bg-[#fffdfa] rounded-[24px] p-6 sm:p-8 border border-[#ebdcd0] shadow-sm space-y-6 animate-fadeIn"><fieldset disabled={!!publishingSection || !!currentSource?.loading || !!currentSource?.error} className="contents">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-5">
                 <div>
                   <h2 className="text-[20px] font-black text-[#1e382f] flex items-center gap-2.5">
@@ -6351,7 +5287,7 @@ export const StudioPage: React.FC = () => {
                     <label className="block text-[12px] font-bold text-[#333] mb-1">
                       Browser Tab Title ({adminContentLang.toUpperCase()}) *
                     </label>
-                    <input
+                    <input aria-label={`Browser Tab Title ( ${adminContentLang.toUpperCase()} ) *`}
                       type="text"
                       value={adminContentLang === 'en' ? (currentLanding.titleEn || '') : (currentLanding.titleDe || '')}
                       onChange={(e) => updateLandingField(adminContentLang === 'en' ? 'titleEn' : 'titleDe', e.target.value)}
@@ -6362,7 +5298,7 @@ export const StudioPage: React.FC = () => {
                     <label className="block text-[12px] font-bold text-[#333] mb-1">
                       Meta Description ({adminContentLang.toUpperCase()}) *
                     </label>
-                    <input
+                    <input aria-label={`Meta Description ( ${adminContentLang.toUpperCase()} ) *`}
                       type="text"
                       value={adminContentLang === 'en' ? (currentLanding.descEn || '') : (currentLanding.descDe || '')}
                       onChange={(e) => updateLandingField(adminContentLang === 'en' ? 'descEn' : 'descDe', e.target.value)}
@@ -6382,7 +5318,7 @@ export const StudioPage: React.FC = () => {
                     <label className="block text-[12px] font-bold text-[#333] mb-1">
                       Main H1 Headline ({adminContentLang.toUpperCase()}) *
                     </label>
-                    <input
+                    <input aria-label={`Main H1 Headline ( ${adminContentLang.toUpperCase()} ) *`}
                       type="text"
                       value={adminContentLang === 'en' ? (currentLanding.h1En || '') : (currentLanding.h1De || '')}
                       onChange={(e) => updateLandingField(adminContentLang === 'en' ? 'h1En' : 'h1De', e.target.value)}
@@ -6393,7 +5329,7 @@ export const StudioPage: React.FC = () => {
                     <label className="block text-[12px] font-bold text-[#333] mb-1">
                       Category Badge Text ({adminContentLang.toUpperCase()})
                     </label>
-                    <input
+                    <input aria-label={`Category Badge Text ( ${adminContentLang.toUpperCase()} )`}
                       type="text"
                       value={adminContentLang === 'en' ? (currentLanding.badgeEn || '') : (currentLanding.badgeDe || '')}
                       onChange={(e) => updateLandingField(adminContentLang === 'en' ? 'badgeEn' : 'badgeDe', e.target.value)}
@@ -6408,7 +5344,7 @@ export const StudioPage: React.FC = () => {
                     <label className="block text-[12px] font-bold text-[#333] mb-1">
                       Intro Paragraph ({adminContentLang.toUpperCase()})
                     </label>
-                    <textarea
+                    <textarea aria-label={`Intro Paragraph ( ${adminContentLang.toUpperCase()} )`}
                       rows={2}
                       value={adminContentLang === 'en' ? (currentLanding.introEn || '') : (currentLanding.introDe || '')}
                       onChange={(e) => updateLandingField(adminContentLang === 'en' ? 'introEn' : 'introDe', e.target.value)}
@@ -6419,7 +5355,7 @@ export const StudioPage: React.FC = () => {
                     <label className="block text-[12px] font-bold text-[#333] mb-1">
                       Starting Price Tag ({adminContentLang.toUpperCase()})
                     </label>
-                    <input
+                    <input aria-label={`Starting Price Tag ( ${adminContentLang.toUpperCase()} )`}
                       type="text"
                       value={adminContentLang === 'en' ? (currentLanding.priceEn || '') : (currentLanding.priceDe || '')}
                       onChange={(e) => updateLandingField(adminContentLang === 'en' ? 'priceEn' : 'priceDe', e.target.value)}
@@ -6457,7 +5393,7 @@ export const StudioPage: React.FC = () => {
                           Highlight #{dIdx + 1}
                         </span>
                         <div className="flex items-center gap-2">
-                          <input
+                          <input aria-label="Dietary tag (e.g. Vegan)"
                             type="text"
                             value={dish.dietary || ''}
                             onChange={(e) => updateLandingItem(dIdx, { ...dish, dietary: e.target.value })}
@@ -6478,7 +5414,7 @@ export const StudioPage: React.FC = () => {
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                           <label className="block text-[11px] font-bold text-gray-600 mb-1">Dish Name ({adminContentLang.toUpperCase()})</label>
-                          <input
+                          <input aria-label={`Dish Name ( ${adminContentLang.toUpperCase()} )`}
                             type="text"
                             value={adminContentLang === 'en' ? (dish.nameEn || '') : (dish.nameDe || '')}
                             onChange={(e) => updateLandingItem(dIdx, adminContentLang === 'en' ? { ...dish, nameEn: e.target.value } : { ...dish, nameDe: e.target.value })}
@@ -6487,7 +5423,7 @@ export const StudioPage: React.FC = () => {
                         </div>
                         <div>
                           <label className="block text-[11px] font-bold text-gray-600 mb-1">Ingredients & Description ({adminContentLang.toUpperCase()})</label>
-                          <input
+                          <input aria-label={`Ingredients & Description ( ${adminContentLang.toUpperCase()} )`}
                             type="text"
                             value={adminContentLang === 'en' ? (dish.descEn || '') : (dish.descDe || '')}
                             onChange={(e) => updateLandingItem(dIdx, adminContentLang === 'en' ? { ...dish, descEn: e.target.value } : { ...dish, descDe: e.target.value })}
@@ -6505,7 +5441,7 @@ export const StudioPage: React.FC = () => {
                   type="submit"
                   className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-7 py-3 rounded-full text-[14px] shadow-sm hover:shadow-md transition-all flex items-center gap-2"
                 >
-                  <Save className="w-4 h-4" /> Save Category Landing Pages
+                  <Save className="w-4 h-4" /> Save &amp; publish
                 </button>
                 <Link
                   to={`/menu/${selectedLandingKey}`}
@@ -6516,7 +5452,7 @@ export const StudioPage: React.FC = () => {
                   <ExternalLink className="w-3.5 h-3.5" />
                 </Link>
               </div>
-            </form>
+            </fieldset></form>
           );
         })()}
 
@@ -6524,7 +5460,7 @@ export const StudioPage: React.FC = () => {
             TAB 16: TABLE RESERVATION SETTINGS
         ═══════════════════════════════════════════════ */}
         {activeTab === 'reservations' && (
-          <form onSubmit={handleSaveReservation} className="bg-[#fffdfa] rounded-[24px] p-6 sm:p-8 border border-[#ebdcd0] shadow-sm space-y-6 animate-fadeIn">
+          <form id={`studio-form-${activeTab}`} onSubmit={handleSaveReservation} className="bg-[#fffdfa] rounded-[24px] p-6 sm:p-8 border border-[#ebdcd0] shadow-sm space-y-6 animate-fadeIn"><fieldset disabled={!!publishingSection || !!currentSource?.loading || !!currentSource?.error} className="contents">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-5">
               <div>
                 <h2 className="text-[20px] font-black text-[#1e382f] flex items-center gap-2.5">
@@ -6569,7 +5505,7 @@ export const StudioPage: React.FC = () => {
                   <label className="block text-[12px] font-bold text-[#333] mb-1">
                     Modal Title ({adminContentLang.toUpperCase()}) *
                   </label>
-                  <input
+                  <input aria-label={`Modal Title ( ${adminContentLang.toUpperCase()} ) *`}
                     type="text"
                     value={adminContentLang === 'en' ? (reservationContent.titleEn || '') : (reservationContent.titleDe || '')}
                     onChange={(e) => _setReservationContent(adminContentLang === 'en' ? { ...reservationContent, titleEn: e.target.value } : { ...reservationContent, titleDe: e.target.value })}
@@ -6580,7 +5516,7 @@ export const StudioPage: React.FC = () => {
                   <label className="block text-[12px] font-bold text-[#333] mb-1">
                     Group Notice & Large Parties ({adminContentLang.toUpperCase()})
                   </label>
-                  <input
+                  <input aria-label={`Group Notice & Large Parties ( ${adminContentLang.toUpperCase()} )`}
                     type="text"
                     value={adminContentLang === 'en' ? (reservationContent.subtitleEn || '') : (reservationContent.subtitleDe || '')}
                     onChange={(e) => _setReservationContent(adminContentLang === 'en' ? { ...reservationContent, subtitleEn: e.target.value } : { ...reservationContent, subtitleDe: e.target.value })}
@@ -6593,7 +5529,7 @@ export const StudioPage: React.FC = () => {
                 <label className="block text-[12px] font-bold text-[#333] mb-1">
                   Walk-In & Counter Order Footnote ({adminContentLang.toUpperCase()})
                 </label>
-                <textarea
+                <textarea aria-label={`Walk-In & Counter Order Footnote ( ${adminContentLang.toUpperCase()} )`}
                   rows={2}
                   value={adminContentLang === 'en' ? (reservationContent.noticeEn || '') : (reservationContent.noticeDe || '')}
                   onChange={(e) => _setReservationContent(adminContentLang === 'en' ? { ...reservationContent, noticeEn: e.target.value } : { ...reservationContent, noticeDe: e.target.value })}
@@ -6613,7 +5549,7 @@ export const StudioPage: React.FC = () => {
                   <label className="block text-[12px] font-bold text-[#333] mb-1">
                     TheFork Widget UUID (restaurantId) *
                   </label>
-                  <input
+                  <input aria-label={`TheFork Widget UUID (restaurantId) *`}
                     type="text"
                     value={reservationContent.theforkWidgetId || ''}
                     onChange={(e) => _setReservationContent({ ...reservationContent, theforkWidgetId: e.target.value })}
@@ -6626,7 +5562,7 @@ export const StudioPage: React.FC = () => {
                   <label className="block text-[12px] font-bold text-[#333] mb-1">
                     Direct TheFork Booking URL
                   </label>
-                  <input
+                  <input aria-label={`Direct TheFork Booking URL`}
                     type="text"
                     value={reservationContent.theforkUrl || ''}
                     onChange={(e) => _setReservationContent({ ...reservationContent, theforkUrl: e.target.value })}
@@ -6640,7 +5576,7 @@ export const StudioPage: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-[12px] font-bold text-[#333] mb-1">Max Online Party Size</label>
-                  <input
+                  <input aria-label={`Max Online Party Size`}
                     type="number"
                     value={reservationContent.maxPartySize || 8}
                     onChange={(e) => _setReservationContent({ ...reservationContent, maxPartySize: parseInt(e.target.value) || 8 })}
@@ -6649,7 +5585,7 @@ export const StudioPage: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-[12px] font-bold text-[#333] mb-1">Direct Phone Contact</label>
-                  <input
+                  <input aria-label={`Direct Phone Contact`}
                     type="text"
                     value={reservationContent.phone || ''}
                     onChange={(e) => _setReservationContent({ ...reservationContent, phone: e.target.value })}
@@ -6659,7 +5595,7 @@ export const StudioPage: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-[12px] font-bold text-[#333] mb-1">Direct Email Contact</label>
-                  <input
+                  <input aria-label={`Direct Email Contact`}
                     type="email"
                     value={reservationContent.email || ''}
                     onChange={(e) => _setReservationContent({ ...reservationContent, email: e.target.value })}
@@ -6675,10 +5611,10 @@ export const StudioPage: React.FC = () => {
                 type="submit"
                 className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-7 py-3 rounded-full text-[14px] shadow-sm hover:shadow-md transition-all flex items-center gap-2"
               >
-                <Save className="w-4 h-4" /> Save Reservation Settings
+                <Save className="w-4 h-4" /> Save &amp; publish
               </button>
             </div>
-          </form>
+          </fieldset></form>
         )}
 
         {/* ═══════════════════════════════════════════════
@@ -6715,7 +5651,7 @@ export const StudioPage: React.FC = () => {
           };
 
           return (
-            <form onSubmit={handleSaveLegal} className="bg-[#fffdfa] rounded-[24px] p-6 sm:p-8 border border-[#ebdcd0] shadow-sm space-y-6 animate-fadeIn">
+            <form id={`studio-form-${activeTab}`} onSubmit={handleSaveLegal} className="bg-[#fffdfa] rounded-[24px] p-6 sm:p-8 border border-[#ebdcd0] shadow-sm space-y-6 animate-fadeIn"><fieldset disabled={!!publishingSection || !!currentSource?.loading || !!currentSource?.error} className="contents">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-5">
                 <div>
                   <h2 className="text-[20px] font-black text-[#1e382f] flex items-center gap-2.5">
@@ -6764,7 +5700,7 @@ export const StudioPage: React.FC = () => {
                 <label className="block text-[12px] font-bold text-[#333] mb-1">
                   General Privacy Statement ({adminContentLang.toUpperCase()})
                 </label>
-                <textarea
+                <textarea aria-label={`General Privacy Statement ( ${adminContentLang.toUpperCase()} )`}
                   rows={3}
                   value={adminContentLang === 'en' ? (legalContent.privacyPolicyEn || '') : (legalContent.privacyPolicyDe || '')}
                   onChange={(e) => _setLegalContent(adminContentLang === 'en' ? { ...legalContent, privacyPolicyEn: e.target.value } : { ...legalContent, privacyPolicyDe: e.target.value })}
@@ -6807,7 +5743,7 @@ export const StudioPage: React.FC = () => {
 
                       <div>
                         <label className="block text-[11px] font-bold text-gray-600 mb-1">Section Title ({adminContentLang.toUpperCase()})</label>
-                        <input
+                        <input aria-label={`Section Title ( ${adminContentLang.toUpperCase()} )`}
                           type="text"
                           value={adminContentLang === 'en' ? sec.titleEn : sec.titleDe}
                           onChange={(e) => updateSection(idx, adminContentLang === 'en' ? { titleEn: e.target.value } : { titleDe: e.target.value })}
@@ -6817,7 +5753,7 @@ export const StudioPage: React.FC = () => {
 
                       <div>
                         <label className="block text-[11px] font-bold text-gray-600 mb-1">Section Body Text ({adminContentLang.toUpperCase()})</label>
-                        <textarea
+                        <textarea aria-label={`Section Body Text ( ${adminContentLang.toUpperCase()} )`}
                           rows={3}
                           value={adminContentLang === 'en' ? sec.bodyEn : sec.bodyDe}
                           onChange={(e) => updateSection(idx, adminContentLang === 'en' ? { bodyEn: e.target.value } : { bodyDe: e.target.value })}
@@ -6834,10 +5770,10 @@ export const StudioPage: React.FC = () => {
                   type="submit"
                   className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-7 py-3 rounded-full text-[14px] shadow-sm hover:shadow-md transition-all flex items-center gap-2"
                 >
-                  <Save className="w-4 h-4" /> Save Privacy Policy
+                  <Save className="w-4 h-4" /> Save &amp; publish
                 </button>
               </div>
-            </form>
+            </fieldset></form>
           );
         })()}
 
@@ -6875,7 +5811,7 @@ export const StudioPage: React.FC = () => {
           };
 
           return (
-            <form onSubmit={handleSaveLegal} className="bg-[#fffdfa] rounded-[24px] p-6 sm:p-8 border border-[#ebdcd0] shadow-sm space-y-6 animate-fadeIn">
+            <form id={`studio-form-${activeTab}`} onSubmit={handleSaveLegal} className="bg-[#fffdfa] rounded-[24px] p-6 sm:p-8 border border-[#ebdcd0] shadow-sm space-y-6 animate-fadeIn"><fieldset disabled={!!publishingSection || !!currentSource?.loading || !!currentSource?.error} className="contents">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-5">
                 <div>
                   <h2 className="text-[20px] font-black text-[#1e382f] flex items-center gap-2.5">
@@ -6924,7 +5860,7 @@ export const StudioPage: React.FC = () => {
                 <label className="block text-[12px] font-bold text-[#333] mb-1">
                   General Terms Intro ({adminContentLang.toUpperCase()})
                 </label>
-                <textarea
+                <textarea aria-label={`General Terms Intro ( ${adminContentLang.toUpperCase()} )`}
                   rows={3}
                   value={adminContentLang === 'en' ? (legalContent.termsEn || '') : (legalContent.termsDe || '')}
                   onChange={(e) => _setLegalContent(adminContentLang === 'en' ? { ...legalContent, termsEn: e.target.value } : { ...legalContent, termsDe: e.target.value })}
@@ -6967,7 +5903,7 @@ export const StudioPage: React.FC = () => {
 
                       <div>
                         <label className="block text-[11px] font-bold text-gray-600 mb-1">Clause Title ({adminContentLang.toUpperCase()})</label>
-                        <input
+                        <input aria-label={`Clause Title ( ${adminContentLang.toUpperCase()} )`}
                           type="text"
                           value={adminContentLang === 'en' ? sec.titleEn : sec.titleDe}
                           onChange={(e) => updateSection(idx, adminContentLang === 'en' ? { titleEn: e.target.value } : { titleDe: e.target.value })}
@@ -6977,7 +5913,7 @@ export const StudioPage: React.FC = () => {
 
                       <div>
                         <label className="block text-[11px] font-bold text-gray-600 mb-1">Clause Body Text ({adminContentLang.toUpperCase()})</label>
-                        <textarea
+                        <textarea aria-label={`Clause Body Text ( ${adminContentLang.toUpperCase()} )`}
                           rows={3}
                           value={adminContentLang === 'en' ? sec.bodyEn : sec.bodyDe}
                           onChange={(e) => updateSection(idx, adminContentLang === 'en' ? { bodyEn: e.target.value } : { bodyDe: e.target.value })}
@@ -6994,10 +5930,10 @@ export const StudioPage: React.FC = () => {
                   type="submit"
                   className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-7 py-3 rounded-full text-[14px] shadow-sm hover:shadow-md transition-all flex items-center gap-2"
                 >
-                  <Save className="w-4 h-4" /> Save Terms &amp; Conditions
+                  <Save className="w-4 h-4" /> Save &amp; publish
                 </button>
               </div>
-            </form>
+            </fieldset></form>
           );
         })()}
 
@@ -7006,9 +5942,9 @@ export const StudioPage: React.FC = () => {
             MODAL: ADD / EDIT DISH
         ═══════════════════════════════════════════════ */}
         {isModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fadeIn">
+          <StudioDialog title="Dish details" busy={!!publishingSection} onClose={() => setIsModalOpen(false)}><div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fadeIn">
             <div className="bg-white rounded-[28px] w-full max-w-[720px] max-h-[92vh] overflow-y-auto shadow-2xl p-6 sm:p-8 space-y-5">
-              
+
               {/* Modal Header */}
               <div className="flex items-center justify-between pb-4 border-b border-gray-100">
                 <div className="flex items-center gap-3">
@@ -7030,8 +5966,8 @@ export const StudioPage: React.FC = () => {
                 </button>
               </div>
 
-              <form onSubmit={handleSaveItem} className="space-y-5">
-                
+              <form onSubmit={handleSaveItem} className="space-y-5">{publishFeedback?.error && <p role="alert" className="rounded-xl bg-red-50 border border-red-200 text-red-800 p-4 text-sm">{publishFeedback.text}</p>}<fieldset disabled={!!publishingSection || !(menuFromSanity && !menuLoading)} className="contents">
+
                 {/* Language Switcher */}
                 <div className="flex items-center justify-between bg-[#fcf8f3] p-2.5 rounded-xl border border-[#ebdcd0]">
                   <span className="text-[11.5px] font-extrabold text-[#1e382f] uppercase tracking-wider">
@@ -7064,7 +6000,7 @@ export const StudioPage: React.FC = () => {
                   <label className="block text-[12px] font-bold text-[#333] mb-1">
                     Dish Title ({adminContentLang === 'en' ? 'English' : 'German'}) *
                   </label>
-                  <input
+                  <input aria-label={`Dish Title ( ${adminContentLang === 'en' ? 'English' : 'German'} ) *`}
                     type="text"
                     value={adminContentLang === 'en' ? formTitleEn : formTitleDe}
                     onChange={(e) => adminContentLang === 'en' ? setFormTitleEn(e.target.value) : setFormTitleDe(e.target.value)}
@@ -7078,7 +6014,7 @@ export const StudioPage: React.FC = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-[12px] font-bold text-[#333] mb-1">Category *</label>
-                    <select
+                    <select aria-label={`Category *`}
                       value={formCatId}
                       onChange={(e) => setFormCatId(e.target.value)}
                       className="w-full border rounded-xl px-3.5 py-2.5 text-[13.5px] focus:outline-none focus:border-[#d85c27] bg-white font-medium"
@@ -7092,7 +6028,7 @@ export const StudioPage: React.FC = () => {
                   </div>
                   <div>
                     <label className="block text-[12px] font-bold text-[#333] mb-1">Dietary Tag *</label>
-                    <select
+                    <select aria-label={`Dietary Tag *`}
                       value={formFoodType}
                       onChange={(e) => setFormFoodType(e.target.value as FoodType)}
                       className="w-full border rounded-xl px-3.5 py-2.5 text-[13.5px] focus:outline-none focus:border-[#d85c27] bg-white font-medium"
@@ -7135,7 +6071,7 @@ export const StudioPage: React.FC = () => {
                   {priceType === 'single' ? (
                     <div>
                       <input
-                        type="text"
+                        aria-label="Price" type="text"
                         value={formPrice}
                         onChange={(e) => setFormPrice(e.target.value)}
                         placeholder="e.g. €11,5"
@@ -7148,7 +6084,7 @@ export const StudioPage: React.FC = () => {
                       <div className="grid grid-cols-3 gap-2 bg-white p-3 rounded-xl border border-[#ebdcd0]">
                         <div>
                           <label className="block text-[10.5px] font-bold text-gray-500 mb-1">Option 1 (EN)</label>
-                          <input
+                          <input aria-label={`Option 1 (EN)`}
                             type="text"
                             value={opt1LabelEn}
                             onChange={(e) => setOpt1LabelEn(e.target.value)}
@@ -7158,7 +6094,7 @@ export const StudioPage: React.FC = () => {
                         </div>
                         <div>
                           <label className="block text-[10.5px] font-bold text-gray-500 mb-1">Option 1 (DE)</label>
-                          <input
+                          <input aria-label={`Option 1 (DE)`}
                             type="text"
                             value={opt1LabelDe}
                             onChange={(e) => setOpt1LabelDe(e.target.value)}
@@ -7168,7 +6104,7 @@ export const StudioPage: React.FC = () => {
                         </div>
                         <div>
                           <label className="block text-[10.5px] font-bold text-gray-500 mb-1">Price 1</label>
-                          <input
+                          <input aria-label={`Price 1`}
                             type="text"
                             value={opt1Price}
                             onChange={(e) => setOpt1Price(e.target.value)}
@@ -7181,7 +6117,7 @@ export const StudioPage: React.FC = () => {
                       <div className="grid grid-cols-3 gap-2 bg-white p-3 rounded-xl border border-[#ebdcd0]">
                         <div>
                           <label className="block text-[10.5px] font-bold text-gray-500 mb-1">Option 2 (EN)</label>
-                          <input
+                          <input aria-label={`Option 2 (EN)`}
                             type="text"
                             value={opt2LabelEn}
                             onChange={(e) => setOpt2LabelEn(e.target.value)}
@@ -7191,7 +6127,7 @@ export const StudioPage: React.FC = () => {
                         </div>
                         <div>
                           <label className="block text-[10.5px] font-bold text-gray-500 mb-1">Option 2 (DE)</label>
-                          <input
+                          <input aria-label={`Option 2 (DE)`}
                             type="text"
                             value={opt2LabelDe}
                             onChange={(e) => setOpt2LabelDe(e.target.value)}
@@ -7201,7 +6137,7 @@ export const StudioPage: React.FC = () => {
                         </div>
                         <div>
                           <label className="block text-[10.5px] font-bold text-gray-500 mb-1">Price 2</label>
-                          <input
+                          <input aria-label={`Price 2`}
                             type="text"
                             value={opt2Price}
                             onChange={(e) => setOpt2Price(e.target.value)}
@@ -7224,7 +6160,7 @@ export const StudioPage: React.FC = () => {
                       </label>
                       <p className="text-[11px] text-[#666]">Choose an existing photo or upload a new one.</p>
                     </div>
-                    
+
                     <button
                       type="button"
                       onClick={() => setShowGallery(!showGallery)}
@@ -7280,7 +6216,7 @@ export const StudioPage: React.FC = () => {
                   <label className="block text-[12px] font-bold text-[#333] mb-1">
                     Description ({adminContentLang === 'en' ? 'English' : 'German'})
                   </label>
-                  <textarea
+                  <textarea aria-label={`Description ( ${adminContentLang === 'en' ? 'English' : 'German'} )`}
                     rows={2}
                     value={adminContentLang === 'en' ? formDescEn : formDescDe}
                     onChange={(e) => adminContentLang === 'en' ? setFormDescEn(e.target.value) : setFormDescDe(e.target.value)}
@@ -7336,20 +6272,20 @@ export const StudioPage: React.FC = () => {
                     className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-6 py-2.5 rounded-xl text-[13.5px] shadow-sm hover:shadow-md transition-all flex items-center gap-1.5"
                   >
                     <Check className="w-4 h-4" />
-                    <span>{editingItem ? 'Save Changes' : 'Add Dish'}</span>
+                    <span>{publishingSection ? 'Publishing…' : 'Save & publish'}</span>
                   </button>
                 </div>
 
-              </form>
+              </fieldset></form>
             </div>
-          </div>
+          </div></StudioDialog>
         )}
 
         {/* ═══════════════════════════════════════════════
             MODAL: ADD / EDIT CATEGORY
         ═══════════════════════════════════════════════ */}
         {isCatModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fadeIn">
+          <StudioDialog title="Menu section details" busy={!!publishingSection} onClose={() => setIsCatModalOpen(false)}><div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fadeIn">
             <div className="bg-white rounded-[28px] w-full max-w-[500px] shadow-2xl p-6 sm:p-8 space-y-5">
               <div className="flex items-center justify-between pb-3 border-b border-gray-100">
                 <h3 className="text-[18px] font-black text-[#1e382f]">
@@ -7363,10 +6299,10 @@ export const StudioPage: React.FC = () => {
                 </button>
               </div>
 
-              <form onSubmit={handleSaveCategory} className="space-y-4">
+              <form onSubmit={handleSaveCategory} className="space-y-4">{publishFeedback?.error && <p role="alert" className="rounded-xl bg-red-50 border border-red-200 text-red-800 p-4 text-sm">{publishFeedback.text}</p>}<fieldset disabled={!!publishingSection || !(menuFromSanity && !menuLoading)} className="contents">
                 <div>
                   <label className="block text-[12px] font-bold text-[#333] mb-1">Category Name (English) *</label>
-                  <input
+                  <input aria-label={`Category Name (English) *`}
                     type="text"
                     value={catNameEn}
                     onChange={(e) => setCatNameEn(e.target.value)}
@@ -7378,7 +6314,7 @@ export const StudioPage: React.FC = () => {
 
                 <div>
                   <label className="block text-[12px] font-bold text-[#333] mb-1">Category Name (German)</label>
-                  <input
+                  <input aria-label={`Category Name (German)`}
                     type="text"
                     value={catNameDe}
                     onChange={(e) => setCatNameDe(e.target.value)}
@@ -7389,7 +6325,7 @@ export const StudioPage: React.FC = () => {
 
                 <div>
                   <label className="block text-[12px] font-bold text-[#333] mb-1">Description (English)</label>
-                  <textarea
+                  <textarea aria-label={`Description (English)`}
                     rows={2}
                     value={catDescEn}
                     onChange={(e) => setCatDescEn(e.target.value)}
@@ -7400,7 +6336,7 @@ export const StudioPage: React.FC = () => {
 
                 <div>
                   <label className="block text-[12px] font-bold text-[#333] mb-1">Description (German)</label>
-                  <textarea
+                  <textarea aria-label={`Description (German)`}
                     rows={2}
                     value={catDescDe}
                     onChange={(e) => setCatDescDe(e.target.value)}
@@ -7421,19 +6357,19 @@ export const StudioPage: React.FC = () => {
                     type="submit"
                     className="bg-[#d85c27] text-white font-extrabold px-5 py-2 rounded-xl text-[13px] hover:bg-[#c24f1c]"
                   >
-                    Save Category
+                    Save &amp; publish
                   </button>
                 </div>
-              </form>
+              </fieldset></form>
             </div>
-          </div>
+          </div></StudioDialog>
         )}
 
         {/* ═══════════════════════════════════════════════
             MODAL: ADD DISH TO CATEGORY
         ═══════════════════════════════════════════════ */}
         {isAddDishModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fadeIn">
+          <StudioDialog title="Move a dish" busy={!!publishingSection} onClose={() => setIsAddDishModalOpen(false)}><div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fadeIn">
             <div className="bg-white rounded-[28px] w-full max-w-[620px] max-h-[85vh] overflow-y-auto shadow-2xl p-6 space-y-4">
               <div className="flex items-center justify-between pb-3 border-b border-gray-100">
                 <div>
@@ -7502,16 +6438,16 @@ export const StudioPage: React.FC = () => {
                   ))}
               </div>
             </div>
-          </div>
+          </div></StudioDialog>
         )}
 
         {/* ═══════════════════════════════════════════════
             MODAL: PHOTO DETAILS & TAGGING
         ═══════════════════════════════════════════════ */}
         {isPhotoModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fadeIn">
+          <StudioDialog title="Photo details" busy={!!publishingSection} onClose={() => setIsPhotoModalOpen(false)}><div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fadeIn">
             <div className="bg-white rounded-[28px] w-full max-w-[520px] shadow-2xl p-6 sm:p-7 space-y-5">
-              
+
               <div className="flex items-center justify-between pb-3 border-b border-gray-100">
                 <div className="flex items-center gap-2.5">
                   <div className="w-9 h-9 rounded-xl bg-[#d85c27]/10 text-[#d85c27] flex items-center justify-center">
@@ -7534,8 +6470,8 @@ export const StudioPage: React.FC = () => {
                 </button>
               </div>
 
-              <form onSubmit={handleSavePhotoModal} className="space-y-4">
-                
+              <form onSubmit={handleSavePhotoModal} className="space-y-4">{publishFeedback?.error && <p role="alert" className="rounded-xl bg-red-50 border border-red-200 text-red-800 p-4 text-sm">{publishFeedback.text}</p>}<fieldset disabled={!!publishingSection || !galleryReady} className="contents">
+
                 {/* Photo Preview & Size Banner */}
                 <div className="flex items-center gap-3.5 bg-[#fcf8f3] p-3 rounded-2xl border border-[#ebdcd0]">
                   <div className="w-16 h-16 rounded-xl overflow-hidden bg-white shrink-0 border border-[#ebdcd0]">
@@ -7564,7 +6500,7 @@ export const StudioPage: React.FC = () => {
                   <label className="block text-[12px] font-bold text-[#333] mb-1">
                     Photo Name *
                   </label>
-                  <input
+                  <input aria-label={`Photo Name *`}
                     type="text"
                     value={photoModalData.name}
                     onChange={(e) => setPhotoModalData({ ...photoModalData, name: e.target.value })}
@@ -7614,9 +6550,9 @@ export const StudioPage: React.FC = () => {
                   </button>
                 </div>
 
-              </form>
+              </fieldset></form>
             </div>
-          </div>
+          </div></StudioDialog>
         )}
 
         {/* ═══════════════════════════════════════════════
@@ -7624,7 +6560,7 @@ export const StudioPage: React.FC = () => {
         ═══════════════════════════════════════════════ */}
         {isTourActive && (
           <div className="fixed inset-0 z-50 pointer-events-none animate-fadeIn">
-            
+
             {/* SVG Dark Backdrop with Cutout Spotlight Mask */}
             <svg className="absolute inset-0 w-full h-full pointer-events-auto">
               <defs>
@@ -7785,7 +6721,7 @@ export const StudioPage: React.FC = () => {
 
         {/* ── Toast Notification ── */}
         {toastMessage && (
-          <div className="fixed bottom-6 right-6 z-50 animate-fadeInUp">
+          <div role="status" aria-live="polite" className="fixed bottom-6 right-6 left-6 sm:left-auto z-50 animate-fadeInUp">
             <div className="bg-[#1e382f] text-white px-5 py-3 rounded-2xl shadow-2xl border border-white/20 flex items-center gap-2.5 text-[13.5px] font-bold">
               <CheckCircle2 className="w-4 h-4 text-[#d85c27]" />
               <span>{toastMessage}</span>

@@ -106,6 +106,16 @@ export const ReservationSection: React.FC<ReservationSectionProps> = ({ lang, is
               />
             </div>
 
+            <div className="p-5 border-t border-gray-100 text-sm text-gray-700 space-y-2">
+              <p>{lang === 'de' ? reservationContent.noticeDe : reservationContent.noticeEn}</p>
+              <p>{lang === 'de' ? `Für Gruppen mit mehr als ${reservationContent.maxPartySize || 8} Personen kontaktieren Sie uns bitte direkt.` : `For groups larger than ${reservationContent.maxPartySize || 8}, please contact us directly.`}</p>
+              <p className="flex flex-wrap gap-4">
+                <a className="underline" href={`tel:${(reservationContent.phone || contactContent.phone || '').replace(/\s/g, '')}`}>{reservationContent.phone || contactContent.phone}</a>
+                <a className="underline" href={`mailto:${reservationContent.email || contactContent.email || ''}`}>{reservationContent.email || contactContent.email}</a>
+                {reservationContent.theforkUrl && <a className="underline" href={reservationContent.theforkUrl} target="_blank" rel="noopener noreferrer">{lang === 'de' ? 'Buchung in neuem Tab öffnen' : 'Open booking in a new tab'} ↗</a>}
+              </p>
+            </div>
+
           </div>
         </div>
       )}

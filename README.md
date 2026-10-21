@@ -45,6 +45,23 @@ The October 2026 security update upgrades Tailwind to v4 with its PostCSS integr
 
 ## Publishing
 
+### For restaurant staff
+
+Open `/admin` or `/studio` and sign in with the staff password. Both addresses open the same editor.
+
+1. Choose a dashboard card: Menu & prices, Homepage, Photo library, Opening hours & contact, Table bookings, or Menu sections.
+2. Edit the English and German text separately. Switching sections keeps open page edits; the dashboard lists pages with unpublished changes.
+3. Select **Save & publish**. Wait for **Published successfully** before closing the page. If a save fails, your open edits remain and the error stays visible. You can retry or explicitly discard your changes and reload the website version.
+4. Select **View live page** to check the result. A menu dialog closes only after publishing succeeds. Editing an existing dish preserves its position in its menu section.
+
+Upload photos to the Photo library, then choose the photo in the relevant page or dish and publish that editor. The library stores Sanity asset URLs, not large embedded image strings. Restaurant ambience photos are labelled as ambience, including the historical files misleadingly named `cocktail-*.jpg`.
+
+Contact details have one editor: **Opening hours & contact** updates the contact page and footer together. Change the booking widget in **Table bookings**. Customer enquiries and job applications require staff sign-in and confirm server saves before reporting success. Public forms keep entered details and show an error if delivery fails.
+
+The October admin review also reconnects previously hardcoded homepage headlines, catering text/FAQs/lead time, careers headings, event highlights/photo, About values, and reservation details to published content. The previous circular homepage hero and all ten recovered cocktails remain available.
+
+Validation: the local isolated browser preview keeps test writes in memory. All thirteen page editor tabs were checked for successful publication, with a failed-save/retry check, menu editing, and public homepage/catering/footer readback. Automated tests cover section routing, session authentication, revision conflicts, image upload responses, menu ordering, inbox merging, failed writes, and deletion boundaries.
+
 Save changes in the relevant editor. A menu save reports success only after Sanity confirms the write. Published content refreshes through a shared Sanity listener, on focus/reconnection, and every 30 seconds as a fallback. Unsaved edits remain protected during refresh. “Refresh from Sanity” reloads cloud content; it never republishes old browser drafts. A revision conflict requires reloading Studio before making the edit again.
 
 Menu image errors show a neutral placeholder. Sanity-hosted asset URLs avoid missing VPS files. Non-versioned local photos are revalidated rather than cached as immutable assets; filenames containing spaces are decoded correctly by the Node server.

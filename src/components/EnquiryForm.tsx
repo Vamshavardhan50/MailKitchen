@@ -80,34 +80,6 @@ export const EnquiryForm: React.FC<EnquiryFormProps> = ({
     setLoading(true);
 
     try {
-      // 1. Immediately backup into client storage
-      const newEnquiryObj = {
-          _id: `enquiry-${Date.now()}`,
-          _type: 'enquirySubmission',
-          id: `enquiry-${Date.now()}`,
-          enquiryType,
-          name: name.trim(),
-          email: email.trim(),
-          phone: phone.trim(),
-          date,
-          guests: Number(guests),
-          company: company.trim(),
-          message: message.trim(),
-          consent,
-          lang,
-          status: 'new',
-          managerNotes: '',
-          receivedAt: new Date().toISOString(),
-        };
-
-        try {
-          const stored = JSON.parse(localStorage.getItem('maati_stored_enquiries') || '[]');
-          localStorage.setItem('maati_stored_enquiries', JSON.stringify([newEnquiryObj, ...stored]));
-          window.dispatchEvent(new CustomEvent('maati_enquiry_received', { detail: newEnquiryObj }));
-        } catch (e) {
-          console.warn('Storage note:', e);
-        }
-
         const response = await fetch(apiUrl('/api/enquiry'), {
           method: 'POST',
           headers: {
@@ -125,7 +97,10 @@ export const EnquiryForm: React.FC<EnquiryFormProps> = ({
             consent,
             lang
           })
-        }).catch(() => null);
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.success) throw new Error('Submission failed');
+        window.dispatchEvent(new Event('maati_enquiry_received'));
 
         setSuccessMsg(
           isDe
@@ -142,12 +117,7 @@ export const EnquiryForm: React.FC<EnquiryFormProps> = ({
         setMessage('');
         setConsent(false);
       } catch (err: any) {
-      // In case server is offline during dev, provide fallback confirmation
-      setSuccessMsg(
-        isDe
-          ? 'Vielen Dank für Ihre Anfrage. Wir haben sie erhalten und melden uns innerhalb eines Werktages bei Ihnen. Bei dringenden Anliegen erreichen Sie uns telefonisch unter der unten genannten Nummer (+49 30 51891367).\n\nMAATI Kitchen, Zimmerstrasse 56, 10117 Berlin.'
-          : 'Thank you for your enquiry. We have received it and will reply within one working day. If your request is urgent please call us on the number below (+49 30 51891367).\n\nMAATI Kitchen, Zimmerstrasse 56, 10117 Berlin.'
-      );
+      setErrorMsg(isDe ? 'Ihre Anfrage konnte nicht gesendet werden. Ihre Eingaben bleiben erhalten. Bitte versuchen Sie es erneut.' : 'Your enquiry was not sent. Your details are still here. Please try again.');
     } finally {
       setLoading(false);
     }

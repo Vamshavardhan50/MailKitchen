@@ -214,7 +214,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ lang = 'en' }) => {
     { id: 'management', label: isDe ? 'Management & HQ' : 'Management & HQ' }
   ];
 
-  const rawJobs = (cmsJobs?.jobs && cmsJobs.jobs.length > 0) ? cmsJobs.jobs : (DEFAULT_JOBS.jobs || []);
+  const rawJobs = cmsJobs.jobs ?? DEFAULT_JOBS.jobs ?? [];
   const activeJobsList = rawJobs
     .filter((j: any) => j.active !== false)
     .map((j: any) => ({
@@ -284,17 +284,8 @@ export const JobsPage: React.FC<JobsPageProps> = ({ lang = 'en' }) => {
       submittedAt: new Date().toISOString(),
     };
 
-    // 1. Immediately backup into client-side storage
     try {
-      const stored = JSON.parse(localStorage.getItem('maati_stored_applications') || '[]');
-      localStorage.setItem('maati_stored_applications', JSON.stringify([newApp, ...stored]));
-      window.dispatchEvent(new CustomEvent('maati_application_received', { detail: newApp }));
-    } catch (e) {
-      console.warn('Local storage write note:', e);
-    }
-
-    try {
-      await fetch(apiUrl('/api/apply'), {
+      const response = await fetch(apiUrl('/api/apply'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -308,8 +299,10 @@ export const JobsPage: React.FC<JobsPageProps> = ({ lang = 'en' }) => {
           message: newApp.message,
           consent: true,
         }),
-      }).catch(() => null);
-
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.success) throw new Error('Submission failed');
+      window.dispatchEvent(new Event('maati_application_received'));
       setSuccess(true);
       setApplicantName('');
       setApplicantEmail('');
@@ -320,8 +313,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ lang = 'en' }) => {
       setCoverNote('');
       setConsent(false);
     } catch (err) {
-      // Even if network fails, the application is securely preserved in storage
-      setSuccess(true);
+      setErrorMsg(isDe ? 'Ihre Bewerbung konnte nicht gesendet werden. Ihre Eingaben bleiben erhalten. Bitte versuchen Sie es erneut.' : 'Your application was not sent. Your details are still here. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -342,19 +334,20 @@ export const JobsPage: React.FC<JobsPageProps> = ({ lang = 'en' }) => {
         <div className="max-w-[900px] mx-auto space-y-6 relative z-10">
           <div className="inline-flex items-center gap-2 bg-[#d85c27] text-white px-4 py-1.5 rounded-full text-[12px] font-black uppercase tracking-[0.18em] shadow-md">
             <Sparkles className="w-4 h-4" />
-            <span>{isDe ? 'Karriere & Kultur' : 'Careers at MAATI'}</span>
+            <span>{(isDe ? cmsJobs.badgeDe : cmsJobs.badgeEn) || (isDe ? 'Karriere & Kultur' : 'Careers at MAATI')}</span>
           </div>
 
           <h1 className="text-[38px] sm:text-[54px] md:text-[64px] font-black tracking-tight leading-[1.08] text-white">
-            {isDe ? 'Wachse mit uns. Put down roots with MAATI.' : 'Put Down Roots With Us. Shape Berlin Dining.'}
+            {(isDe ? cmsJobs.heroTitleDe : cmsJobs.heroTitleEn) || (isDe ? 'Wachse mit uns. Put down roots with MAATI.' : 'Put Down Roots With Us. Shape Berlin Dining.')}
           </h1>
 
           <p className="text-[17px] sm:text-[20px] text-white/85 font-medium leading-relaxed max-w-[720px] mx-auto">
-            {isDe
+            {(isDe ? cmsJobs.heroDescDe : cmsJobs.heroDescEn) || (isDe
               ? 'Wir suchen Menschen mit Herzblut für ehrliches indisches Soul Food, echte Gastfreundschaft und ein Arbeitsumfeld, in dem Respekt und Wertschätzung gelebt werden.'
-              : 'We are looking for dedicated individuals who care about honest Indian soul food, authentic hospitality, and a team culture grounded in equality and growth.'}
+              : 'We are looking for dedicated individuals who care about honest Indian soul food, authentic hospitality, and a team culture grounded in equality and growth.')}
           </p>
 
+          <h2 className="text-xl font-bold">{isDe ? cmsJobs.cultureTitleDe : cmsJobs.cultureTitleEn}</h2>
           <div className="pt-2 flex flex-wrap items-center justify-center gap-4">
             <a
               href="#positions"

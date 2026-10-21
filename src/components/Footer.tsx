@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { MapPin, Phone, Mail, Facebook, Instagram } from 'lucide-react';
-import { useSiteSettings } from '../lib/sanityService';
+import { useSiteSettings, useContactContent } from '../lib/sanityService';
 
 // TikTok icon — clean white monochrome SVG for dark background
 const TikTokIcon = () => (
@@ -19,6 +19,10 @@ interface FooterProps {
 export const Footer: React.FC<FooterProps> = ({ lang = 'en' }) => {
   const isDe = lang === 'de';
   const { settings } = useSiteSettings();
+  const { content: contact } = useContactContent();
+  const phone = contact.phone || settings.phone || '+49 30 51891367';
+  const email = contact.email || settings.email || 'hello@maatikitchen.com';
+  const address = contact.address || settings.address || 'Zimmerstraße 56, 10117 Berlin';
 
   return (
     <footer className="bg-white text-[#1a1a1a] py-12 sm:py-16 md:py-20 px-5 sm:px-8 md:px-16 lg:px-24 border-t border-gray-100">
@@ -44,28 +48,28 @@ export const Footer: React.FC<FooterProps> = ({ lang = 'en' }) => {
             <div className="flex items-start gap-3">
               <MapPin className="w-4 h-4 text-[#d85c27] shrink-0 mt-0.5" />
               <span className="font-semibold uppercase tracking-wider text-[11px] leading-snug text-[#444]">
-                {settings.address || 'ZIMMERSTR. 56, 10117'}<br />Berlin
+                {address}
               </span>
             </div>
 
             <div className="flex items-center gap-3">
               <Phone className="w-4 h-4 text-[#d85c27] shrink-0" />
-              <a href={`tel:${(settings.phone || '+493051891367').replace(/\s/g, '')}`} className="hover:text-[#d85c27] transition-colors">
-                {settings.phone || '+49 30 51891367'}
+              <a href={`tel:${phone.replace(/\s/g, '')}`} className="hover:text-[#d85c27] transition-colors">
+                {phone}
               </a>
             </div>
 
             <div className="flex items-center gap-3">
               <Mail className="w-4 h-4 text-[#d85c27] shrink-0" />
-              <a href={`mailto:${settings.email || 'hello@maatikitchen.com'}`} className="hover:text-[#d85c27] transition-colors">
-                {settings.email || 'hello@maatikitchen.com'}
+              <a href={`mailto:${email}`} className="hover:text-[#d85c27] transition-colors">
+                {email}
               </a>
             </div>
           </div>
 
           {/* Copyright */}
           <div className="text-[12.5px] sm:text-[13px] text-[#777] leading-tight mb-4">
-            <p>© 2026 MAATI Kitchen Berlin. All rights reserved.</p>
+            <p>© 2026 {settings.restaurantName || 'MAATI Kitchen'} Berlin. All rights reserved.</p>
           </div>
 
           {/* Social Icons — Colored Brand Icons */}
@@ -106,7 +110,7 @@ export const Footer: React.FC<FooterProps> = ({ lang = 'en' }) => {
 
             {/* Email — brand orange */}
             <a
-              href={`mailto:${settings.email || 'hello@maatikitchen.com'}`}
+              href={`mailto:${email}`}
               aria-label="Email"
               className="w-9 h-9 rounded-xl flex items-center justify-center bg-[#d85c27] hover:bg-[#c24f1c] transition-transform hover:scale-110 shadow-sm"
             >

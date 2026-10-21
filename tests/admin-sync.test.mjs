@@ -7,6 +7,7 @@ async function fixture(t, options = {}) {
   const documents = new Map([['menuCategoriesData', { _id: 'menuCategoriesData', _type: 'menuCategoriesData', _rev: 'r1', categories: [{ _id: 'desserts', items: [{ id: 'mithai', img: 'correct-photo', price: '€2,5' }] }], preserved: 'keep' }]]);
   let sequence = 1;
   const client = {
+    assets: { async upload(type, bytes, options) { return { url: `https://cdn.sanity.io/test/${options.filename}.webp`, size: bytes.length }; } },
     async getDocument(id) { return structuredClone(documents.get(id)); },
     patch(id) {
       let revision, fields;
@@ -52,9 +53,41 @@ test('anonymous visitors and old localStorage sync cannot write to Sanity', asyn
   const f = await fixture(t);
   assert.equal((await f.request('/api/admin/content', { section: 'menu', fields: { categories: [] } })).status, 401);
   assert.equal((await f.request('/api/admin/login', { password: 'wrong' })).status, 401);
+  assert.equal((await f.request('/api/inquiries')).status, 401);
+  assert.equal((await f.request('/api/applications/status', { id: 'app-1', status: 'hired' })).status, 401);
+  assert.equal((await f.request('/api/admin/image', { dataUrl: 'data:image/png;base64,aGk=' })).status, 401);
   await f.login();
   assert.equal((await f.request('/api/sync', { menu: [] })).status, 410);
   assert.equal(f.documents.get('menuCategoriesData')._rev, 'r1');
+});
+
+test('every page section publishes to the same canonical document the website reads', async t => {
+  const f = await fixture(t); await f.login();
+  for (const [section, id] of Object.entries({
+    homepage: 'homepage', settings: 'siteSettings', events: 'eventsContent', contact: 'contactContent',
+    printMenu: 'printMenuContent', catering: 'cateringPageContent', jobs: 'jobsPageContent',
+    about: 'aboutPageContent', legal: 'legalPageContent', landingPages: 'landingPagesContent',
+    reservation: 'reservationContent', gallery: 'galleryData',
+  })) {
+    const fields = { titleEn: 'Original English', titleDe: 'Deutscher Text', image: 'existing-photo' };
+    const created = await f.request('/api/admin/content', { section, fields });
+    assert.equal(created.status, 200, section);
+    const revision = (await created.json()).revision;
+    const updated = await f.request('/api/admin/content', { section, fields: { titleEn: 'Updated' }, baseRevision: revision });
+    assert.equal(updated.status, 200, section);
+    assert.equal(f.documents.get(id).titleDe, fields.titleDe);
+    assert.equal(f.documents.get(id).image, fields.image);
+  }
+});
+
+test('staff image uploads return a reusable asset URL and reject unsupported data', async t => {
+  const f = await fixture(t); await f.login();
+  const image = await f.request('/api/admin/image', { dataUrl: 'data:image/png;base64,aGk=', filename: 'Food photo' });
+  assert.equal(image.status, 200);
+  assert.match((await image.json()).url, /^https:\/\/cdn.sanity.io\//);
+  assert.equal((await f.request('/api/admin/image', { dataUrl: 'data:text/html;base64,aGk=' })).status, 400);
+  const unavailable = await fixture(t, { client: null }); await unavailable.login();
+  assert.equal((await unavailable.request('/api/admin/image', { dataUrl: 'data:image/png;base64,aGk=' })).status, 503);
 });
 
 test('stale browser copies cannot overwrite corrected menu photos', async t => {

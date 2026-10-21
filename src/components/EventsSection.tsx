@@ -71,6 +71,9 @@ export const EventsSection: React.FC<EventsSectionProps> = ({ lang = 'en', onOpe
                 ? 'Ein warmer, moderner Raum im Herzen Berlins für private Dinners, Firmenfeiern, Geburtstage und Workshops. Genießen Sie maßgeschneiderte Menüs, erlesene Weine und aufmerksamen Service.'
                 : 'A warm, design-forward space in the heart of Berlin Mitte for private dinners, corporate socials, birthdays, and workshops. Indulge in bespoke food stations, craft drinks, and attentive hospitality.')}
             </p>
+            <ul className="space-y-2 text-white/90 text-sm">
+              {[(isDe ? cmsEvents.bullet1De : cmsEvents.bullet1En), (isDe ? cmsEvents.bullet2De : cmsEvents.bullet2En), (isDe ? cmsEvents.bullet3De : cmsEvents.bullet3En)].filter(Boolean).map((bullet, index) => <li key={index}>✓ {bullet}</li>)}
+            </ul>
             <div className="pt-4 flex flex-wrap items-center gap-4">
               <a
                 href="#enquiry-form"
@@ -120,7 +123,7 @@ export const EventsSection: React.FC<EventsSectionProps> = ({ lang = 'en', onOpe
           </div>
           <div className="lg:col-span-5 rounded-[32px] overflow-hidden shadow-xl border border-[#ebdcd0]">
             <img
-              src="/assets/show5-BiQql1jr.jpeg"
+              src={cmsEvents.eventImage || '/assets/show5-BiQql1jr.jpeg'}
               alt="MAATI Event Space interior ambiance"
               className="w-full h-[360px] object-cover hover:scale-105 transition-transform duration-700"
             />

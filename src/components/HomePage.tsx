@@ -54,10 +54,10 @@ export const HomePage: React.FC<HomePageProps> = ({ lang, onOpenReservation }) =
 
             {/* Headline */}
             <h1 className="font-black leading-[1.05] mb-3 text-[#1a1a1a]" style={{ fontSize: 'clamp(40px,5vw,68px)' }}>
-              Modern Indian Food.
+              {(isDe ? content.heroTitle1De : content.heroTitle1En) || 'Modern Indian Food.'}
               <br />
               <span className="text-[#d85c27]">
-                Made for Berlin.
+                {(isDe ? content.heroTitle2De : content.heroTitle2En) || 'Made for Berlin.'}
               </span>
             </h1>
             <p className="text-[#1e382f] font-bold text-[15px] sm:text-[17px] mb-5 leading-snug">
@@ -77,7 +77,7 @@ export const HomePage: React.FC<HomePageProps> = ({ lang, onOpenReservation }) =
                 onClick={onOpenReservation}
                 className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-8 py-4 rounded-full text-[15px] shadow-sm hover:shadow-xl transition-all duration-300 hover:scale-105 inline-flex items-center justify-center gap-2 active-press"
               >
-                <span>{(isDe ? 'Tisch reservieren' : 'Book A Table')}</span>
+                <span>{(isDe ? content.heroBtnResDe : content.heroBtnResEn) || (isDe ? 'Tisch reservieren' : 'Book A Table')}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
               <Link
@@ -269,14 +269,14 @@ export const HomePage: React.FC<HomePageProps> = ({ lang, onOpenReservation }) =
 
               <div className="space-y-3 sm:space-y-4 text-[#555] text-[15px] sm:text-[16px] leading-relaxed">
                 <p>
-                  {isDe
+                  {(isDe ? content.cateringDescDe : content.cateringDescEn) || (isDe
                     ? 'Frisches indisches Catering für Büro-Lunches, Team-Meetings und Feiern in Berlin Mitte. Von 10 bis 200+ Personen liefern wir warme Bowls, getoastete Naan-Pockets und Lassis direkt zu Ihnen.'
-                    : 'Fresh Indian catering crafted for office lunches, team meetings, and celebrations in Berlin Mitte. From 10 to 200+ guests, we deliver warm wholesome bowls, toasted naan pockets, and signature drinks directly to your team.'}
+                    : 'Fresh Indian catering crafted for office lunches, team meetings, and celebrations in Berlin Mitte. From 10 to 200+ guests, we deliver warm wholesome bowls, toasted naan pockets, and signature drinks directly to your team.')}
                 </p>
                 <p>
-                  {isDe
+                  {(isDe ? content.cateringP2De : content.cateringP2En) || (isDe
                     ? 'Wählen Sie aus unseren transparenten Paketen ab €11,90 pro Person oder lassen Sie sich ein individuelles Buffet-Setup zusammenstellen.'
-                    : 'Choose from our confirmed transparent packages starting at €11.90 per person or request a tailored on-site buffet setup.'}
+                    : 'Choose from our confirmed transparent packages starting at €11.90 per person or request a tailored on-site buffet setup.')}
                 </p>
               </div>
 
@@ -284,19 +284,19 @@ export const HomePage: React.FC<HomePageProps> = ({ lang, onOpenReservation }) =
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 pt-2">
                 <div className="flex items-center gap-2.5 text-[#1e382f] font-extrabold text-[13px] sm:text-[14px]">
                   <span className="w-2 h-2 rounded-full bg-[#d85c27]" />
-                  <span>{isDe ? 'Pakete ab €11,90 p.P.' : 'Packages from €11.90 p.p.'}</span>
+                  <span>{(isDe ? content.cateringBullet1De : content.cateringBullet1En) || (isDe ? 'Pakete ab €11,90 p.P.' : 'Packages from €11.90 p.p.')}</span>
                 </div>
                 <div className="flex items-center gap-2.5 text-[#1e382f] font-extrabold text-[13px] sm:text-[14px]">
                   <span className="w-2 h-2 rounded-full bg-[#d85c27]" />
-                  <span>{isDe ? '100% Vegan & Veggie-freundlich' : '100% Vegan & Veggie friendly'}</span>
+                  <span>{(isDe ? content.cateringBullet2De : content.cateringBullet2En) || (isDe ? '100% Vegan & Veggie-freundlich' : '100% Vegan & Veggie friendly')}</span>
                 </div>
                 <div className="flex items-center gap-2.5 text-[#1e382f] font-extrabold text-[13px] sm:text-[14px]">
                   <span className="w-2 h-2 rounded-full bg-[#d85c27]" />
-                  <span>{isDe ? 'Kostenlose Lieferung in Mitte (<5km)' : 'Free delivery in Mitte (<5km)'}</span>
+                  <span>{(isDe ? content.cateringBullet3De : content.cateringBullet3En) || (isDe ? 'Kostenlose Lieferung in Mitte (<5km)' : 'Free delivery in Mitte (<5km)')}</span>
                 </div>
                 <div className="flex items-center gap-2.5 text-[#1e382f] font-extrabold text-[13px] sm:text-[14px]">
                   <span className="w-2 h-2 rounded-full bg-[#d85c27]" />
-                  <span>{isDe ? 'Individuelle Firmenrechnung' : 'Custom corporate invoicing'}</span>
+                  <span>{(isDe ? content.cateringBullet4De : content.cateringBullet4En) || (isDe ? 'Individuelle Firmenrechnung' : 'Custom corporate invoicing')}</span>
                 </div>
               </div>
 
@@ -306,7 +306,7 @@ export const HomePage: React.FC<HomePageProps> = ({ lang, onOpenReservation }) =
                   to={isDe ? '/de/catering#enquiry' : '/catering#enquiry'}
                   className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-7 sm:px-8 py-3.5 sm:py-4 rounded-full text-[14px] sm:text-[15px] shadow-sm hover:shadow-xl transition-all duration-300 hover:scale-105 inline-flex items-center justify-center gap-2 active-press"
                 >
-                  <span>{isDe ? 'Catering Anfragen' : 'Get a Quote'}</span>
+                  <span>{(isDe ? content.cateringBtnDe : content.cateringBtnEn) || (isDe ? 'Catering Anfragen' : 'Get a Quote')}</span>
                   <ArrowRight className="w-4 h-4" />
                 </Link>
                 <Link
@@ -352,13 +352,13 @@ export const HomePage: React.FC<HomePageProps> = ({ lang, onOpenReservation }) =
                 : 'Experience modern Indian soul food in a cozy, welcoming atmosphere.')}
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4">
-            <button
-              onClick={onOpenReservation}
+            <Link
+              to={isDe ? '/de/locations' : '/locations'}
               className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-8 py-4 rounded-full text-[15px] shadow-sm hover:shadow-xl transition-all duration-300 hover:scale-105 inline-flex items-center gap-2"
             >
-              <span>{isDe ? 'Tisch reservieren' : 'Make a Reservation'}</span>
+              <span>{(isDe ? content.ctaBtnLocationsDe : content.ctaBtnLocationsEn) || (isDe ? 'Tisch reservieren' : 'Make a Reservation')}</span>
               <ArrowRight className="w-4 h-4" />
-            </button>
+            </Link>
             <Link
               to={isDe ? '/de/menu' : '/menu'}
               className="border-2 border-white/40 hover:border-white text-white font-extrabold px-8 py-3.5 rounded-full text-[15px] transition-all duration-300 hover:bg-white/10"

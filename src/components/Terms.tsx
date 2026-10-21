@@ -83,7 +83,7 @@ export const Terms: React.FC<TermsProps> = ({ lang = 'en' }) => {
                   1. General &amp; Scope
                 </h2>
                 <p className="text-[14px] leading-relaxed text-[#555]">
-                  {legal.termsEn || 'These General Terms and Conditions govern all orders, reservations, catering services, and interactions with MAATI Kitchen (Unicorn Table UG).'}
+                  {(lang === 'de' ? legal.termsDe : legal.termsEn) || 'These General Terms and Conditions govern all orders, reservations, catering services, and interactions with MAATI Kitchen (Unicorn Table UG).'}
                 </p>
               </section>
 

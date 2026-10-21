@@ -31,13 +31,14 @@ export function createAdminApi({ client, password, now = Date.now }) {
     return JSON.parse(Buffer.concat(chunks).toString() || '{}');
   };
   return async (req, res, pathname) => {
-    if (!pathname.startsWith('/api/admin/') && pathname !== '/api/sync') return false;
+    const inboxRoute = /^\/api\/(inquiries|applications)(\/(status|delete))?$/.test(pathname);
+    if (!pathname.startsWith('/api/admin/') && pathname !== '/api/sync' && !inboxRoute) return false;
     try {
       const secure = req.socket.encrypted || req.headers['x-forwarded-proto'] === 'https';
       const cookie = value => `maati_admin_session=${value}; HttpOnly; SameSite=Strict; Path=/api/; Max-Age=${value ? sessionAge / 1000 : 0}${secure ? '; Secure' : ''}`;
       const session = /(?:^|;\s*)maati_admin_session=([^;]+)/.exec(req.headers.cookie || '')?.[1];
       if (pathname === '/api/admin/login' && req.method === 'POST') {
-        if (!password) { send(res, 503, { success: false, error: 'Set ADMIN_PASSWORD on the VPS and restart the server.' }); return true; }
+        if (!password) { send(res, 503, { success: false, error: 'Staff sign-in has not been set up yet. Please contact your website manager.' }); return true; }
         const address = req.socket.remoteAddress || 'unknown';
         const attempt = attempts.get(address);
         if (attempt && attempt.until > now() && attempt.count >= 10) { send(res, 429, { success: false, error: 'Too many login attempts. Try again in 15 minutes.' }); return true; }
@@ -63,13 +64,28 @@ export function createAdminApi({ client, password, now = Date.now }) {
       if (!session || (sessions.get(session) || 0) <= now()) {
         send(res, 401, { success: false, error: 'Sign in to Studio again before publishing.' }); return true;
       }
+      // Existing inbox handlers share the same staff session as content editing.
+      if (inboxRoute) return false;
       if (pathname === '/api/admin/session' && req.method === 'GET') {
-        send(res, 200, { success: true }); return true;
+        send(res, 200, { success: true, publishingReady: Boolean(client) }); return true;
+      }
+      if (pathname === '/api/admin/image' && req.method === 'POST') {
+        if (!client) { send(res, 503, { success: false, error: 'Photo uploads are unavailable. Ask the website manager to check the publishing connection.' }); return true; }
+        const { dataUrl, filename } = await readBody(req);
+        const match = typeof dataUrl === 'string' && /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/.exec(dataUrl);
+        if (!match) { send(res, 400, { success: false, error: 'Choose a JPG, PNG or WebP photo.' }); return true; }
+        const bytes = Buffer.from(match[2], 'base64');
+        if (!bytes.length || bytes.length > 6 * 1024 * 1024) { send(res, 400, { success: false, error: 'Choose a photo smaller than 6 MB.' }); return true; }
+        const asset = await client.assets.upload('image', bytes, {
+          filename: (typeof filename === 'string' ? filename : 'maati-photo').replace(/[^a-zA-Z0-9._-]/g, '-').slice(0, 100),
+          contentType: match[1],
+        });
+        send(res, 200, { success: true, url: asset.url }); return true;
       }
       if (pathname !== '/api/admin/content' || req.method !== 'POST') {
         send(res, 410, { success: false, error: 'Reload Studio to use the current publishing API.' }); return true;
       }
-      if (!client) { send(res, 503, { success: false, error: 'SANITY_API_TOKEN is missing on the VPS.' }); return true; }
+      if (!client) { send(res, 503, { success: false, error: 'Publishing is unavailable. Please ask your website manager to check the publishing connection.' }); return true; }
       const { section, fields, baseRevision } = await readBody(req);
       if (!Object.hasOwn(SECTIONS, section) || !fields || typeof fields !== 'object' || Array.isArray(fields)) {
         send(res, 400, { success: false, error: 'Invalid content section.' }); return true;

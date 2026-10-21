@@ -82,7 +82,7 @@ export const Privacy: React.FC<PrivacyProps> = ({ lang = 'en' }) => {
                   1. General &amp; Data Protection
                 </h2>
                 <p className="text-[14px] leading-relaxed text-[#555]">
-                  {legal.privacyPolicyEn || 'We are MAATI (Unicorn Table UG, Lindenstraße 74, 10969 Berlin). We take the protection of your personal data very seriously and process data strictly in accordance with GDPR provisions.'}
+                  {(lang === 'de' ? legal.privacyPolicyDe : legal.privacyPolicyEn) || 'We are MAATI (Unicorn Table UG, Lindenstraße 74, 10969 Berlin). We take the protection of your personal data very seriously and process data strictly in accordance with GDPR provisions.'}
                 </p>
                 <p className="text-[14px] leading-relaxed text-[#555]">
                   Please read this policy carefully as it sets out the basis on which we collect any personal information from you when you use our website. If you have any questions about this Privacy Policy, please contact us at{' '}

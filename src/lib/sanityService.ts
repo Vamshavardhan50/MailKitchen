@@ -1,3 +1,4 @@
+import { usePublishedDocument } from './usePublishedDocument';
 import { apiUrl } from './api';
 import { subscribeToPublishedContent, refreshPublishedContent } from './cmsRefresh';
 import { normalizeMenuCategories } from './menuImages';
@@ -414,71 +415,24 @@ const DEFAULT_HOMEPAGE: HomepageContent = {
   ctaBtnLocationsDe: 'Tisch reservieren',
 };
 
+function normalizeHomepage(data: any) {
+  const result = { ...data };
+  const aliases: Record<string, string> = {
+    heroBadgeEn: 'heroEyebrowEn', heroBadgeDe: 'heroEyebrowDe',
+    heroTitle1En: 'heroTitleEn', heroTitle1De: 'heroTitleDe',
+    heroTitle2En: 'heroSubtitleEn', heroTitle2De: 'heroSubtitleDe',
+    lunchTitleEn: 'featuredTitleEn', lunchTitleDe: 'featuredTitleDe',
+    lunchDescEn: 'featuredDescEn', lunchDescDe: 'featuredDescDe',
+  };
+  for (const [key, alias] of Object.entries(aliases)) if (result[key] === undefined && data[alias] !== undefined) result[key] = data[alias];
+  for (const key of ['heroImage', 'experienceImg1', 'experienceImg2', 'cateringImage']) {
+    if (result[key] && typeof result[key] !== 'string') result[key] = urlFor(result[key])?.url() || '';
+  }
+  return result;
+}
+
 export function useHomepageContent() {
-  const [content, setContent] = useState<HomepageContent>(DEFAULT_HOMEPAGE);
-  const [loading, setLoading] = useState<boolean>(true);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    // Reactively update if admin saves in current session
-    const handleSync = (e?: Event) => {
-      if (!isMounted) return;
-      if (e instanceof CustomEvent && e.detail?.homepage) {
-        setContent(e.detail.homepage);
-      }
-    };
-    window.addEventListener('maati_homepage_updated', handleSync);
-
-    async function fetchHomepage() {
-      if (!isSanityConfigured) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const data = await sanityClient.fetch<any>(
-          `*[_type == "homepage" && !(_id in path("drafts.**"))][0]`
-        );
-        if (isMounted && data && typeof data === 'object') {
-          const normalized: HomepageContent = {
-            ...data,
-            heroBadgeEn: data.heroBadgeEn || data.heroEyebrowEn,
-            heroBadgeDe: data.heroBadgeDe || data.heroEyebrowDe,
-            heroTitle1En: data.heroTitle1En || data.heroTitleEn,
-            heroTitle1De: data.heroTitle1De || data.heroTitleDe,
-            heroTitle2En: data.heroTitle2En || data.heroSubtitleEn,
-            heroTitle2De: data.heroTitle2De || data.heroSubtitleDe,
-            heroDescEn: data.heroDescEn,
-            heroDescDe: data.heroDescDe,
-            lunchTitleEn: data.lunchTitleEn || data.featuredTitleEn,
-            lunchTitleDe: data.lunchTitleDe || data.featuredTitleDe,
-            lunchDescEn: data.lunchDescEn || data.featuredDescEn,
-            lunchDescDe: data.lunchDescDe || data.featuredDescDe,
-            heroImage: data.heroImage ? (typeof data.heroImage === 'string' ? data.heroImage : (urlFor(data.heroImage) as any)?.url?.() || data.heroImage) : data.heroImage,
-            experienceImg1: data.experienceImg1 ? (typeof data.experienceImg1 === 'string' ? data.experienceImg1 : (urlFor(data.experienceImg1) as any)?.url?.() || data.experienceImg1) : data.experienceImg1,
-            experienceImg2: data.experienceImg2 ? (typeof data.experienceImg2 === 'string' ? data.experienceImg2 : (urlFor(data.experienceImg2) as any)?.url?.() || data.experienceImg2) : data.experienceImg2,
-            cateringImage: data.cateringImage ? (typeof data.cateringImage === 'string' ? data.cateringImage : (urlFor(data.cateringImage) as any)?.url?.() || data.cateringImage) : data.cateringImage,
-          };
-          setContent((prev) => ({ ...prev, ...normalized }));
-        }
-      } catch (err) {
-        console.warn('Sanity homepage fetch error, using fallback:', err);
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    }
-
-    const unsubscribePublished = subscribeToPublishedContent(fetchHomepage);
-    fetchHomepage();
-    return () => {
-      isMounted = false;
-      unsubscribePublished();
-      window.removeEventListener('maati_homepage_updated', handleSync);
-    };
-  }, []);
-
-  return { content, loading };
+  return usePublishedDocument<HomepageContent>('homepage', DEFAULT_HOMEPAGE, normalizeHomepage);
 }
 
 // ─────────────────────────────────────────────
@@ -499,50 +453,8 @@ const DEFAULT_SETTINGS: SiteSettings = {
 };
 
 export function useSiteSettings() {
-  const [settings, setSettings] = useState<SiteSettings>(DEFAULT_SETTINGS);
-  const [loading, setLoading] = useState<boolean>(true);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const handleSync = (e?: Event) => {
-      if (!isMounted) return;
-      if (e instanceof CustomEvent && e.detail?.settings) {
-        setSettings(e.detail.settings);
-      }
-    };
-    window.addEventListener('maati_settings_updated', handleSync);
-
-    async function fetchSettings() {
-      if (!isSanityConfigured) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const data = await sanityClient.fetch<SiteSettings>(
-          `*[_type == "siteSettings" && !(_id in path("drafts.**"))][0]`
-        );
-        if (isMounted && data && typeof data === 'object') {
-          setSettings((prev) => ({ ...prev, ...data }));
-        }
-      } catch (err) {
-        console.warn('Sanity site settings fetch error, using fallback:', err);
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    }
-
-    const unsubscribePublished = subscribeToPublishedContent(fetchSettings);
-    fetchSettings();
-    return () => {
-      isMounted = false;
-      unsubscribePublished();
-      window.removeEventListener('maati_settings_updated', handleSync);
-    };
-  }, []);
-
-  return { settings, loading };
+  const { content: settings, ...status } = usePublishedDocument<SiteSettings>('siteSettings', DEFAULT_SETTINGS);
+  return { settings, ...status };
 }
 
 // ─────────────────────────────────────────────
@@ -581,43 +493,7 @@ const DEFAULT_EVENTS: EventsContent = {
 };
 
 export function useEventsContent() {
-  const [content, setContent] = useState<EventsContent>(DEFAULT_EVENTS);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const handleSync = (e?: Event) => {
-      if (!isMounted) return;
-      if (e instanceof CustomEvent && e.detail?.events) {
-        setContent(e.detail.events);
-      }
-    };
-    window.addEventListener('maati_events_updated', handleSync);
-
-    async function fetchFromSanity() {
-      if (!isSanityConfigured) return;
-      try {
-        const data = await sanityClient.fetch<EventsContent>(
-          `*[_type == "eventsContent" && !(_id in path("drafts.**"))][0]`
-        );
-        if (isMounted && data && typeof data === 'object') {
-          setContent((prev) => ({ ...prev, ...data }));
-        }
-      } catch (err) {
-        console.warn('Sanity events fetch error:', err);
-      }
-    }
-    const unsubscribePublished = subscribeToPublishedContent(fetchFromSanity);
-    fetchFromSanity();
-
-    return () => {
-      isMounted = false;
-      unsubscribePublished();
-      window.removeEventListener('maati_events_updated', handleSync);
-    };
-  }, []);
-
-  return { content };
+  return usePublishedDocument<EventsContent>('eventsContent', DEFAULT_EVENTS);
 }
 
 // ─────────────────────────────────────────────
@@ -656,34 +532,7 @@ const DEFAULT_CONTACT: ContactContent = {
 };
 
 export function useContactContent() {
-  const [content, setContent] = useState<ContactContent>(DEFAULT_CONTACT);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    async function fetchFromSanity() {
-      if (!isSanityConfigured) return;
-      try {
-        const data = await sanityClient.fetch<ContactContent>(
-          `*[_type == "contactContent" && !(_id in path("drafts.**"))][0]`
-        );
-        if (isMounted && data && typeof data === 'object') {
-          setContent((prev) => ({ ...prev, ...data }));
-        }
-      } catch (err) {
-        console.warn('Sanity contact fetch error:', err);
-      }
-    }
-    const unsubscribePublished = subscribeToPublishedContent(fetchFromSanity);
-    fetchFromSanity();
-
-    return () => {
-      isMounted = false;
-      unsubscribePublished();
-    };
-  }, []);
-
-  return { content };
+  return usePublishedDocument<ContactContent>('contactContent', DEFAULT_CONTACT);
 }
 
 // ─────────────────────────────────────────────
@@ -728,34 +577,7 @@ const DEFAULT_PRINT_MENU: PrintMenuContent = {
 };
 
 export function usePrintMenuContent() {
-  const [content, setContent] = useState<PrintMenuContent>(DEFAULT_PRINT_MENU);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    async function fetchFromSanity() {
-      if (!isSanityConfigured) return;
-      try {
-        const data = await sanityClient.fetch<PrintMenuContent>(
-          `*[_type == "printMenuContent" && !(_id in path("drafts.**"))][0]`
-        );
-        if (isMounted && data && typeof data === 'object') {
-          setContent((prev) => ({ ...prev, ...data }));
-        }
-      } catch (err) {
-        console.warn('Sanity print menu fetch error:', err);
-      }
-    }
-    const unsubscribePublished = subscribeToPublishedContent(fetchFromSanity);
-    fetchFromSanity();
-
-    return () => {
-      isMounted = false;
-      unsubscribePublished();
-    };
-  }, []);
-
-  return { content };
+  return usePublishedDocument<PrintMenuContent>('printMenuContent', DEFAULT_PRINT_MENU);
 }
 
 // ─────────────────────────────────────────────
@@ -922,42 +744,7 @@ export const DEFAULT_CATERING: CateringContent = {
 };
 
 export function useCateringContent() {
-  const [content, setContent] = useState<CateringContent>(DEFAULT_CATERING);
-
-  useEffect(() => {
-    let isMounted = true;
-    const handleSync = (e?: Event) => {
-      if (!isMounted) return;
-      if (e instanceof CustomEvent && e.detail?.catering) {
-        setContent(e.detail.catering);
-      }
-    };
-    window.addEventListener('maati_catering_updated', handleSync);
-
-    async function fetchFromSanity() {
-      if (!isSanityConfigured) return;
-      try {
-        const data = await sanityClient.fetch<CateringContent>(
-          `*[_type == "cateringPageContent" && !(_id in path("drafts.**"))][0]`
-        );
-        if (isMounted && data && typeof data === 'object') {
-          setContent((prev) => ({ ...prev, ...data }));
-        }
-      } catch (err) {
-        console.warn('Sanity catering fetch error:', err);
-      }
-    }
-    const unsubscribePublished = subscribeToPublishedContent(fetchFromSanity);
-    fetchFromSanity();
-
-    return () => {
-      isMounted = false;
-      unsubscribePublished();
-      window.removeEventListener('maati_catering_updated', handleSync);
-    };
-  }, []);
-
-  return { content };
+  return usePublishedDocument<CateringContent>('cateringPageContent', DEFAULT_CATERING);
 }
 
 // ─────────────────────────────────────────────
@@ -1164,42 +951,7 @@ export const DEFAULT_JOBS: JobsContent = {
 };
 
 export function useJobsContent() {
-  const [content, setContent] = useState<JobsContent>(DEFAULT_JOBS);
-
-  useEffect(() => {
-    let isMounted = true;
-    const handleSync = (e?: Event) => {
-      if (!isMounted) return;
-      if (e instanceof CustomEvent && e.detail?.jobs) {
-        setContent(e.detail.jobs);
-      }
-    };
-    window.addEventListener('maati_jobs_updated', handleSync);
-
-    async function fetchFromSanity() {
-      if (!isSanityConfigured) return;
-      try {
-        const data = await sanityClient.fetch<JobsContent>(
-          `*[_type == "jobsPageContent" && !(_id in path("drafts.**"))][0]`
-        );
-        if (isMounted && data && typeof data === 'object') {
-          setContent((prev) => ({ ...prev, ...data }));
-        }
-      } catch (err) {
-        console.warn('Sanity jobs fetch error:', err);
-      }
-    }
-    const unsubscribePublished = subscribeToPublishedContent(fetchFromSanity);
-    fetchFromSanity();
-
-    return () => {
-      isMounted = false;
-      unsubscribePublished();
-      window.removeEventListener('maati_jobs_updated', handleSync);
-    };
-  }, []);
-
-  return { content };
+  return usePublishedDocument<JobsContent>('jobsPageContent', DEFAULT_JOBS);
 }
 
 // ─────────────────────────────────────────────
@@ -1276,42 +1028,7 @@ export const DEFAULT_ABOUT: AboutContent = {
 };
 
 export function useAboutContent() {
-  const [content, setContent] = useState<AboutContent>(DEFAULT_ABOUT);
-
-  useEffect(() => {
-    let isMounted = true;
-    const handleSync = (e?: Event) => {
-      if (!isMounted) return;
-      if (e instanceof CustomEvent && e.detail?.about) {
-        setContent(e.detail.about);
-      }
-    };
-    window.addEventListener('maati_about_updated', handleSync);
-
-    async function fetchFromSanity() {
-      if (!isSanityConfigured) return;
-      try {
-        const data = await sanityClient.fetch<AboutContent>(
-          `*[_type == "aboutPageContent" && !(_id in path("drafts.**"))][0]`
-        );
-        if (isMounted && data && typeof data === 'object') {
-          setContent((prev) => ({ ...prev, ...data }));
-        }
-      } catch (err) {
-        console.warn('Sanity about fetch error:', err);
-      }
-    }
-    const unsubscribePublished = subscribeToPublishedContent(fetchFromSanity);
-    fetchFromSanity();
-
-    return () => {
-      isMounted = false;
-      unsubscribePublished();
-      window.removeEventListener('maati_about_updated', handleSync);
-    };
-  }, []);
-
-  return { content };
+  return usePublishedDocument<AboutContent>('aboutPageContent', DEFAULT_ABOUT);
 }
 
 // ─────────────────────────────────────────────
@@ -1434,42 +1151,7 @@ export const DEFAULT_LEGAL: LegalContent = {
 };
 
 export function useLegalContent() {
-  const [content, setContent] = useState<LegalContent>(DEFAULT_LEGAL);
-
-  useEffect(() => {
-    let isMounted = true;
-    const handleSync = (e?: Event) => {
-      if (!isMounted) return;
-      if (e instanceof CustomEvent && e.detail?.legal) {
-        setContent(e.detail.legal);
-      }
-    };
-    window.addEventListener('maati_legal_updated', handleSync);
-
-    async function fetchFromSanity() {
-      if (!isSanityConfigured) return;
-      try {
-        const data = await sanityClient.fetch<LegalContent>(
-          `*[_type == "legalPageContent" && !(_id in path("drafts.**"))][0]`
-        );
-        if (isMounted && data && typeof data === 'object') {
-          setContent((prev) => ({ ...prev, ...data }));
-        }
-      } catch (err) {
-        console.warn('Sanity legal fetch error:', err);
-      }
-    }
-    const unsubscribePublished = subscribeToPublishedContent(fetchFromSanity);
-    fetchFromSanity();
-
-    return () => {
-      isMounted = false;
-      unsubscribePublished();
-      window.removeEventListener('maati_legal_updated', handleSync);
-    };
-  }, []);
-
-  return { content };
+  return usePublishedDocument<LegalContent>('legalPageContent', DEFAULT_LEGAL);
 }
 
 // ─────────────────────────────────────────────
@@ -1652,42 +1334,7 @@ export const DEFAULT_LANDING_PAGES: LandingPagesContent = {
 };
 
 export function useLandingPagesContent() {
-  const [content, setContent] = useState<LandingPagesContent>(DEFAULT_LANDING_PAGES);
-
-  useEffect(() => {
-    let isMounted = true;
-    const handleSync = (e?: Event) => {
-      if (!isMounted) return;
-      if (e instanceof CustomEvent && e.detail?.landingPages) {
-        setContent(e.detail.landingPages);
-      }
-    };
-    window.addEventListener('maati_landing_pages_updated', handleSync);
-
-    async function fetchFromSanity() {
-      if (!isSanityConfigured) return;
-      try {
-        const data = await sanityClient.fetch<LandingPagesContent>(
-          `*[_type == "landingPagesContent" && !(_id in path("drafts.**"))][0]`
-        );
-        if (isMounted && data && typeof data === 'object') {
-          setContent((prev) => ({ ...prev, ...data }));
-        }
-      } catch (err) {
-        console.warn('Sanity landing pages fetch error:', err);
-      }
-    }
-    const unsubscribePublished = subscribeToPublishedContent(fetchFromSanity);
-    fetchFromSanity();
-
-    return () => {
-      isMounted = false;
-      unsubscribePublished();
-      window.removeEventListener('maati_landing_pages_updated', handleSync);
-    };
-  }, []);
-
-  return { content };
+  return usePublishedDocument<LandingPagesContent>('landingPagesContent', DEFAULT_LANDING_PAGES);
 }
 
 // ─────────────────────────────────────────────
@@ -1722,42 +1369,7 @@ export const DEFAULT_RESERVATION: ReservationContent = {
 };
 
 export function useReservationContent() {
-  const [content, setContent] = useState<ReservationContent>(DEFAULT_RESERVATION);
-
-  useEffect(() => {
-    let isMounted = true;
-    const handleSync = (e?: Event) => {
-      if (!isMounted) return;
-      if (e instanceof CustomEvent && e.detail?.reservation) {
-        setContent(e.detail.reservation);
-      }
-    };
-    window.addEventListener('maati_reservation_updated', handleSync);
-
-    async function fetchFromSanity() {
-      if (!isSanityConfigured) return;
-      try {
-        const data = await sanityClient.fetch<ReservationContent>(
-          `*[_type == "reservationContent" && !(_id in path("drafts.**"))][0]`
-        );
-        if (isMounted && data && typeof data === 'object') {
-          setContent((prev) => ({ ...prev, ...data }));
-        }
-      } catch (err) {
-        console.warn('Sanity reservation fetch error:', err);
-      }
-    }
-    const unsubscribePublished = subscribeToPublishedContent(fetchFromSanity);
-    fetchFromSanity();
-
-    return () => {
-      isMounted = false;
-      unsubscribePublished();
-      window.removeEventListener('maati_reservation_updated', handleSync);
-    };
-  }, []);
-
-  return { content };
+  return usePublishedDocument<ReservationContent>('reservationContent', DEFAULT_RESERVATION);
 }
 
 // Publishing uses the authenticated VPS API. Never bundle a Sanity write token.
@@ -1774,7 +1386,9 @@ async function writeSanityDoc(docId: string, _docType: string, fields: Record<st
       method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ section: DOC_SECTIONS[docId], fields, baseRevision: baseRevision ?? fields._rev }),
     });
-    const result = await response.json();
+    const result = await response.json().catch(() => ({}));
+    if (response.status === 401) window.dispatchEvent(new Event('maati_session_expired'));
+    if (response.status === 404) return { success: false, message: 'The website server needs an update. Please contact your website manager.' };
     if (!response.ok || !result.success) return { success: false, message: result.error || 'Publishing failed.' };
     fields._rev = result.revision;
     window.dispatchEvent(new CustomEvent('maati_content_published', { detail: { fields } }));
