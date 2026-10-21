@@ -107,7 +107,7 @@ export const HomePage: React.FC<HomePageProps> = ({ lang, onOpenReservation }) =
             <div className="w-full max-w-[560px] md:max-w-[620px] lg:max-w-[660px]">
               <div className="animate-rotate-in rounded-[32px] md:rounded-[40px] overflow-hidden transition-transform duration-700 hover:scale-[1.02]">
                 <img
-                  src={content.heroImage || "/assets/hero-flatlay.jpg"}
+                  src={content.heroImage || "/assets/maati-cover-3.jpg"}
                   alt="MAATI Indian Soul Food spread"
                   className="w-full h-auto object-cover block rounded-[32px] md:rounded-[40px]"
                 />

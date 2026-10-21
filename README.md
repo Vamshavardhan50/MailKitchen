@@ -18,6 +18,8 @@ SANITY_API_TOKEN=your_existing_sanity_editor_token
 ADMIN_PASSWORD=your_chosen_studio_password
 ```
 
+The server reads `.env` beside `server.mjs`, so PM2 can start it from another working directory. Restart the backend after changing environment settings. A missing `vps:status` npm script means this checkout has not received the update: run `git pull --ff-only origin main` first and inspect any Git errors rather than resetting local changes.
+
 Keep the existing `VITE_SANITY_PROJECT_ID=ohmgd0hu` and `VITE_SANITY_DATASET=production`. Remove `VITE_SANITY_WRITE_TOKEN` and any `VITE_SANITY_TOKEN` from build configuration; publishing now runs on the server, authenticated by an HTTP-only session cookie. Rotate previously exposed browser write tokens in Sanity and update `SANITY_API_TOKEN` accordingly.
 
 Build and test:
@@ -48,5 +50,7 @@ Save changes in the relevant editor. A menu save reports success only after Sani
 Menu image errors show a neutral placeholder. Sanity-hosted asset URLs avoid missing VPS files. Non-versioned local photos are revalidated rather than cached as immutable assets; filenames containing spaces are decoded correctly by the Node server.
 
 ## Image repair
+
+The homepage uses the user-selected **Original MAATI Cover 3** (`maati-cover-3.jpg`), copied unchanged from the restaurant's supplied photoshoot. The published Sanity hero uses the same original image, served at an appropriate display width. The public fallback and gallery picker point to that photograph too.
 
 `node scripts/repair-menu-images.mjs` previews the restoration plan using the checked-in original image mappings. `--apply` uploads the photos to Sanity and patches only image fields under a revision guard. Backups are saved in the ignored `.task-backups/` directory. Custom remote CMS images are preserved. The production repair on 21 October 2026 preserved all dishes, prices, availability, and order and verified all 37 distinct image URLs used by the 42 menu entries.

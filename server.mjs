@@ -14,7 +14,7 @@ const DIST_DIR = path.resolve(__dirname, 'dist');
 
 // Automatically load local .env file if present
 function loadEnv() {
-  const envPath = path.resolve(process.cwd(), '.env');
+  const envPath = path.resolve(__dirname, '.env');
   if (fs.existsSync(envPath)) {
     try {
       const content = fs.readFileSync(envPath, 'utf8');
