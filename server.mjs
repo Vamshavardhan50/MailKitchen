@@ -1,3 +1,4 @@
+import { createAdminApi } from './server/admin-api.mjs';
 import http from 'http';
 import { createClient } from '@sanity/client';
 import fs from 'fs';
@@ -54,6 +55,8 @@ const writeClient = SANITY_API_TOKEN
     })
   : null;
 
+const handleAdminApi = createAdminApi({ client: writeClient, password: process.env.ADMIN_PASSWORD });
+
 const server = http.createServer(async (req, res) => {
   // CORS Headers for API
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -68,8 +71,10 @@ const server = http.createServer(async (req, res) => {
 
   const url = new URL(req.url || '/', `http://${req.headers.host}`);
 
+  if (await handleAdminApi(req, res, url.pathname)) return;
+
   // Health check endpoint
-  if (url.pathname === '/api/health' && req.method === 'GET') {
+  if (url.pathname === '/api/health' && (req.method === 'GET' || req.method === 'HEAD')) {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(
       JSON.stringify({
@@ -395,180 +400,9 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // Secure Cloud Sync Endpoint
-  if (url.pathname === '/api/sync' && req.method === 'POST') {
-    if (!writeClient) {
-      res.writeHead(500, { 'Content-Type': 'application/json' });
-      res.end(
-        JSON.stringify({
-          success: false,
-          error: 'SANITY_API_TOKEN is not configured on the server. Please check server environment.',
-        })
-      );
-      return;
-    }
-
-    let body = '';
-    req.on('data', (chunk) => {
-      body += chunk;
-    });
-
-    req.on('end', async () => {
-      try {
-        const payload = JSON.parse(body || '{}');
-        const results = [];
-
-        // 1. Site Settings
-        if (payload.settings) {
-          await writeClient.createOrReplace({
-            _id: 'siteSettings',
-            _type: 'siteSettings',
-            ...payload.settings,
-          });
-          results.push('siteSettings');
-        }
-
-        // 2. Homepage Content
-        if (payload.homepage) {
-          await writeClient.createOrReplace({
-            _id: 'homepage',
-            _type: 'homepage',
-            ...payload.homepage,
-          });
-          results.push('homepage');
-        }
-
-        // 3. Events Content
-        if (payload.events) {
-          await writeClient.createOrReplace({
-            _id: 'eventsContent',
-            _type: 'eventsContent',
-            ...payload.events,
-          });
-          results.push('eventsContent');
-        }
-
-        // 4. Contact Content
-        if (payload.contact) {
-          await writeClient.createOrReplace({
-            _id: 'contactContent',
-            _type: 'contactContent',
-            ...payload.contact,
-          });
-          results.push('contactContent');
-        }
-
-        // 5. Print Menu Content
-        if (payload.printMenu) {
-          await writeClient.createOrReplace({
-            _id: 'printMenuContent',
-            _type: 'printMenuContent',
-            ...payload.printMenu,
-          });
-          results.push('printMenuContent');
-        }
-
-        // 6. Menu Categories & Dishes
-        if (payload.menu && Array.isArray(payload.menu)) {
-          await writeClient.createOrReplace({
-            _id: 'menuCategoriesData',
-            _type: 'menuCategoriesData',
-            categories: payload.menu,
-            updatedAt: new Date().toISOString(),
-          });
-          results.push('menuCategoriesData');
-        }
-
-        // 7. Gallery Assets
-        if (payload.gallery && Array.isArray(payload.gallery)) {
-          await writeClient.createOrReplace({
-            _id: 'galleryAssetsData',
-            _type: 'galleryAssetsData',
-            assets: payload.gallery,
-            updatedAt: new Date().toISOString(),
-          });
-          results.push('galleryAssetsData');
-        }
-
-        // 8. Catering Page Content
-        if (payload.catering) {
-          await writeClient.createOrReplace({
-            _id: 'cateringPageContent',
-            _type: 'cateringPageContent',
-            ...payload.catering,
-          });
-          results.push('cateringPageContent');
-        }
-
-        // 9. Careers / Jobs Page Content
-        if (payload.jobs) {
-          await writeClient.createOrReplace({
-            _id: 'jobsPageContent',
-            _type: 'jobsPageContent',
-            ...payload.jobs,
-          });
-          results.push('jobsPageContent');
-        }
-
-        // 10. About Us Page Content
-        if (payload.about) {
-          await writeClient.createOrReplace({
-            _id: 'aboutPageContent',
-            _type: 'aboutPageContent',
-            ...payload.about,
-          });
-          results.push('aboutPageContent');
-        }
-
-        // 11. Legal & Impressum Page Content
-        if (payload.legal) {
-          await writeClient.createOrReplace({
-            _id: 'legalPageContent',
-            _type: 'legalPageContent',
-            ...payload.legal,
-          });
-          results.push('legalPageContent');
-        }
-
-        // 12. Category Landing Pages Content
-        if (payload.landingPages) {
-          await writeClient.createOrReplace({
-            _id: 'landingPagesContent',
-            _type: 'landingPagesContent',
-            ...payload.landingPages,
-          });
-          results.push('landingPagesContent');
-        }
-
-        // 13. Reservation Modal & Widget Content
-        if (payload.reservation) {
-          await writeClient.createOrReplace({
-            _id: 'reservationContent',
-            _type: 'reservationContent',
-            ...payload.reservation,
-          });
-          results.push('reservationContent');
-        }
-
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(
-          JSON.stringify({
-            success: true,
-            syncedSections: results,
-            message: `Successfully published ${results.length} sections to Sanity Cloud!`,
-          })
-        );
-      } catch (err) {
-        console.error('Server sync error:', err);
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(
-          JSON.stringify({
-            success: false,
-            error: err?.message || 'Failed to publish to Sanity',
-          })
-        );
-      }
-    });
+  if (url.pathname.startsWith('/api/')) {
+    res.writeHead(404, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ success: false, error: 'API endpoint not found.' }));
     return;
   }
 
@@ -593,10 +427,12 @@ const server = http.createServer(async (req, res) => {
 
   // Strip query string to get the clean file path
   const reqPath = url.pathname;
-  let filePath = path.join(DIST_DIR, reqPath);
+  let decodedPath;
+  try { decodedPath = decodeURIComponent(reqPath); } catch { res.writeHead(400); res.end('Invalid path'); return; }
+  let filePath = path.resolve(DIST_DIR, '.' + decodedPath);
 
   // Security: prevent directory traversal outside dist/
-  if (!filePath.startsWith(DIST_DIR)) {
+  if (filePath !== DIST_DIR && !filePath.startsWith(DIST_DIR + path.sep)) {
     res.writeHead(403);
     res.end('Forbidden');
     return;
@@ -612,7 +448,7 @@ const server = http.createServer(async (req, res) => {
     const mime = MIME_TYPES[ext] || 'application/octet-stream';
 
     // Long-lived cache for hashed assets, no-cache for HTML
-    const isHashedAsset = reqPath.startsWith('/assets/');
+    const isHashedAsset = /\.[cm]?js$|\.css$/.test(reqPath) && /-[A-Za-z0-9_-]{8,}\./.test(reqPath);
     res.setHeader('Cache-Control', isHashedAsset
       ? 'public, max-age=31536000, immutable'
       : 'no-cache, no-store, must-revalidate'
@@ -620,6 +456,7 @@ const server = http.createServer(async (req, res) => {
     res.writeHead(200, { 'Content-Type': mime });
     fs.createReadStream(filePath).pipe(res);
   } else {
+    if (path.extname(decodedPath)) { res.writeHead(404, { 'Content-Type': 'text/plain' }); res.end('Asset not found'); return; }
     // SPA fallback — all unmatched routes return index.html so React Router handles them
     const indexPath = path.join(DIST_DIR, 'index.html');
     if (fs.existsSync(indexPath)) {

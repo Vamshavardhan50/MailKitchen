@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { usePublishedEditor } from '../lib/usePublishedEditor';
+import { recoverMissingCocktails } from '../lib/menuRecovery';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Plus,
@@ -213,7 +215,20 @@ export const StudioPage: React.FC = () => {
   const [passwordInput, setPasswordInput] = useState('');
   const [authError, setAuthError] = useState(false);
 
-  const { categories: initialCategories } = useSanityMenu();
+  const { categories: initialCategories, revision: initialMenuRevision, loading: menuLoading, isFromSanity: menuFromSanity } = useSanityMenu();
+  const menuRevision = useRef<string | undefined>(undefined);
+  const menuVersion = useRef(0);
+  const menuDirty = useRef(false);
+  const menuSaveQueue = useRef<Promise<void>>(Promise.resolve());
+  const [legacyMenuDraft] = useState<unknown>(() => {
+    try {
+      const oldDraft = JSON.parse(localStorage.getItem('maati_admin_menu') || 'null');
+      const recovery = JSON.parse(localStorage.getItem('maati_admin_menu_recovery') || 'null');
+      return [...(Array.isArray(recovery) ? recovery : []), ...(Array.isArray(oldDraft) ? oldDraft : [])];
+    }
+    catch { return null; }
+  });
+  const [isRecoveringCocktails, setIsRecoveringCocktails] = useState(false);
   const { content: initialHomepage } = useHomepageContent();
   const { settings: initialSettings } = useSiteSettings();
   const { content: initialEvents } = useEventsContent();
@@ -231,35 +246,29 @@ export const StudioPage: React.FC = () => {
   const [selectedCatId, setSelectedCatId] = useState<string>('all');
   
   // Site settings state
-  const [siteSettings, setSiteSettings] = useState(initialSettings);
+  const [siteSettings, setSiteSettings] = usePublishedEditor(initialSettings);
   // Homepage state
-  const [homepageContent, _setHomepageContent] = useState<HomepageContent>(initialHomepage);
+  const [homepageContent, _setHomepageContent] = usePublishedEditor<HomepageContent>(initialHomepage);
   // Events page state
-  const [eventsContent, _setEventsContent] = useState<EventsContent>(initialEvents);
+  const [eventsContent, _setEventsContent] = usePublishedEditor<EventsContent>(initialEvents);
   // Contact page state
-  const [contactContent, _setContactContent] = useState<ContactContent>(initialContact);
+  const [contactContent, _setContactContent] = usePublishedEditor<ContactContent>(initialContact);
   // Catering page state
-  const [cateringContent, _setCateringContent] = useState<CateringContent>(initialCatering);
+  const [cateringContent, _setCateringContent] = usePublishedEditor<CateringContent>(initialCatering);
   // Jobs page state
-  const [jobsContent, _setJobsContent] = useState<JobsContent>(initialJobs);
+  const [jobsContent, _setJobsContent] = usePublishedEditor<JobsContent>(initialJobs);
   // About Us page state
-  const [aboutContent, _setAboutContent] = useState<AboutContent>(initialAbout);
+  const [aboutContent, _setAboutContent] = usePublishedEditor<AboutContent>(initialAbout);
   // Legal & Impressum state
-  const [legalContent, _setLegalContent] = useState<LegalContent>(initialLegal);
+  const [legalContent, _setLegalContent] = usePublishedEditor<LegalContent>(initialLegal);
   // Category Landing Pages state
-  const [landingPagesContent, _setLandingPagesContent] = useState<LandingPagesContent>(initialLandingPages);
+  const [landingPagesContent, _setLandingPagesContent] = usePublishedEditor<LandingPagesContent>(initialLandingPages);
   const [selectedLandingKey, setSelectedLandingKey] = useState<'naan-pockets' | 'bowls' | 'breakfast' | 'coffee-chai'>('naan-pockets');
   // Table Reservations state
-  const [reservationContent, _setReservationContent] = useState<ReservationContent>(initialReservation);
+  const [reservationContent, _setReservationContent] = usePublishedEditor<ReservationContent>(initialReservation);
 
-  useEffect(() => { _setCateringContent(initialCatering); }, [initialCatering]);
-  useEffect(() => { _setJobsContent(initialJobs); }, [initialJobs]);
-  useEffect(() => { _setAboutContent(initialAbout); }, [initialAbout]);
-  useEffect(() => { _setLegalContent(initialLegal); }, [initialLegal]);
-  useEffect(() => { _setLandingPagesContent(initialLandingPages); }, [initialLandingPages]);
-  useEffect(() => { _setReservationContent(initialReservation); }, [initialReservation]);
   // Print / Visual Menu state
-  const [printMenuContent, _setPrintMenuContent] = useState<PrintMenuContent>(initialPrintMenu);
+  const [printMenuContent, _setPrintMenuContent] = usePublishedEditor<PrintMenuContent>(initialPrintMenu);
 
   // Inquiries & Applications State
   const [inquiries, setInquiries] = useState<any[]>([]);
@@ -620,16 +629,13 @@ export const StudioPage: React.FC = () => {
   const [showGallery, setShowGallery] = useState(false);
 
   // Dynamic Gallery Assets with Delete & Custom Upload Management
-  const [galleryAssets, setGalleryAssets] = useState<GalleryAssetItem[]>(() => {
-    const saved = localStorage.getItem('maati_admin_gallery_v2');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      } catch {}
-    }
-    return DEFAULT_GALLERY_ASSETS;
-  });
+  const [galleryAssets, setGalleryAssets] = useState<GalleryAssetItem[]>(DEFAULT_GALLERY_ASSETS);
+  const galleryRevision = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    sanityClient.fetch<any>('*[_id == "galleryData"][0]').then(doc => {
+      if (doc && Array.isArray(doc.items)) { setGalleryAssets(doc.items); galleryRevision.current = doc._rev; }
+    }).catch(() => undefined);
+  }, []);
   const [galleryFilterCat, setGalleryFilterCat] = useState<string>('All');
   const [gallerySearch, setGallerySearch] = useState<string>('');
 
@@ -653,7 +659,10 @@ export const StudioPage: React.FC = () => {
   const saveGalleryAssets = (updated: GalleryAssetItem[]) => {
     setGalleryAssets(updated);
     localStorage.setItem('maati_admin_gallery_v2', JSON.stringify(updated));
-    saveGalleryToSanity(updated).catch((err) => console.warn('Sanity gallery sync error:', err));
+    saveGalleryToSanity(updated, galleryRevision.current).then(result => {
+      if (result.success) galleryRevision.current = result.revision;
+      else showToast('Photo library not published: ' + result.message);
+    }).catch(err => showToast('Photo library not published: ' + err.message));
   };
 
 
@@ -796,80 +805,57 @@ export const StudioPage: React.FC = () => {
     }, 3000);
   };
 
-  // Load from local storage or initial
+  // Sanity is authoritative. Browser backups are only for manual recovery.
   useEffect(() => {
-    const savedMenu = localStorage.getItem('maati_admin_menu');
-    if (savedMenu) {
-      try {
-        const parsed = JSON.parse(savedMenu);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setCategories(parsed);
-        } else {
-          setCategories(initialCategories);
-        }
-      } catch {
-        setCategories(initialCategories);
-      }
-    } else {
+    if (!menuLoading && !menuDirty.current) {
       setCategories(initialCategories);
+      menuRevision.current = initialMenuRevision;
     }
+  }, [initialCategories, initialMenuRevision, menuLoading]);
 
-    const savedSettings = localStorage.getItem('maati_admin_settings');
-    if (savedSettings) {
-      try {
-        setSiteSettings(JSON.parse(savedSettings));
-      } catch {}
-    }
-
-    const savedHome = localStorage.getItem('maati_admin_homepage');
-    if (savedHome) {
-      try {
-        _setHomepageContent(JSON.parse(savedHome));
-      } catch {}
-    }
-
-    const savedEvents = localStorage.getItem('maati_admin_events');
-    if (savedEvents) {
-      try { _setEventsContent(JSON.parse(savedEvents)); } catch {}
-    }
-
-    const savedContact = localStorage.getItem('maati_admin_contact');
-    if (savedContact) {
-      try { _setContactContent(JSON.parse(savedContact)); } catch {}
-    }
-
-    const savedPrintMenu = localStorage.getItem('maati_admin_print_menu');
-    if (savedPrintMenu) {
-      try { _setPrintMenuContent(JSON.parse(savedPrintMenu)); } catch {}
-    }
-  }, [initialCategories, initialSettings, initialHomepage]);
+  useEffect(() => {
+    fetch(apiUrl('/api/admin/session'), { credentials: 'include' })
+      .then(r => { if (!r.ok) { setIsAuthenticated(false); sessionStorage.removeItem('maati_admin_auth'); } })
+      .catch(() => setIsAuthenticated(false));
+  }, []);
 
   // Login handler
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (passwordInput === 'admin' || passwordInput === 'maati2026' || passwordInput === 'maati') {
+    try {
+      const response = await fetch(apiUrl('/api/admin/login'), {
+        method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: passwordInput }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) { setAuthError(true); showToast(result.error || 'Sign-in failed.'); return; }
       setIsAuthenticated(true);
       sessionStorage.setItem('maati_admin_auth', 'true');
       setAuthError(false);
-    } else {
-      setAuthError(true);
-    }
+      setPasswordInput('');
+    } catch { setAuthError(true); showToast('Cannot reach the admin server.'); }
   };
 
   const handleLogout = () => {
+    fetch(apiUrl('/api/admin/logout'), { method: 'POST', credentials: 'include' }).catch(() => undefined);
     setIsAuthenticated(false);
     sessionStorage.removeItem('maati_admin_auth');
   };
 
   const saveAllToLocal = (newCats: SanityCategoryWithItems[]) => {
+    if (menuLoading || !menuFromSanity) { showToast('Wait for the published menu to load from Sanity before editing.'); return; }
+    menuDirty.current = true;
+    const version = ++menuVersion.current;
     setCategories(newCats);
-    localStorage.setItem('maati_admin_menu', JSON.stringify(newCats));
-    // Dispatch with detail so useSanityMenu always re-reads localStorage even when Sanity is configured
-    window.dispatchEvent(new CustomEvent('maati_menu_updated', { detail: { forceLocal: true } }));
-    // Also trigger storage event for cross-tab sync
-    window.dispatchEvent(new StorageEvent('storage', { key: 'maati_admin_menu', newValue: JSON.stringify(newCats) }));
-    saveMenuCategoriesToSanity(newCats).catch((err) => console.warn('Sanity menu sync error:', err));
-    showToast('Menu updated live & synced! ✅');
+    try { localStorage.setItem('maati_admin_menu_recovery', JSON.stringify(newCats)); } catch { /* Cloud saves still work when storage is full. */ }
+    showToast('Publishing menu to Sanity...');
+    menuSaveQueue.current = menuSaveQueue.current.then(async () => {
+      const result = await saveMenuCategoriesToSanity(newCats, menuRevision.current);
+      if (!result.success) { showToast('Menu not published: ' + result.message); return; }
+      menuRevision.current = result.revision;
+      if (version === menuVersion.current) menuDirty.current = false;
+      showToast('Menu published to Sanity.');
+    }).catch(error => showToast('Menu not published: ' + error.message));
   };
 
   const showSuccessToast = () => {
@@ -877,6 +863,19 @@ export const StudioPage: React.FC = () => {
     window.dispatchEvent(new CustomEvent('maati_homepage_updated', { detail: { forceLocal: true } }));
     window.dispatchEvent(new StorageEvent('storage', { key: 'maati_admin_homepage' }));
     showToast('Homepage changes saved live & synced! ✅');
+  };
+
+  const cocktailRecovery = recoverMissingCocktails(categories, legacyMenuDraft);
+  const handleRecoverCocktails = async () => {
+    if (!menuFromSanity || menuLoading || menuDirty.current || !cocktailRecovery.added.length) return;
+    setIsRecoveringCocktails(true);
+    try {
+      const result = await saveMenuCategoriesToSanity(cocktailRecovery.categories, menuRevision.current);
+      if (!result.success) { showToast('Cocktails not published: ' + result.message); return; }
+      menuRevision.current = result.revision;
+      setCategories(cocktailRecovery.categories);
+      showToast(`Published ${cocktailRecovery.added.length} recovered cocktails to Sanity.`);
+    } finally { setIsRecoveringCocktails(false); }
   };
 
 
@@ -991,6 +990,7 @@ export const StudioPage: React.FC = () => {
     }
 
     const itemData: SanityMenuItem = {
+      ...editingItem,
       _id: editingItem ? editingItem._id : `item-${Date.now()}`,
       id: editingItem ? editingItem.id || editingItem._id : `item-${Date.now()}`,
       titleEn: formTitleEn.trim(),
@@ -999,6 +999,8 @@ export const StudioPage: React.FC = () => {
       descDe: formDescDe.trim() || formDescEn.trim(),
       price: computedPrice,
       options: computedOptions,
+      priceEn: editingItem?.price === computedPrice ? editingItem.priceEn : undefined,
+      priceDe: editingItem?.price === computedPrice ? editingItem.priceDe : undefined,
       foodType: formFoodType,
       img: formImg.trim() || undefined,
       featured: formFeatured,
@@ -1398,11 +1400,11 @@ export const StudioPage: React.FC = () => {
   const [isCloudSyncing, setIsCloudSyncing] = useState(false);
   const handleSyncAllToCloud = async () => {
     setIsCloudSyncing(true);
-    showToast('Syncing all site data to Sanity Cloud... ⏳');
+    showToast('Refreshing published Sanity content...');
     try {
       const res = await syncAllLocalToSanity();
       if (res.success) {
-        showToast('All changes synced to Sanity Cloud! 🚀 All visitors will see them!');
+        showToast(res.message);
       } else {
         showToast(`Sync warning: ${res.message}`);
       }
@@ -1666,6 +1668,7 @@ export const StudioPage: React.FC = () => {
             Staff access to update menu dishes, prices, photos, and homepage content.
           </p>
 
+          {toastMessage && <p role="alert" className="text-red-700 mb-3">{toastMessage}</p>}
           <form onSubmit={handleLogin} className="space-y-4 text-left">
             <div>
               <label className="block text-[11px] font-extrabold uppercase tracking-wider text-[#444] mb-1.5">
@@ -1712,6 +1715,23 @@ export const StudioPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#f5f0e8] pt-4 sm:pt-6 pb-24 px-3 sm:px-6 md:px-10 lg:px-16 relative">
       <div className="max-w-[1360px] mx-auto space-y-5">
+
+        {(!menuFromSanity || menuLoading) && (
+          <p role="status" className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm">
+            {menuLoading ? 'Loading the published menu from Sanity...' : 'The published menu could not be loaded. Showing an offline reference; publishing is paused. Check the Sanity connection and refresh.'}
+          </p>
+        )}
+
+        {menuFromSanity && !menuLoading && cocktailRecovery.added.length > 0 && (
+          <section role="status" className="rounded-2xl border border-amber-300 bg-amber-50 p-5 space-y-3">
+            <h2 className="font-bold text-[#1e382f]">Recover {cocktailRecovery.added.length} unpublished cocktail cards</h2>
+            <p className="text-sm">These cocktails are saved in this browser but are missing from the published website. Publishing them preserves the current photos and prices of existing menu items.</p>
+            <p className="text-sm">{cocktailRecovery.added.map(item => item.titleEn).join(', ')}</p>
+            <button type="button" disabled={isRecoveringCocktails || menuDirty.current} onClick={handleRecoverCocktails} className="bg-[#1e382f] text-white rounded-xl px-4 py-2 font-bold disabled:opacity-50">
+              {isRecoveringCocktails ? 'Publishing recovered cocktails...' : 'Publish missing cocktails to website'}
+            </button>
+          </section>
+        )}
 
         {/* ── Top Header Bar with Tour Guide Button ── */}
         <header
@@ -1797,11 +1817,11 @@ export const StudioPage: React.FC = () => {
               data-tour="cloud-sync"
               onClick={handleSyncAllToCloud}
               disabled={isCloudSyncing}
-              title="Push all saved admin data to Sanity Cloud so production visitors on any device see your changes"
+              title="Refresh published Sanity content. Use each editor’s Save button to publish edits."
               className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-4 py-2.5 rounded-xl text-[13px] shadow-sm hover:shadow-md transition-all flex items-center gap-2 disabled:opacity-50 cursor-pointer"
             >
               <span className="text-[14px]">{isCloudSyncing ? '⏳' : '☁️'}</span>
-              <span>{isCloudSyncing ? 'Syncing...' : 'Sync to Cloud'}</span>
+              <span>{isCloudSyncing ? 'Refreshing...' : 'Refresh from Sanity'}</span>
             </button>
 
             <Link
@@ -1970,7 +1990,7 @@ export const StudioPage: React.FC = () => {
                   className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-5 py-3 rounded-xl text-[13px] shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
                 >
                   <Sparkles className="w-4 h-4 text-amber-200" />
-                  <span>{isCloudSyncing ? 'Syncing...' : 'Sync All Pages Live 🚀'}</span>
+                  <span>{isCloudSyncing ? 'Refreshing...' : 'Refresh published pages'}</span>
                 </button>
               </div>
               <div className="absolute -bottom-16 -right-16 w-64 h-64 rounded-full bg-[#d85c27]/5 blur-3xl pointer-events-none" />

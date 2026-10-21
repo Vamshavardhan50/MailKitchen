@@ -1,6 +1,8 @@
+import { apiUrl } from './api';
+import { subscribeToPublishedContent, refreshPublishedContent } from './cmsRefresh';
+import { normalizeMenuCategories } from './menuImages';
 import { useState, useEffect } from 'react';
-import { createClient } from '@sanity/client';
-import { sanityClient, isSanityConfigured, urlFor, SANITY_PROJECT_ID, SANITY_DATASET, SANITY_API_VERSION } from './sanity';
+import { sanityClient, isSanityConfigured, urlFor } from './sanity';
 import {
   getMenuCategoriesQuery,
   getMenuItemsQuery,
@@ -305,130 +307,42 @@ function getLocalFallbackFeatured(): SanityMenuItem[] {
 // ─────────────────────────────────────────────
 export function useSanityMenu() {
   const [categories, setCategories] = useState<SanityCategoryWithItems[]>(getLocalFallbackCategories);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [isFromSanity, setIsFromSanity] = useState<boolean>(false);
-
-
-
+  const [loading, setLoading] = useState(true);
+  const [isFromSanity, setIsFromSanity] = useState(false);
+  const [revision, setRevision] = useState<string>();
   useEffect(() => {
     let isMounted = true;
-
-    // Reactively update if admin dispatches event in current session
-    const handleSync = (e?: Event) => {
-      if (!isMounted) return;
-      if (e instanceof CustomEvent && e.detail?.categories) {
-        setCategories(e.detail.categories);
-      }
-    };
-    window.addEventListener('maati_menu_updated', handleSync);
-
+    let request = 0;
     async function fetchMenu() {
-      if (!isSanityConfigured) {
-        setLoading(false);
-        return;
-      }
-
+      const currentRequest = ++request;
+      if (!isSanityConfigured) { setLoading(false); return; }
       try {
-        // 1. First check if consolidated menuCategoriesData exists in Sanity Cloud
-        const customMenu = await sanityClient.fetch<any>(
-          `*[_type == "menuCategoriesData" && !(_id in path("drafts.**"))][0].categories`
+        const doc = await sanityClient.fetch<any>(
+          '*[_id == "menuCategoriesData" && !(_id in path("drafts.**"))][0]'
         );
-        if (isMounted && customMenu && Array.isArray(customMenu) && customMenu.length > 0) {
-          setCategories(customMenu);
-          setIsFromSanity(true);
-          setLoading(false);
-          return;
-        }
-
-        // 2. Otherwise fetch from standard categories query
-        const data = await sanityClient.fetch<SanityCategoryWithItems[]>(getMenuByCategoryQuery);
-        if (isMounted && data && Array.isArray(data) && data.length > 0) {
-          const normalized = data.map((cat) => ({
-            ...cat,
-            items: (cat.items || []).map((item) => ({
-              ...item,
-              id: item.slug && typeof item.slug === 'object' ? item.slug.current : item.id || item._id,
-              img: item.image ? ((urlFor(item.image) as any)?.url?.() || item.img) : item.img,
-            })),
-          }));
-          setCategories(normalized);
+        const data = Array.isArray(doc?.categories) ? doc.categories
+          : await sanityClient.fetch<SanityCategoryWithItems[]>(getMenuByCategoryQuery);
+        if (isMounted && request === currentRequest && Array.isArray(data)) {
+          setCategories(normalizeMenuCategories(data));
+          setRevision(doc?._rev);
           setIsFromSanity(true);
         }
       } catch (err) {
-        console.warn('Sanity menu fetch error, using local fallback:', err);
-      } finally {
-        if (isMounted) setLoading(false);
-      }
+        console.warn('Sanity menu fetch failed; retaining last loaded menu:', err);
+      } finally { if (isMounted && request === currentRequest) setLoading(false); }
     }
-
+    const unsubscribePublished = subscribeToPublishedContent(fetchMenu);
     fetchMenu();
-    return () => {
-      isMounted = false;
-      window.removeEventListener('maati_menu_updated', handleSync);
-    };
+    return () => { isMounted = false; unsubscribePublished(); };
   }, []);
-
-  return { categories, loading, isFromSanity };
+  return { categories, loading, isFromSanity, revision };
 }
 
-// ─────────────────────────────────────────────
-// React Hook: useFeaturedMenu (Public Featured Dishes Hook)
-// ─────────────────────────────────────────────
 export function useFeaturedMenu() {
-  const [items, setItems] = useState<SanityMenuItem[]>(getLocalFallbackFeatured);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [isFromSanity, setIsFromSanity] = useState<boolean>(false);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    async function fetchFeatured() {
-      if (!isSanityConfigured) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        // 1. First check if consolidated menuCategoriesData exists
-        const customMenu = await sanityClient.fetch<any>(
-          `*[_type == "menuCategoriesData" && !(_id in path("drafts.**"))][0].categories`
-        );
-        if (isMounted && customMenu && Array.isArray(customMenu) && customMenu.length > 0) {
-          const featured = customMenu
-            .flatMap((c: any) => (c.items || []).filter((it: any) => it.featured && it.available !== false))
-            .sort((a: any, b: any) => (a.featuredOrder || 999) - (b.featuredOrder || 999));
-          if (featured.length > 0) {
-            setItems(featured);
-            setIsFromSanity(true);
-            setLoading(false);
-            return;
-          }
-        }
-
-        // 2. Otherwise fetch from standard query
-        const data = await sanityClient.fetch<SanityMenuItem[]>(getFeaturedMenuItemsQuery);
-        if (isMounted && data && Array.isArray(data) && data.length > 0) {
-          const normalized = data.map((item) => ({
-            ...item,
-            id: item.slug && typeof item.slug === 'object' ? item.slug.current : item.id || item._id,
-            img: item.image ? ((urlFor(item.image) as any)?.url?.() || item.img) : item.img,
-          }));
-          setItems(normalized);
-          setIsFromSanity(true);
-        }
-      } catch (err) {
-        console.warn('Sanity featured items fetch error, using local fallback:', err);
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    }
-
-    fetchFeatured();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
+  const { categories, loading, isFromSanity } = useSanityMenu();
+  const items = categories.flatMap(category => category.items)
+    .filter(item => item.featured && item.available !== false)
+    .sort((a, b) => (a.featuredOrder ?? 999) - (b.featuredOrder ?? 999));
   return { items, loading, isFromSanity };
 }
 
@@ -555,9 +469,11 @@ export function useHomepageContent() {
       }
     }
 
+    const unsubscribePublished = subscribeToPublishedContent(fetchHomepage);
     fetchHomepage();
     return () => {
       isMounted = false;
+      unsubscribePublished();
       window.removeEventListener('maati_homepage_updated', handleSync);
     };
   }, []);
@@ -617,9 +533,11 @@ export function useSiteSettings() {
       }
     }
 
+    const unsubscribePublished = subscribeToPublishedContent(fetchSettings);
     fetchSettings();
     return () => {
       isMounted = false;
+      unsubscribePublished();
       window.removeEventListener('maati_settings_updated', handleSync);
     };
   }, []);
@@ -663,15 +581,7 @@ const DEFAULT_EVENTS: EventsContent = {
 };
 
 export function useEventsContent() {
-  const [content, setContent] = useState<EventsContent>(() => {
-    try {
-      const local = localStorage.getItem('maati_admin_events');
-      if (local) return JSON.parse(local);
-    } catch (e) {
-      // ignore
-    }
-    return DEFAULT_EVENTS;
-  });
+  const [content, setContent] = useState<EventsContent>(DEFAULT_EVENTS);
 
   useEffect(() => {
     let isMounted = true;
@@ -697,10 +607,12 @@ export function useEventsContent() {
         console.warn('Sanity events fetch error:', err);
       }
     }
+    const unsubscribePublished = subscribeToPublishedContent(fetchFromSanity);
     fetchFromSanity();
 
     return () => {
       isMounted = false;
+      unsubscribePublished();
       window.removeEventListener('maati_events_updated', handleSync);
     };
   }, []);
@@ -762,10 +674,12 @@ export function useContactContent() {
         console.warn('Sanity contact fetch error:', err);
       }
     }
+    const unsubscribePublished = subscribeToPublishedContent(fetchFromSanity);
     fetchFromSanity();
 
     return () => {
       isMounted = false;
+      unsubscribePublished();
     };
   }, []);
 
@@ -832,10 +746,12 @@ export function usePrintMenuContent() {
         console.warn('Sanity print menu fetch error:', err);
       }
     }
+    const unsubscribePublished = subscribeToPublishedContent(fetchFromSanity);
     fetchFromSanity();
 
     return () => {
       isMounted = false;
+      unsubscribePublished();
     };
   }, []);
 
@@ -1006,15 +922,7 @@ export const DEFAULT_CATERING: CateringContent = {
 };
 
 export function useCateringContent() {
-  const [content, setContent] = useState<CateringContent>(() => {
-    try {
-      const local = localStorage.getItem('maati_admin_catering');
-      if (local) return JSON.parse(local);
-    } catch (e) {
-      // ignore
-    }
-    return DEFAULT_CATERING;
-  });
+  const [content, setContent] = useState<CateringContent>(DEFAULT_CATERING);
 
   useEffect(() => {
     let isMounted = true;
@@ -1039,10 +947,12 @@ export function useCateringContent() {
         console.warn('Sanity catering fetch error:', err);
       }
     }
+    const unsubscribePublished = subscribeToPublishedContent(fetchFromSanity);
     fetchFromSanity();
 
     return () => {
       isMounted = false;
+      unsubscribePublished();
       window.removeEventListener('maati_catering_updated', handleSync);
     };
   }, []);
@@ -1254,15 +1164,7 @@ export const DEFAULT_JOBS: JobsContent = {
 };
 
 export function useJobsContent() {
-  const [content, setContent] = useState<JobsContent>(() => {
-    try {
-      const local = localStorage.getItem('maati_admin_jobs');
-      if (local) return JSON.parse(local);
-    } catch (e) {
-      // ignore
-    }
-    return DEFAULT_JOBS;
-  });
+  const [content, setContent] = useState<JobsContent>(DEFAULT_JOBS);
 
   useEffect(() => {
     let isMounted = true;
@@ -1287,10 +1189,12 @@ export function useJobsContent() {
         console.warn('Sanity jobs fetch error:', err);
       }
     }
+    const unsubscribePublished = subscribeToPublishedContent(fetchFromSanity);
     fetchFromSanity();
 
     return () => {
       isMounted = false;
+      unsubscribePublished();
       window.removeEventListener('maati_jobs_updated', handleSync);
     };
   }, []);
@@ -1372,15 +1276,7 @@ export const DEFAULT_ABOUT: AboutContent = {
 };
 
 export function useAboutContent() {
-  const [content, setContent] = useState<AboutContent>(() => {
-    try {
-      const local = localStorage.getItem('maati_admin_about');
-      if (local) return JSON.parse(local);
-    } catch (e) {
-      // ignore
-    }
-    return DEFAULT_ABOUT;
-  });
+  const [content, setContent] = useState<AboutContent>(DEFAULT_ABOUT);
 
   useEffect(() => {
     let isMounted = true;
@@ -1405,10 +1301,12 @@ export function useAboutContent() {
         console.warn('Sanity about fetch error:', err);
       }
     }
+    const unsubscribePublished = subscribeToPublishedContent(fetchFromSanity);
     fetchFromSanity();
 
     return () => {
       isMounted = false;
+      unsubscribePublished();
       window.removeEventListener('maati_about_updated', handleSync);
     };
   }, []);
@@ -1536,15 +1434,7 @@ export const DEFAULT_LEGAL: LegalContent = {
 };
 
 export function useLegalContent() {
-  const [content, setContent] = useState<LegalContent>(() => {
-    try {
-      const local = localStorage.getItem('maati_admin_legal');
-      if (local) return JSON.parse(local);
-    } catch (e) {
-      // ignore
-    }
-    return DEFAULT_LEGAL;
-  });
+  const [content, setContent] = useState<LegalContent>(DEFAULT_LEGAL);
 
   useEffect(() => {
     let isMounted = true;
@@ -1569,10 +1459,12 @@ export function useLegalContent() {
         console.warn('Sanity legal fetch error:', err);
       }
     }
+    const unsubscribePublished = subscribeToPublishedContent(fetchFromSanity);
     fetchFromSanity();
 
     return () => {
       isMounted = false;
+      unsubscribePublished();
       window.removeEventListener('maati_legal_updated', handleSync);
     };
   }, []);
@@ -1760,15 +1652,7 @@ export const DEFAULT_LANDING_PAGES: LandingPagesContent = {
 };
 
 export function useLandingPagesContent() {
-  const [content, setContent] = useState<LandingPagesContent>(() => {
-    try {
-      const local = localStorage.getItem('maati_admin_landing_pages');
-      if (local) return JSON.parse(local);
-    } catch (e) {
-      // ignore
-    }
-    return DEFAULT_LANDING_PAGES;
-  });
+  const [content, setContent] = useState<LandingPagesContent>(DEFAULT_LANDING_PAGES);
 
   useEffect(() => {
     let isMounted = true;
@@ -1793,10 +1677,12 @@ export function useLandingPagesContent() {
         console.warn('Sanity landing pages fetch error:', err);
       }
     }
+    const unsubscribePublished = subscribeToPublishedContent(fetchFromSanity);
     fetchFromSanity();
 
     return () => {
       isMounted = false;
+      unsubscribePublished();
       window.removeEventListener('maati_landing_pages_updated', handleSync);
     };
   }, []);
@@ -1836,15 +1722,7 @@ export const DEFAULT_RESERVATION: ReservationContent = {
 };
 
 export function useReservationContent() {
-  const [content, setContent] = useState<ReservationContent>(() => {
-    try {
-      const local = localStorage.getItem('maati_admin_reservation');
-      if (local) return JSON.parse(local);
-    } catch (e) {
-      // ignore
-    }
-    return DEFAULT_RESERVATION;
-  });
+  const [content, setContent] = useState<ReservationContent>(DEFAULT_RESERVATION);
 
   useEffect(() => {
     let isMounted = true;
@@ -1869,10 +1747,12 @@ export function useReservationContent() {
         console.warn('Sanity reservation fetch error:', err);
       }
     }
+    const unsubscribePublished = subscribeToPublishedContent(fetchFromSanity);
     fetchFromSanity();
 
     return () => {
       isMounted = false;
+      unsubscribePublished();
       window.removeEventListener('maati_reservation_updated', handleSync);
     };
   }, []);
@@ -1880,40 +1760,27 @@ export function useReservationContent() {
   return { content };
 }
 
-// ─────────────────────────────────────────────
-// Admin Direct Write Client
-// Uses VITE_SANITY_WRITE_TOKEN — only present in admin builds
-// ─────────────────────────────────────────────
-
-
-const metaEnvWrite = (import.meta as any).env || {};
-const WRITE_TOKEN = metaEnvWrite.VITE_SANITY_WRITE_TOKEN || '';
-
-const adminWriteClient = WRITE_TOKEN
-  ? createClient({
-      projectId: SANITY_PROJECT_ID,
-      dataset: SANITY_DATASET,
-      apiVersion: SANITY_API_VERSION,
-      useCdn: false,
-      token: WRITE_TOKEN,
-    })
-  : null;
-
-async function writeSanityDoc(docId: string, docType: string, fields: Record<string, any>): Promise<{ success: boolean; message: string }> {
-  if (!adminWriteClient) {
-    return { success: false, message: 'Admin write token not configured. Add VITE_SANITY_WRITE_TOKEN to .env and rebuild.' };
-  }
+// Publishing uses the authenticated VPS API. Never bundle a Sanity write token.
+const DOC_SECTIONS: Record<string, string> = {
+  siteSettings: 'settings', homepage: 'homepage', eventsContent: 'events', contactContent: 'contact',
+  printMenuContent: 'printMenu', menuCategoriesData: 'menu', galleryData: 'gallery',
+  cateringPageContent: 'catering', jobsPageContent: 'jobs', aboutPageContent: 'about',
+  legalPageContent: 'legal', landingPagesContent: 'landingPages', reservationContent: 'reservation',
+};
+export type PublishResult = { success: boolean; message: string; revision?: string };
+async function writeSanityDoc(docId: string, _docType: string, fields: Record<string, any>, baseRevision?: string): Promise<PublishResult> {
   try {
-    await adminWriteClient.createOrReplace({
-      _id: docId,
-      _type: docType,
-      ...fields,
+    const response = await fetch(apiUrl('/api/admin/content'), {
+      method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ section: DOC_SECTIONS[docId], fields, baseRevision: baseRevision ?? fields._rev }),
     });
-    return { success: true, message: `Published to Sanity Cloud (${docId})` };
-  } catch (err: any) {
-    console.error(`[MAATI Admin] Sanity write error for ${docId}:`, err);
-    return { success: false, message: err?.message || 'Sanity write failed' };
-  }
+    const result = await response.json();
+    if (!response.ok || !result.success) return { success: false, message: result.error || 'Publishing failed.' };
+    fields._rev = result.revision;
+    window.dispatchEvent(new CustomEvent('maati_content_published', { detail: { fields } }));
+    refreshPublishedContent();
+    return { success: true, message: result.message, revision: result.revision };
+  } catch (err: any) { return { success: false, message: err.message || 'Could not reach the publishing server.' }; }
 }
 
 export async function saveSettingsToSanity(settings: SiteSettings): Promise<{ success: boolean; message: string }> {
@@ -1936,12 +1803,12 @@ export async function savePrintMenuToSanity(printMenu: PrintMenuContent): Promis
   return writeSanityDoc('printMenuContent', 'printMenuContent', printMenu);
 }
 
-export async function saveMenuCategoriesToSanity(menu: SanityCategoryWithItems[]): Promise<{ success: boolean; message: string }> {
-  return writeSanityDoc('menuCategoriesData', 'menuCategoriesData', { categories: menu });
+export async function saveMenuCategoriesToSanity(menu: SanityCategoryWithItems[], baseRevision?: string): Promise<PublishResult> {
+  return writeSanityDoc('menuCategoriesData', 'menuCategoriesData', { categories: menu }, baseRevision);
 }
 
-export async function saveGalleryToSanity(gallery: any[]): Promise<{ success: boolean; message: string }> {
-  return writeSanityDoc('galleryData', 'galleryData', { items: gallery });
+export async function saveGalleryToSanity(gallery: any[], baseRevision?: string): Promise<PublishResult> {
+  return writeSanityDoc('galleryData', 'galleryData', { items: gallery }, baseRevision);
 }
 
 export async function saveCateringToSanity(catering: CateringContent): Promise<{ success: boolean; message: string }> {
@@ -1971,108 +1838,7 @@ export async function saveReservationToSanity(reservation: ReservationContent): 
 /**
  * Uploads all locally edited admin data directly to Sanity Cloud.
  */
-export async function syncAllLocalToSanity(): Promise<{ success: boolean; message: string }> {
-  if (!adminWriteClient) {
-    return { success: false, message: 'Admin write token not configured. Add VITE_SANITY_WRITE_TOKEN to .env and rebuild.' };
-  }
-
-  try {
-    const results: string[] = [];
-    const errors: string[] = [];
-
-    const localSettings = localStorage.getItem('maati_admin_settings');
-    if (localSettings) {
-      const r = await saveSettingsToSanity(JSON.parse(localSettings));
-      r.success ? results.push('settings') : errors.push(`settings: ${r.message}`);
-    }
-
-    const localHomepage = localStorage.getItem('maati_admin_homepage');
-    if (localHomepage) {
-      const r = await saveHomepageToSanity(JSON.parse(localHomepage));
-      r.success ? results.push('homepage') : errors.push(`homepage: ${r.message}`);
-    }
-
-    const localEvents = localStorage.getItem('maati_admin_events');
-    if (localEvents) {
-      const r = await saveEventsToSanity(JSON.parse(localEvents));
-      r.success ? results.push('events') : errors.push(`events: ${r.message}`);
-    }
-
-    const localContact = localStorage.getItem('maati_admin_contact');
-    if (localContact) {
-      const r = await saveContactToSanity(JSON.parse(localContact));
-      r.success ? results.push('contact') : errors.push(`contact: ${r.message}`);
-    }
-
-    const localPrint = localStorage.getItem('maati_admin_print_menu');
-    if (localPrint) {
-      const r = await savePrintMenuToSanity(JSON.parse(localPrint));
-      r.success ? results.push('printMenu') : errors.push(`printMenu: ${r.message}`);
-    }
-
-    const localMenu = localStorage.getItem('maati_admin_menu');
-    if (localMenu) {
-      const r = await saveMenuCategoriesToSanity(JSON.parse(localMenu));
-      r.success ? results.push('menu') : errors.push(`menu: ${r.message}`);
-    }
-
-    const localGallery = localStorage.getItem('maati_admin_gallery_v2');
-    if (localGallery) {
-      const r = await saveGalleryToSanity(JSON.parse(localGallery));
-      r.success ? results.push('gallery') : errors.push(`gallery: ${r.message}`);
-    }
-
-    const localCatering = localStorage.getItem('maati_admin_catering');
-    if (localCatering) {
-      const r = await saveCateringToSanity(JSON.parse(localCatering));
-      r.success ? results.push('catering') : errors.push(`catering: ${r.message}`);
-    }
-
-    const localJobs = localStorage.getItem('maati_admin_jobs');
-    if (localJobs) {
-      const r = await saveJobsToSanity(JSON.parse(localJobs));
-      r.success ? results.push('jobs') : errors.push(`jobs: ${r.message}`);
-    }
-
-    const localAbout = localStorage.getItem('maati_admin_about');
-    if (localAbout) {
-      const r = await saveAboutToSanity(JSON.parse(localAbout));
-      r.success ? results.push('about') : errors.push(`about: ${r.message}`);
-    }
-
-    const localLegal = localStorage.getItem('maati_admin_legal');
-    if (localLegal) {
-      const r = await saveLegalToSanity(JSON.parse(localLegal));
-      r.success ? results.push('legal') : errors.push(`legal: ${r.message}`);
-    }
-
-    const localLanding = localStorage.getItem('maati_admin_landing_pages');
-    if (localLanding) {
-      const r = await saveLandingPagesToSanity(JSON.parse(localLanding));
-      r.success ? results.push('landingPages') : errors.push(`landingPages: ${r.message}`);
-    }
-
-    const localReservation = localStorage.getItem('maati_admin_reservation');
-    if (localReservation) {
-      const r = await saveReservationToSanity(JSON.parse(localReservation));
-      r.success ? results.push('reservation') : errors.push(`reservation: ${r.message}`);
-    }
-
-    if (errors.length === 0) {
-      return { success: true, message: `Published ${results.join(', ')} to Sanity Cloud! 🚀` };
-    } else if (results.length > 0) {
-      return { success: false, message: `Partial sync. OK: ${results.join(', ')}. Failed: ${errors.join('; ')}` };
-    } else {
-      return { success: false, message: `Sync failed: ${errors.join('; ')}` };
-    }
-  } catch (err: any) {
-    console.error('syncAllLocalToSanity error:', err);
-    return { success: false, message: `Sync failed: ${err.message || 'Unknown error'}` };
-  }
+export async function syncAllLocalToSanity(): Promise<PublishResult> {
+  refreshPublishedContent();
+  return { success: true, message: 'Refreshed published content from Sanity. Save edits in their page editor to publish.' };
 }
-
-
-
-
-
-

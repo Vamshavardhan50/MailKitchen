@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Leaf, Flame } from 'lucide-react';
 import { SanityMenuItem } from '../lib/sanityService';
 import { MenuItem } from '../data/june2026MenuData';
@@ -23,6 +23,7 @@ const getDietBadge = (item: SanityMenuItem | MenuItem, isDe: boolean) => {
 };
 
 export const MenuCard: React.FC<MenuCardProps> = ({ item, lang = 'en' }) => {
+  const [failedImage, setFailedImage] = useState<string>();
   const isDe = lang === 'de';
   const title = (isDe ? item.titleDe : item.titleEn) || item.titleEn || item.titleDe;
   const desc = isDe ? item.descDe : item.descEn;
@@ -70,6 +71,7 @@ export const MenuCard: React.FC<MenuCardProps> = ({ item, lang = 'en' }) => {
   };
 
   const itemId = ('id' in item && item.id) ? item.id : ('_id' in item ? item._id : undefined);
+  const isBottledDrink = ['coca-cola', 'fanta', 'mezzo-mix', 'fuze-tea', 'vio-schorle', 'vio-stilles-wasser', 'spreequell-classic', 'thums-up'].includes(itemId || '');
   const isSoldOut = 'available' in item ? item.available === false : false;
 
   // Extract clean decimal price for search engine microdata (e.g. "€11,5" -> "11.50")
@@ -97,14 +99,15 @@ export const MenuCard: React.FC<MenuCardProps> = ({ item, lang = 'en' }) => {
 
       {/* ── Top Food Image Area with Badge ── */}
       <div className="relative h-[210px] sm:h-[240px] md:h-[250px] w-full overflow-hidden bg-[#fae8d8]/40 shrink-0">
-        {item.img ? (
+        {item.img && failedImage !== item.img ? (
           <img
             src={item.img}
             alt={title}
             itemProp="image"
             loading="lazy"
+            onError={() => setFailedImage(item.img)}
             className={`w-full h-full transition-transform duration-600 ease-out group-hover:scale-108 ${
-              item.img.toLowerCase().endsWith('.png') && (item.img.includes('water') || item.img.includes('still') || item.img.includes('cola') || item.img.includes('fanta') || item.img.includes('fuze') || item.img.includes('Mezo') || item.img.includes('vio') || item.img.includes('Thums'))
+              isBottledDrink
                 ? 'object-contain p-3.5 bg-white/70'
                 : 'object-cover'
             }`}

@@ -32,6 +32,7 @@ export const sanityConfig = {
   dataset: SANITY_DATASET,
   apiVersion: SANITY_API_VERSION,
   useCdn: false, // direct fresh data
+  perspective: 'published' as const,
 };
 
 // Read-only client used across the website for fetching published content
