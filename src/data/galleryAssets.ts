@@ -49,7 +49,7 @@ export const DEFAULT_GALLERY_ASSETS: GalleryAssetItem[] = [
   { id: 'asset-28', name: "MAATI Signature Cocktail 4", path: "/assets/cocktail-4.jpg", category: "Cocktails" },
   { id: 'asset-29', name: "MAATI Signature Cocktail 5", path: "/assets/cocktail-5.jpg", category: "Cocktails" },
   { id: 'asset-30', name: "MAATI Signature Cocktail 6", path: "/assets/cocktail-6.jpg", category: "Cocktails" },
-  { id: 'asset-31', name: "Homepage Cover — Original MAATI Cover 3", path: "/assets/maati-cover-3.jpg", category: "Showcase & Ambience" },
+  { id: 'asset-31', name: "Homepage — Previous Circular Hero", path: "/assets/circle-Bq5xyFQD.png", category: "Showcase & Ambience" },
   { id: 'asset-32', name: "Restaurant Interior Ambience 1", path: "/assets/show5-BiQql1jr.jpeg", category: "Showcase & Ambience" },
   { id: 'asset-33', name: "Window Dining & Pendant Lights", path: "/assets/show2-CM6MShfY.jpeg", category: "Showcase & Ambience" },
   { id: 'asset-34', name: "MAATI Catering Spread", path: "/assets/show3-D0blnzja.jpeg", category: "Showcase & Ambience" },

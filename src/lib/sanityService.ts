@@ -368,7 +368,7 @@ const DEFAULT_HOMEPAGE: HomepageContent = {
   heroPill2De: 'AUTHENTISCHE GEWÜRZE',
   heroPill3En: 'READY IN MINUTES',
   heroPill3De: 'SCHNELL SERVIERT',
-  heroImage: '/assets/maati-cover-3.jpg',
+  heroImage: '/assets/circle-Bq5xyFQD.png',
   lunchTitleEn: 'Treat Your Tastebuds',
   lunchTitleDe: 'Verwöhnen Sie Ihren Gaumen',
   lunchDescEn: 'Discover our most-loved signature combinations, crafted for perfect balance.',

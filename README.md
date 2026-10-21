@@ -51,6 +51,6 @@ Menu image errors show a neutral placeholder. Sanity-hosted asset URLs avoid mis
 
 ## Image repair
 
-The homepage uses the user-selected **Original MAATI Cover 3** (`maati-cover-3.jpg`), copied unchanged from the restaurant's supplied photoshoot. The published Sanity hero uses the same original image, served at an appropriate display width. The public fallback and gallery picker point to that photograph too.
+The homepage uses the **previous circular hero** (`circle-Bq5xyFQD.png`) with its original circular layout and entrance animation. The published Sanity hero, public fallback, and gallery picker all use the same image.
 
 `node scripts/repair-menu-images.mjs` previews the restoration plan using the checked-in original image mappings. `--apply` uploads the photos to Sanity and patches only image fields under a revision guard. Backups are saved in the ignored `.task-backups/` directory. Custom remote CMS images are preserved. The production repair on 21 October 2026 preserved all dishes, prices, availability, and order and verified all 37 distinct image URLs used by the 42 menu entries.

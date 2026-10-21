@@ -102,14 +102,17 @@ export const HomePage: React.FC<HomePageProps> = ({ lang, onOpenReservation }) =
             </div>
           </div>
 
-          {/* RIGHT FOOD FLATLAY PHOTO */}
+          {/* Original circular hero image */}
           <div className="flex-1 flex justify-center items-center w-full">
-            <div className="w-full max-w-[560px] md:max-w-[620px] lg:max-w-[660px]">
-              <div className="animate-rotate-in rounded-[32px] md:rounded-[40px] overflow-hidden transition-transform duration-700 hover:scale-[1.02]">
+            <div className="max-w-full transition-transform duration-500 ease-out hover:scale-[1.02]">
+              <div
+                className="rounded-full overflow-hidden animate-spin-dish"
+                style={{ width: 'clamp(280px,38vw,520px)', height: 'clamp(280px,38vw,520px)', maxWidth: '100%' }}
+              >
                 <img
-                  src={content.heroImage || "/assets/maati-cover-3.jpg"}
+                  src={content.heroImage || "/assets/circle-Bq5xyFQD.png"}
                   alt="MAATI Indian Soul Food spread"
-                  className="w-full h-auto object-cover block rounded-[32px] md:rounded-[40px]"
+                  className="w-full h-full object-cover block pointer-events-none"
                 />
               </div>
             </div>
