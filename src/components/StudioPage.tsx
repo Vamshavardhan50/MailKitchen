@@ -1,3 +1,5 @@
+import './StudioPage.css';
+import { StudioHeader, StudioNavigation, STUDIO_HELP } from './StudioNavigation';
 import { usePublishedDocument } from '../lib/usePublishedDocument';
 import { StudioDialog } from './StudioDialog';
 import { StudioHome } from './StudioHome';
@@ -156,7 +158,7 @@ export type StudioTab =
 export const TAB_TITLES: Record<StudioTab, { title: string; route?: string; icon?: string }> = {
   overview: { title: 'Dashboard' },
   homepage: { title: 'Homepage', route: '/' },
-  items: { title: 'Menu & prices', route: '/menu' },
+  items: { title: 'Food & drinks', route: '/menu' },
   categories: { title: 'Menu sections', route: '/menu' },
   landingPages: { title: 'Food & drink introduction pages', route: '/menu/naan-pockets' },
   catering: { title: 'Corporate & Event Catering', route: '/catering' },
@@ -532,12 +534,12 @@ export const StudioPage: React.FC = () => {
   // Accordion open states for Homepage editor
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     hero: true,
-    favorites: true,
-    maatiWay: true,
-    experience: true,
-    catering: true,
-    footerCta: true,
-    lunch: true,
+    favorites: false,
+    maatiWay: false,
+    experience: false,
+    catering: false,
+    footerCta: false,
+    lunch: false,
   });
 
   const toggleSection = (section: string) => {
@@ -1405,7 +1407,7 @@ export const StudioPage: React.FC = () => {
               return (
                 <div
                   key={asset.id || asset.path}
-                  role="button" tabIndex={0} aria-label={`Choose photo: ${asset.name}`} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelect(asset.path); onClose?.(); } }} onClick={() => {
+                  role="button" tabIndex={0} aria-label={`Choose photo: ${asset.name}`} onKeyDown={event => { if (event.target !== event.currentTarget) return; if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelect(asset.path); onClose?.(); } }} onClick={() => {
                     onSelect(asset.path);
                     if (onClose) onClose();
                   }}
@@ -1475,7 +1477,7 @@ export const StudioPage: React.FC = () => {
   const currentSource = currentPage ? pageSources[currentPage] : null;
   const currentEditor = currentPage ? pageEditors[currentPage] : null;
   const dirtyPages = Object.entries(pageEditors).filter(([tab, editor]) => editor.dirty && !['privacy', 'terms'].includes(tab)).map(([tab]) => ({ tab: tab as StudioTab, title: TAB_TITLES[tab as StudioTab].title }));
-  if (menuHasChanges) dirtyPages.push({ tab: 'items', title: 'Menu & prices' });
+  if (menuHasChanges) dirtyPages.push({ tab: 'items', title: 'Food & drinks' });
   const resetCurrentPage = () => {
     if (!window.confirm('Discard the unpublished changes in this section and reload the website version?')) return;
     if (currentEditor) currentEditor.reset();
@@ -1490,18 +1492,16 @@ export const StudioPage: React.FC = () => {
   if (checkingSession) return <div className="min-h-screen grid place-items-center text-[#1e382f]" role="status">Checking staff sign-in…</div>;
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-[#f5f0e8] flex items-center justify-center px-4 py-20">
-        <div className="w-full max-w-[420px] bg-white rounded-[32px] p-8 md:p-10 shadow-2xl border border-[#ebdcd0] text-center animate-fadeInUp">
+      <div className="studio-login-page min-h-screen flex items-center justify-center px-4 py-14">
+        <div className="studio-login-card w-full max-w-[440px] rounded-[26px] border text-center animate-fadeInUp">
 
-          <div className="w-16 h-16 rounded-2xl bg-[#d85c27] text-white flex items-center justify-center mx-auto mb-5 shadow-md">
-            <Lock className="w-8 h-8" />
-          </div>
-
+          <div className="studio-login-brand"><span className="studio-brand-logo"><img src="/assets/logo-C86A0r1B.png" alt="MAATI Kitchen" /></span></div>
+          <div className="p-7 sm:p-9">
           <h1 className="text-[26px] font-black text-[#1e382f] mb-1.5">
             MAATI Studio
           </h1>
           <p className="text-[13.5px] text-[#666] mb-7">
-            Staff access to update menu dishes, prices, photos, and homepage content.
+            Welcome back. Sign in to update your menu, photos and restaurant details.
           </p>
 
           {authServerError && <p role="alert" className="text-red-700 mb-3">{authServerError}</p>}
@@ -1544,6 +1544,7 @@ export const StudioPage: React.FC = () => {
             <Link to="/" className="underline text-[#1e382f]">Back to website</Link>
           </div>
 
+          </div>
         </div>
       </div>
     );
@@ -1555,12 +1556,12 @@ export const StudioPage: React.FC = () => {
   // 2. MAIN ADMIN DASHBOARD
   // ═══════════════════════════════════════════════
   return (
-    <div className="min-h-screen bg-[#f5f0e8] pt-4 sm:pt-6 pb-24 px-3 sm:px-6 md:px-10 lg:px-16 relative">
+    <div className="maati-studio min-h-screen pt-4 sm:pt-6 pb-24 px-3 sm:px-6 md:px-10 lg:px-16 relative">
       <div className="max-w-[1360px] mx-auto space-y-5">
 
         {(!menuFromSanity || menuLoading) && (
           <p role="status" className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm">
-            {menuLoading ? 'Loading the published menu from Sanity...' : 'The published menu could not be loaded. Showing an offline reference; publishing is paused. Check the Sanity connection and refresh.'}
+            {menuLoading ? 'Loading your menu…' : 'The latest menu could not be loaded. Check your internet connection and select Refresh. Editing will resume when the menu loads.'}
           </p>
         )}
 
@@ -1575,16 +1576,10 @@ export const StudioPage: React.FC = () => {
           </section>
         )}
 
-        <header data-tour="studio-header" className="bg-[#1e382f] text-white rounded-3xl p-5 sm:p-6 flex flex-wrap items-center justify-between gap-4">
-          <div><h1 className="text-2xl font-bold">MAATI Studio</h1><p className="text-sm text-white/75 mt-1">Update your restaurant website</p></div>
-          <div className="flex flex-wrap gap-2 text-sm">
-            <button onClick={startSpotlightTour} className="p-3 rounded-xl bg-white/10">How to use Studio</button>
-            <button data-tour="cloud-sync" onClick={handleSyncAllToCloud} disabled={!!publishingSection} className="p-3 rounded-xl bg-white/10 disabled:opacity-50">Refresh content</button>
-            <Link data-tour="view-site" to="/" target="_blank" rel="noopener noreferrer" className="p-3 rounded-xl bg-white/10">View website ↗</Link>
-            <button onClick={handleLogout} disabled={!!publishingSection} className="p-3 rounded-xl bg-white/10 disabled:opacity-50">Sign out</button>
-          </div>
-        </header>
-        <div className="sticky top-2 z-30 bg-white border border-[#ebdcd0] rounded-2xl p-4 shadow-md flex flex-wrap items-center justify-between gap-3" aria-label="Publishing controls">
+        <StudioHeader busy={!!publishingSection} help={startSpotlightTour} refresh={handleSyncAllToCloud} logout={handleLogout} />
+        <StudioNavigation active={activeTab} open={setActiveTab} />
+        {(activeTab !== 'overview' || publishFeedback || publishingSection || dirtyPages.length > 0) && (
+        <div data-state={publishFeedback ? (publishFeedback.error ? 'error' : 'success') : 'ready'} className="studio-publish-bar sticky top-2 z-30 bg-white border border-[#ebdcd0] rounded-2xl p-4 shadow-md flex flex-wrap items-center justify-between gap-3" aria-label="Publishing controls">
           <div className="min-w-0 flex-1" role={publishFeedback?.error ? 'alert' : 'status'} aria-live="polite">
             <p className="font-bold text-sm text-[#1e382f]">{publishingSection ? 'Publishing… Please keep this page open.' : publishFeedback ? (publishFeedback.error ? 'Changes have not been published' : 'Published successfully') : currentEditor?.dirty || menuHasChanges ? 'You have unpublished changes' : 'Ready to edit'}</p>
             <p className={publishFeedback?.error ? 'text-sm text-red-700 mt-1' : 'text-sm text-gray-600 mt-1'}>{publishFeedback?.text || (currentSource?.loading ? 'Loading the latest content…' : currentSource?.error || 'Edit a section, then select Save & publish to update the website.')}</p>
@@ -1597,101 +1592,22 @@ export const StudioPage: React.FC = () => {
           </div>
         </div>
 
-        {activeTab === 'gallery' && !galleryReady && <p role="alert" className="rounded-xl bg-amber-50 text-amber-900 p-4">{gallerySource.loading ? 'Loading your photo library…' : gallerySource.error} <button onClick={handleSyncAllToCloud} className="underline p-2">Refresh content</button></p>}
-        {['inquiries', 'applications'].includes(activeTab) && inboxError && <p role="alert" className="bg-red-50 text-red-800 rounded-xl p-4">{inboxError} <button onClick={() => activeTab === 'inquiries' ? fetchInquiries() : fetchApplications()} className="underline font-bold p-2">Try again</button></p>}
-        {/* ── Sub-Header Bar when inside any Page Editor: Back to dashboard Button ── */}
-        {activeTab !== 'overview' && (
-          <div className="bg-[#fffdfa] rounded-[24px] p-4 sm:p-5 border border-[#ebdcd0] shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-fadeIn">
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => setActiveTab('overview')}
-                className="bg-[#1e382f] hover:bg-[#d85c27] text-white font-extrabold px-5 py-2.5 rounded-xl text-[13.5px] flex items-center gap-2 shadow-xs hover:shadow-md transition-all cursor-pointer group"
-              >
-                <ArrowLeft className="w-4 h-4 text-[#d85c27] group-hover:text-white transition-colors" />
-                <span>Back to dashboard</span>
-              </button>
-
-              <div className="h-6 w-px bg-[#ebdcd0] hidden sm:block" />
-
-              <div>
-                <span className="text-[10.5px] font-black text-[#888] uppercase tracking-wider block">
-                  Current Editor
-                </span>
-                <div className="flex items-center gap-2">
-                  <span className="text-[16px] font-black text-[#1e382f]">
-                    {TAB_TITLES[activeTab]?.title}
-                  </span>
-                  {TAB_TITLES[activeTab]?.route && (
-                    <span className="text-[11px] font-mono font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-md">
-                      {TAB_TITLES[activeTab]?.route}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 self-end sm:self-auto">
-              {TAB_TITLES[activeTab]?.route && (
-                <Link
-                  to={TAB_TITLES[activeTab].route!}
-                  target="_blank"
-                  className="bg-white hover:bg-gray-50 text-[#1e382f] border border-[#ebdcd0] font-bold px-3 py-2 rounded-xl text-[12px] flex items-center gap-1.5 transition-colors"
-                >
-                  <ExternalLink className="w-3.5 h-3.5 text-[#d85c27]" />
-                  <span>View Live Page</span>
-                </Link>
-              )}
-
-              <select
-                aria-label="Go to another section"
-                value={activeTab}
-                onChange={(e) => setActiveTab(e.target.value as StudioTab)}
-                className="border border-[#ebdcd0] rounded-xl px-3 py-2 text-[12.5px] font-bold text-[#1e382f] bg-white focus:outline-none focus:border-[#d85c27] shadow-xs cursor-pointer"
-              >
-                <option value="overview">Dashboard</option>
-
-                <optgroup label="── Main Pages ──">
-                  <option value="homepage">Homepage</option>
-                  <option value="about">Brand Story &amp; About</option>
-                  <option value="contact">Contact &amp; Location</option>
-                  <option value="reservations">Table Reservations</option>
-                </optgroup>
-
-                <optgroup label="── Food &amp; Menu ──">
-                  <option value="items">Menu &amp; prices</option>
-                  <option value="categories">Menu Categories</option>
-                  <option value="landingPages">Food & drink introduction pages</option>
-                  <option value="printMenu">Printable Menu Cards</option>
-                </optgroup>
-
-                <optgroup label="── Services &amp; Hiring ──">
-                  <option value="catering">Corporate &amp; Event Catering</option>
-                  <option value="events">Private Events &amp; Venue Hire</option>
-                  <option value="jobs">Careers &amp; Job Openings</option>
-                </optgroup>
-
-                <optgroup label="── Inboxes ──">
-                  <option value="inquiries">Catering Inquiries Inbox</option>
-                  <option value="applications">Job Applications Inbox</option>
-                </optgroup>
-
-                <optgroup label="── Legal &amp; System ──">
-                  <option value="legal">Impressum (§ 5 TMG)</option>
-                  <option value="privacy">Privacy Policy (DSGVO)</option>
-                  <option value="terms">Terms &amp; Conditions (AGB)</option>
-                  <option value="settings">Restaurant &amp; social links</option>
-                  <option value="gallery">Photo library</option>
-                </optgroup>
-              </select>
-            </div>
-          </div>
         )}
 
-        {/* ═══════════════════════════════════════════════
-            TAB 0: ALL WEBSITE PAGES DIRECTORY
-        ═══════════════════════════════════════════════ */}
-        {activeTab === 'overview' && <StudioHome open={setActiveTab} items={allItemsWithCat.length} categories={categories.length} cocktails={categories.filter(cat => /cocktail/i.test(cat.name)).reduce((count, cat) => count + cat.items.length, 0)} ready={menuFromSanity && !menuLoading} dirtyPages={dirtyPages} />}
+        {activeTab === 'gallery' && !galleryReady && <p role="alert" className="rounded-xl bg-amber-50 text-amber-900 p-4">{gallerySource.loading ? 'Loading your photo library…' : gallerySource.error} <button onClick={handleSyncAllToCloud} className="underline p-2">Refresh content</button></p>}
+        {['inquiries', 'applications'].includes(activeTab) && inboxError && <p role="alert" className="bg-red-50 text-red-800 rounded-xl p-4">{inboxError} <button onClick={() => activeTab === 'inquiries' ? fetchInquiries() : fetchApplications()} className="underline font-bold p-2">Try again</button></p>}
+        {activeTab !== 'overview' && <section className="studio-editor-heading" aria-label="Current section">
+          <div><h2>{TAB_TITLES[activeTab].title}</h2><p>{STUDIO_HELP[activeTab] || 'Make your changes below, then select Save & publish to update the website.'}</p></div>
+          <div className="studio-editor-tools">
+            <button type="button" onClick={() => setActiveTab('overview')}><span aria-hidden="true">←</span> Back to dashboard</button>
+            {TAB_TITLES[activeTab].route && <Link to={TAB_TITLES[activeTab].route!} target="_blank" rel="noopener noreferrer">View this page<ExternalLink size={14} /></Link>}
+            <select aria-label="Go to another section" value={activeTab} onChange={event => setActiveTab(event.target.value as StudioTab)}>
+              {Object.entries(TAB_TITLES).map(([tab, page]) => <option key={tab} value={tab}>{page.title}</option>)}
+            </select>
+          </div>
+        </section>}
+
+        {activeTab === 'overview' && <StudioHome open={setActiveTab} items={allItemsWithCat.length} categories={categories.length} cocktails={categories.filter(cat => /cocktail/i.test(cat.name)).reduce((count, cat) => count + cat.items.length, 0)} ready={menuFromSanity && !menuLoading} dirtyPages={dirtyPages} inquiries={inquiries.filter(item => item.status === 'new').length} applications={applications.filter(item => item.status === 'new').length} />}
 
         {/* ═══════════════════════════════════════════════
             TAB 1: MENU DISHES
@@ -1702,7 +1618,7 @@ export const StudioPage: React.FC = () => {
             {/* Quick Metrics Cards */}
             <div data-tour="metrics" className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
               <div className="bg-[#fffdfa] rounded-2xl p-4 border border-[#ebdcd0] shadow-xs">
-                <span className="text-[11px] font-extrabold text-[#777] uppercase tracking-wider block">Total Dishes</span>
+                <span className="text-[11px] font-extrabold text-[#777] uppercase tracking-wider block">Menu items</span>
                 <span className="text-[24px] font-black text-[#1e382f]">{allItemsWithCat.length}</span>
               </div>
               <div className="bg-[#fffdfa] rounded-2xl p-4 border border-[#ebdcd0] shadow-xs">
@@ -1714,7 +1630,7 @@ export const StudioPage: React.FC = () => {
                 <span className="text-[24px] font-black text-rose-600">{soldOutCount}</span>
               </div>
               <div className="bg-[#fffdfa] rounded-2xl p-4 border border-[#ebdcd0] shadow-xs">
-                <span className="text-[11px] font-extrabold text-amber-600 uppercase tracking-wider block">Featured on Home</span>
+                <span className="text-[11px] font-extrabold text-amber-600 uppercase tracking-wider block">Homepage favourites</span>
                 <span className="text-[24px] font-black text-amber-600">{featuredCount}</span>
               </div>
             </div>
@@ -1728,12 +1644,12 @@ export const StudioPage: React.FC = () => {
               if (featuredList.length === 0) return null;
 
               return (
-                <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-[22px] p-4 sm:p-5 border border-amber-200 shadow-xs space-y-3">
+                <details className="studio-featured-tools"><summary>Homepage favourites ({featuredList.length})<span>Choose the dishes shown on your homepage</span></summary><div className="pt-4 space-y-3">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                     <div className="flex items-center gap-2">
                       <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
                       <h3 className="text-[14px] font-black text-amber-900">
-                        Featured on Homepage ({featuredList.length} Dishes)
+                        Homepage favourites ({featuredList.length} items)
                       </h3>
                     </div>
                     <span className="text-[11.5px] text-amber-800 font-semibold">
@@ -1785,7 +1701,7 @@ export const StudioPage: React.FC = () => {
                       </div>
                     ))}
                   </div>
-                </div>
+                </div></details>
               );
             })()}
 
@@ -1826,15 +1742,7 @@ export const StudioPage: React.FC = () => {
                     </select>
                   </div>
 
-                  <button
-                    type="button"
-                    data-tour="add-dish"
-                    onClick={() => handleOpenNewItem()}
-                    className="bg-[#d85c27] hover:bg-[#c24f1c] text-white font-extrabold px-4 py-2 rounded-xl text-[13px] shadow-sm hover:shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>+ Add Dish</span>
-                  </button>
+                  <span className="text-sm text-[#7c715e] font-semibold">{displayedItems.length} {displayedItems.length === 1 ? 'item' : 'items'} shown</span>
                 </div>
               </div>
             </div>
@@ -1874,7 +1782,7 @@ export const StudioPage: React.FC = () => {
                               <img src={item.img} alt={item.titleEn} className="w-full h-full object-cover" />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-[10px] font-bold text-gray-400">
-                                No Photo
+                                No photo yet
                               </div>
                             )}
                           </div>
@@ -1916,7 +1824,7 @@ export const StudioPage: React.FC = () => {
                       </div>
 
                       {/* Footer: Price + Quick Actions */}
-                      <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
+                      <div className="studio-menu-card-footer pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
                         <span className="font-black text-[#d85c27] text-[14px]">
                           {item.price}
                         </span>
@@ -1943,7 +1851,7 @@ export const StudioPage: React.FC = () => {
                             data-tour={idx === 0 ? "dish-star" : undefined}
                             type="button"
                             onClick={() => handleToggleFeatured(item._id || item.id || '', item.catId)}
-                            title={item.featured ? 'Featured on Home' : 'Feature on Homepage'}
+                            title={item.featured ? 'Featured on Home' : 'Show on homepage'}
                             className={`p-1.5 rounded-lg transition-colors ${
                               item.featured ? 'text-amber-500 bg-amber-50' : 'text-gray-400 hover:bg-gray-100'
                             }`}
@@ -1951,15 +1859,15 @@ export const StudioPage: React.FC = () => {
                             <Star className={`w-4 h-4 ${item.featured ? 'fill-amber-500' : ''}`} />
                           </button>
 
-                          {/* Edit Dish */}
+                          {/* Edit food or drink */}
                           <button
                             data-tour={idx === 0 ? "dish-edit" : undefined}
                             type="button"
                             onClick={() => handleOpenEditItem(item, item.catId)}
-                            className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors"
-                            title="Edit Dish"
+                            className="studio-edit-item"
+                            title="Edit item details"
                           >
-                            <Edit3 className="w-4 h-4" />
+                            <Edit3 className="w-4 h-4" /><span>Edit details</span>
                           </button>
 
                           {/* Delete Dish */}
@@ -2191,7 +2099,7 @@ export const StudioPage: React.FC = () => {
             {/* Language Banner */}
             <div className="bg-[#fffdfa] rounded-[24px] p-5 sm:p-6 border border-[#ebdcd0] shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <h2 className="text-[20px] font-black text-[#1e382f]">Homepage Content Sections</h2>
+                <h2 className="text-[20px] font-black text-[#1e382f]">Your homepage</h2>
                 <p className="text-[13px] text-[#666] mt-0.5">
                   Update headlines, descriptions, step cards, and photos across your landing page.
                 </p>
@@ -2224,13 +2132,13 @@ export const StudioPage: React.FC = () => {
             <div className="bg-[#fffdfa] rounded-[22px] border border-[#ebdcd0] shadow-xs overflow-hidden">
               <button
                 type="button"
-                onClick={() => toggleSection('hero')}
+                aria-expanded={openSections.hero} onClick={() => toggleSection('hero')}
                 className="w-full p-5 flex items-center justify-between text-left bg-white/70 border-b border-[#ebdcd0]"
               >
                 <div className="flex items-center gap-3">
                   <span className="w-7 h-7 rounded-lg bg-[#d85c27] text-white font-black text-[12px] flex items-center justify-center">1</span>
                   <div>
-                    <h3 className="text-[16px] font-black text-[#1e382f]">Hero Banner Section</h3>
+                    <h3 className="text-[16px] font-black text-[#1e382f]">Main photo & welcome text</h3>
                     <p className="text-[12px] text-gray-500">Main headline, intro tagline, action buttons & food image</p>
                   </div>
                 </div>
@@ -2243,9 +2151,9 @@ export const StudioPage: React.FC = () => {
                   <div className="bg-[#fcf8f3] border border-[#ebdcd0] rounded-xl p-3.5">
                     <label className="block text-[12px] font-black text-[#d85c27] mb-1 flex items-center gap-2">
                       <span className="bg-[#d85c27] text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase">Badge</span>
-                      Top Orange Badge ({adminContentLang.toUpperCase()})
+                      Small heading above the title ({adminContentLang.toUpperCase()})
                     </label>
-                    <input aria-label={`Badge Top Orange Badge ( ${adminContentLang.toUpperCase()} )`}
+                    <input aria-label={`Small heading above the title ( ${adminContentLang.toUpperCase()} )`}
                       type="text"
                       value={adminContentLang === 'en' ? (homepageContent.heroBadgeEn || '') : (homepageContent.heroBadgeDe || '')}
                       onChange={(e) => setHomepageContent(adminContentLang === 'en' ? { ...homepageContent, heroBadgeEn: e.target.value } : { ...homepageContent, heroBadgeDe: e.target.value })}
@@ -2256,8 +2164,8 @@ export const StudioPage: React.FC = () => {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[12px] font-bold text-[#333] mb-1">Headline Line 1</label>
-                      <input aria-label={`Headline Line 1`}
+                      <label className="block text-[12px] font-bold text-[#333] mb-1">Main heading — first line</label>
+                      <input aria-label={`Main heading — first line`}
                         type="text"
                         value={adminContentLang === 'en' ? (homepageContent.heroTitle1En || '') : (homepageContent.heroTitle1De || '')}
                         onChange={(e) => setHomepageContent(adminContentLang === 'en' ? { ...homepageContent, heroTitle1En: e.target.value } : { ...homepageContent, heroTitle1De: e.target.value })}
@@ -2266,8 +2174,8 @@ export const StudioPage: React.FC = () => {
                     </div>
 
                     <div>
-                      <label className="block text-[12px] font-bold text-[#333] mb-1">Headline Line 2 (Highlighted)</label>
-                      <input aria-label={`Headline Line 2 (Highlighted)`}
+                      <label className="block text-[12px] font-bold text-[#333] mb-1">Main heading — second line</label>
+                      <input aria-label={`Main heading — second line`}
                         type="text"
                         value={adminContentLang === 'en' ? (homepageContent.heroTitle2En || '') : (homepageContent.heroTitle2De || '')}
                         onChange={(e) => setHomepageContent(adminContentLang === 'en' ? { ...homepageContent, heroTitle2En: e.target.value } : { ...homepageContent, heroTitle2De: e.target.value })}
@@ -2277,8 +2185,8 @@ export const StudioPage: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-[12px] font-bold text-[#333] mb-1">Description Tagline</label>
-                    <textarea aria-label={`Description Tagline`}
+                    <label className="block text-[12px] font-bold text-[#333] mb-1">Short introduction</label>
+                    <textarea aria-label={`Short introduction`}
                       rows={2}
                       value={adminContentLang === 'en' ? (homepageContent.heroDescEn || '') : (homepageContent.heroDescDe || '')}
                       onChange={(e) => setHomepageContent(adminContentLang === 'en' ? { ...homepageContent, heroDescEn: e.target.value } : { ...homepageContent, heroDescDe: e.target.value })}
@@ -2291,7 +2199,7 @@ export const StudioPage: React.FC = () => {
                     <div className="flex items-center justify-between">
                       <label className="text-[12.5px] font-black text-[#1e382f] flex items-center gap-1.5">
                         <ImageIcon className="w-4 h-4 text-[#d85c27]" />
-                        Hero Food Photo
+                        Main website photo
                       </label>
                       <button
                         type="button"
@@ -2305,7 +2213,7 @@ export const StudioPage: React.FC = () => {
                     <div className="flex items-center gap-3">
                       <div className="w-16 h-16 rounded-xl overflow-hidden bg-white shrink-0 border border-[#ebdcd0]">
                         {homepageContent.heroImage ? (
-                          <img src={homepageContent.heroImage} alt="Hero" className="w-full h-full object-cover" />
+                          <img src={homepageContent.heroImage} alt="Main website photo" className="w-full h-full object-cover" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-[9px] text-gray-400 font-bold">No Img</div>
                         )}
@@ -2337,7 +2245,7 @@ export const StudioPage: React.FC = () => {
             <div className="bg-[#fffdfa] rounded-[22px] border border-[#ebdcd0] shadow-xs overflow-hidden">
               <button
                 type="button"
-                onClick={() => toggleSection('lunch')}
+                aria-expanded={openSections.lunch} onClick={() => toggleSection('lunch')}
                 className="w-full p-5 flex items-center justify-between text-left bg-white/70 border-b border-[#ebdcd0]"
               >
                 <div className="flex items-center gap-3">
@@ -2380,7 +2288,7 @@ export const StudioPage: React.FC = () => {
             <div className="bg-[#fffdfa] rounded-[22px] border border-[#ebdcd0] shadow-xs overflow-hidden">
               <button
                 type="button"
-                onClick={() => toggleSection('maatiWay')}
+                aria-expanded={openSections.maatiWay} onClick={() => toggleSection('maatiWay')}
                 className="w-full p-5 flex items-center justify-between text-left bg-white/70 border-b border-[#ebdcd0]"
               >
                 <div className="flex items-center gap-3">
@@ -2501,7 +2409,7 @@ export const StudioPage: React.FC = () => {
             <div className="bg-[#fffdfa] rounded-[22px] border border-[#ebdcd0] shadow-xs overflow-hidden">
               <button
                 type="button"
-                onClick={() => toggleSection('experience')}
+                aria-expanded={openSections.experience} onClick={() => toggleSection('experience')}
                 className="w-full p-5 flex items-center justify-between text-left bg-white/70 border-b border-[#ebdcd0]"
               >
                 <div className="flex items-center gap-3">
@@ -2606,7 +2514,7 @@ export const StudioPage: React.FC = () => {
             <div className="bg-[#fffdfa] rounded-[22px] border border-[#ebdcd0] shadow-xs overflow-hidden">
               <button
                 type="button"
-                onClick={() => toggleSection('catering')}
+                aria-expanded={openSections.catering} onClick={() => toggleSection('catering')}
                 className="w-full p-5 flex items-center justify-between text-left bg-white/70 border-b border-[#ebdcd0]"
               >
                 <div className="flex items-center gap-3">
@@ -2675,17 +2583,17 @@ export const StudioPage: React.FC = () => {
               )}
             </div>
 
-            {/* ── 6. Footer CTA Banner ── */}
+            {/* ── 6. Bottom welcome section ── */}
             <div className="bg-[#fffdfa] rounded-[22px] border border-[#ebdcd0] shadow-xs overflow-hidden">
               <button
                 type="button"
-                onClick={() => toggleSection('footerCta')}
+                aria-expanded={openSections.footerCta} onClick={() => toggleSection('footerCta')}
                 className="w-full p-5 flex items-center justify-between text-left bg-white/70 border-b border-[#ebdcd0]"
               >
                 <div className="flex items-center gap-3">
                   <span className="w-7 h-7 rounded-lg bg-[#d85c27] text-white font-black text-[12px] flex items-center justify-center">6</span>
                   <div>
-                    <h3 className="text-[16px] font-black text-[#1e382f]">Footer CTA Banner</h3>
+                    <h3 className="text-[16px] font-black text-[#1e382f]">Bottom welcome section</h3>
                     <p className="text-[12px] text-gray-500">"Visit us" banner at the bottom of the homepage — headline, tagline & button labels</p>
                   </div>
                 </div>
@@ -3065,8 +2973,8 @@ export const StudioPage: React.FC = () => {
 
             {/* Description */}
             <div>
-              <label className="block text-[12px] font-bold text-[#333] mb-1">Description Tagline ({adminContentLang.toUpperCase()})</label>
-              <textarea aria-label={`Description Tagline ( ${adminContentLang.toUpperCase()} )`}
+              <label className="block text-[12px] font-bold text-[#333] mb-1">Short introduction ({adminContentLang.toUpperCase()})</label>
+              <textarea aria-label={`Short introduction ( ${adminContentLang.toUpperCase()} )`}
                 rows={3}
                 value={adminContentLang === 'en' ? (eventsContent.descEn || '') : (eventsContent.descDe || '')}
                 onChange={(e) => _setEventsContent(adminContentLang === 'en' ? { ...eventsContent, descEn: e.target.value } : { ...eventsContent, descDe: e.target.value })}
@@ -5953,9 +5861,9 @@ export const StudioPage: React.FC = () => {
                   </div>
                   <div>
                     <h3 className="text-[19px] font-black text-[#1e382f]">
-                      {editingItem ? 'Edit Dish' : 'Add New Dish'}
+                      {editingItem ? 'Edit food or drink' : 'Add food or drink'}
                     </h3>
-                    <p className="text-[12px] text-gray-500">Fill in dish details and photo</p>
+                    <p className="text-[12px] text-gray-500">Update the name, price, description and photo.</p>
                   </div>
                 </div>
                 <button
@@ -5995,12 +5903,12 @@ export const StudioPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* 1. Dish Title */}
+                {/* 1. Item name */}
                 <div>
                   <label className="block text-[12px] font-bold text-[#333] mb-1">
-                    Dish Title ({adminContentLang === 'en' ? 'English' : 'German'}) *
+                    Item name ({adminContentLang === 'en' ? 'English' : 'German'}) *
                   </label>
-                  <input aria-label={`Dish Title ( ${adminContentLang === 'en' ? 'English' : 'German'} ) *`}
+                  <input aria-label={`Item name ( ${adminContentLang === 'en' ? 'English' : 'German'} ) *`}
                     type="text"
                     value={adminContentLang === 'en' ? formTitleEn : formTitleDe}
                     onChange={(e) => adminContentLang === 'en' ? setFormTitleEn(e.target.value) : setFormTitleDe(e.target.value)}
@@ -6027,8 +5935,8 @@ export const StudioPage: React.FC = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[12px] font-bold text-[#333] mb-1">Dietary Tag *</label>
-                    <select aria-label={`Dietary Tag *`}
+                    <label className="block text-[12px] font-bold text-[#333] mb-1">Food preference *</label>
+                    <select aria-label={`Food preference *`}
                       value={formFoodType}
                       onChange={(e) => setFormFoodType(e.target.value as FoodType)}
                       className="w-full border rounded-xl px-3.5 py-2.5 text-[13.5px] focus:outline-none focus:border-[#d85c27] bg-white font-medium"
@@ -6044,7 +5952,7 @@ export const StudioPage: React.FC = () => {
                 <div className="bg-[#fcf8f3] border border-[#ebdcd0] rounded-2xl p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <label className="text-[12px] font-black text-[#1e382f] uppercase tracking-wider">
-                      Pricing Option
+                      How is this item priced?
                     </label>
                     <div className="flex items-center gap-1 bg-white p-1 rounded-lg border border-[#ebdcd0]">
                       <button
@@ -6054,7 +5962,7 @@ export const StudioPage: React.FC = () => {
                           priceType === 'single' ? 'bg-[#1e382f] text-white shadow-xs' : 'text-[#1e382f]'
                         }`}
                       >
-                        Single Price
+                        One price
                       </button>
                       <button
                         type="button"
@@ -6063,7 +5971,7 @@ export const StudioPage: React.FC = () => {
                           priceType === 'double' ? 'bg-[#1e382f] text-white shadow-xs' : 'text-[#1e382f]'
                         }`}
                       >
-                        Two Options (e.g. Chicken / Prawns)
+                        Two choices (e.g. Chicken / Prawns)
                       </button>
                     </div>
                   </div>
@@ -6176,7 +6084,7 @@ export const StudioPage: React.FC = () => {
                         <img src={formImg} alt="Preview" className="w-full h-full object-cover" style={{ maxHeight: '80px', maxWidth: '80px' }} />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-400 font-bold p-2 text-center">
-                          No Photo
+                          No photo yet
                         </div>
                       )}
                     </div>
@@ -6234,7 +6142,7 @@ export const StudioPage: React.FC = () => {
                       onChange={(e) => setFormAvailable(e.target.checked)}
                       className="w-4 h-4 rounded text-[#d85c27]"
                     />
-                    <span>Available for Ordering</span>
+                    <span>Available on the menu</span>
                   </label>
 
                   <label className="flex items-center gap-2 cursor-pointer text-[13px] font-bold text-[#333]">
@@ -6244,7 +6152,7 @@ export const StudioPage: React.FC = () => {
                       onChange={(e) => setFormFeatured(e.target.checked)}
                       className="w-4 h-4 rounded text-[#d85c27]"
                     />
-                    <span>Feature on Homepage</span>
+                    <span>Show on homepage</span>
                   </label>
 
                   <label className="flex items-center gap-2 cursor-pointer text-[13px] font-bold text-[#333]">
@@ -6254,7 +6162,7 @@ export const StudioPage: React.FC = () => {
                       onChange={(e) => setFormSpicy(e.target.checked)}
                       className="w-4 h-4 rounded text-[#d85c27]"
                     />
-                    <span>Spicy Dish</span>
+                    <span>Spicy</span>
                   </label>
                 </div>
 

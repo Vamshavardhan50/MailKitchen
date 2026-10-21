@@ -49,6 +49,8 @@ The October 2026 security update upgrades Tailwind to v4 with its PostCSS integr
 
 Open `/admin` or `/studio` and sign in with the staff password. Both addresses open the same editor.
 
+The staff interface uses MAATI's original deep green, terracotta and warm cream palette, with coloured task cards. The persistent navigation opens Food & drinks, Homepage, Photos, Hours & contact and Bookings directly. Menu cards have a labelled **Edit details** action; homepage favourites and secondary homepage sections can be expanded when needed. The dashboard also includes customer enquiry and job application shortcuts.
+
 1. Choose a dashboard card: Menu & prices, Homepage, Photo library, Opening hours & contact, Table bookings, or Menu sections.
 2. Edit the English and German text separately. Switching sections keeps open page edits; the dashboard lists pages with unpublished changes.
 3. Select **Save & publish**. Wait for **Published successfully** before closing the page. If a save fails, your open edits remain and the error stays visible. You can retry or explicitly discard your changes and reload the website version.
