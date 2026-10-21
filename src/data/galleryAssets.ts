@@ -54,10 +54,10 @@ export const DEFAULT_GALLERY_ASSETS: GalleryAssetItem[] = [
   { id: 'asset-33', name: "Window Dining & Pendant Lights", path: "/assets/show2-CM6MShfY.jpeg", category: "Showcase & Ambience" },
   { id: 'asset-34', name: "MAATI Catering Spread", path: "/assets/show3-D0blnzja.jpeg", category: "Showcase & Ambience" },
   { id: 'asset-35', name: "Coca-Cola (Glass Bottle)", path: "/assets/cola.png", category: "Bottled Drinks" },
-  { id: 'asset-36', name: "Fanta Orange", path: "/assets/fanta.png", category: "Bottled Drinks" },
-  { id: 'asset-37', name: "Mezzo Mix", path: "/assets/Mezo-Mix.png", category: "Bottled Drinks" },
-  { id: 'asset-38', name: "VIO Bio Schorle", path: "/assets/vio-schorle.png", category: "Bottled Drinks" },
-  { id: 'asset-39', name: "Mineral Water", path: "/assets/water.png", category: "Bottled Drinks" },
+  { id: 'asset-36', name: "Mezzo Mix", path: "/assets/Mezo-Mix.png", category: "Bottled Drinks" },
+  { id: 'asset-37', name: "VIO Bio Schorle Rhubarb", path: "/assets/vio-rhubarb.png", category: "Bottled Drinks" },
+  { id: 'asset-38', name: "VIO Still Water (0,25L)", path: "/assets/vio-still.png", category: "Bottled Drinks" },
+  { id: 'asset-39', name: "Spreequell Classic Water", path: "/assets/spreequell-water.png", category: "Bottled Drinks" },
   { id: 'asset-40', name: "Thums Up (Indian Cola)", path: "/assets/Thums-UP.png", category: "Bottled Drinks" }
 ];
 

@@ -304,8 +304,8 @@ export const HOT_DRINKS: MenuItem[] = [
     id: 'espresso',
     titleDe: 'Espresso',
     titleEn: 'Espresso',
-    descDe: 'Kräftiger, konzentrierter schwarzer Kaffee.',
-    descEn: 'Strong, concentrated shot of black coffee.',
+    descDe: 'Kräftiger, konzentrierter schwarzer Kaffee mit feiner Crema.',
+    descEn: 'Strong, concentrated shot of rich black coffee with golden crema.',
     price: 'M €2,4',
     img: '/assets/Americano_Maati.png'
   },
@@ -349,19 +349,33 @@ export const HOT_DRINKS: MenuItem[] = [
     id: 'latte',
     titleDe: 'Latte',
     titleEn: 'Latte',
-    descDe: 'Klassischer Milchkaffee mit viel Milchschaum.',
-    descEn: 'Steamed milk poured over a shot of espresso with thin foam.',
+    descDe: 'Klassischer Milchkaffee im hohen Glas mit samtigem Milchschaum.',
+    descEn: 'Steamed milk poured over a shot of espresso with thin foam in a tall glass.',
     price: 'M €3,5 | L €4,5',
     img: '/assets/Cafe Latte_Maati.png'
+  },
+  {
+    id: 'matcha-latte',
+    titleDe: 'Matcha Latte',
+    titleEn: 'Matcha Latte',
+    descDe: 'Fein gemahlener grüner Bio-Matcha verquirlt mit samtig aufgeschäumter Milch.',
+    descEn: 'Finely ground Japanese green matcha whisked with silky steamed milk.',
+    price: 'M €3,9 | L €4,9',
+    badgeDe: 'VEGETARISCH',
+    badgeEn: 'VEGETARIAN',
+    img: '/assets/Matcha Latte_Maati.png'
   },
   {
     id: 'tea-assortments',
     titleDe: 'Tee-Auswahl',
     titleEn: 'Tea (Assortments)',
-    descDe: 'Auswahl an verschiedenen feinen Teesorten.',
-    descEn: 'Selection of various fine teas.',
+    descDe: 'Auswahl an verschiedenen feinen Bio-Teesorten.',
+    descEn: 'Selection of various fine organic teas.',
     price: 'M €2,5 | L €3,5',
-    img: '/assets/FlatWhite_Maati.png'
+    badgeDe: 'VEGAN',
+    badgeEn: 'VEGAN',
+    isVeganLeaf: true,
+    img: '/assets/wPT_69fdf67802a5542f2c8b6d0e.jpg'
   }
 ];
 
@@ -374,13 +388,6 @@ export const BOTTLED_DRINKS: MenuItem[] = [
     img: '/assets/cola.png'
   },
   {
-    id: 'fanta',
-    titleDe: 'Fanta Orange',
-    titleEn: 'Fanta Orange',
-    price: '0,2L €1,9 | 0,33L €2,9',
-    img: '/assets/fanta.png'
-  },
-  {
     id: 'mezzo-mix',
     titleDe: 'Mezzo Mix',
     titleEn: 'Mezzo Mix',
@@ -389,24 +396,24 @@ export const BOTTLED_DRINKS: MenuItem[] = [
   },
   {
     id: 'vio-schorle',
-    titleDe: 'Vio Schorle',
-    titleEn: 'Vio Schorle',
+    titleDe: 'Vio Bio Schorle (Rhabarber)',
+    titleEn: 'Vio Organic Spritzer (Rhubarb)',
     price: '0,33L €2,9',
-    img: '/assets/vio-schorle.png'
+    img: '/assets/vio-rhubarb.png'
   },
   {
-    id: 'fuze-tea',
-    titleDe: 'Fuze Tea',
-    titleEn: 'Fuze Tea',
-    price: '0,33L €2,9',
-    img: '/assets/cola.png'
+    id: 'vio-stilles-wasser',
+    titleDe: 'Vio Stilles Mineralwasser',
+    titleEn: 'Vio Still Mineral Water',
+    price: '0,25L €1,9 | 0,5L €2,9',
+    img: '/assets/vio-still.png'
   },
   {
-    id: 'water-still-sparkling',
-    titleDe: 'Stilles Wasser / Sprudelwasser',
-    titleEn: 'Still / Sparkling Water',
-    price: '0,2L €1,9 | 0,33L €2,9',
-    img: '/assets/water.png'
+    id: 'spreequell-classic',
+    titleDe: 'Spreequell Classic Sprudel',
+    titleEn: 'Spreequell Classic Sparkling Water',
+    price: '0,25L €1,9 | 0,5L €2,9',
+    img: '/assets/spreequell-water.png'
   },
   {
     id: 'thums-up',
@@ -422,22 +429,37 @@ export const ALKOHOLISCHE_GETRAENKE: MenuItem[] = [
     id: 'bayreuther',
     titleDe: 'Bayreuther Hell (0,33L)',
     titleEn: 'Bayreuther Hell (0.33L)',
+    descDe: 'Klassisches bayerisches Helles, feinherb, süffig und ausgewogen.',
+    descEn: 'Classic Bavarian mild lager, crisp and well-balanced.',
     price: '€2,9',
-    img: '/assets/show4-8NQJNwyl.jpeg'
+    badgeDe: 'VEGAN',
+    badgeEn: 'VEGAN',
+    isVeganLeaf: true,
+    img: '/assets/hero-flatlay.jpg'
   },
   {
     id: 'augustiner',
     titleDe: 'Augustiner Lagerbier Hell (0,5L)',
     titleEn: 'Augustiner Lagerbier Hell (0.5L)',
+    descDe: 'Münchens ältestes Traditionsbier, besonders mild, spritzig und erfrischend.',
+    descEn: "Munich's oldest traditional lager, mild, sparkling, and refreshing.",
     price: '€3,9',
-    img: '/assets/show3-D0blnzja.jpeg'
+    badgeDe: 'VEGAN',
+    badgeEn: 'VEGAN',
+    isVeganLeaf: true,
+    img: '/assets/hero-flatlay.jpg'
   },
   {
     id: 'berliner-kindl',
     titleDe: 'Berliner Kindl Natur Radler (0,5L)',
     titleEn: 'Berliner Kindl Natur Radler (0.5L)',
+    descDe: 'Naturtrübes Berliner Radler mit echtem Zitronensaft.',
+    descEn: 'Naturally cloudy Berlin Radler with real citrus lemon juice.',
     price: '€3,9',
-    img: '/assets/show4-8NQJNwyl.jpeg'
+    badgeDe: 'VEGAN',
+    badgeEn: 'VEGAN',
+    isVeganLeaf: true,
+    img: '/assets/hero-flatlay.jpg'
   }
 ];
 
@@ -446,90 +468,19 @@ export const COCKTAILS: MenuItem[] = [
     id: 'aperol-spritz',
     titleDe: 'Aperol Spritz',
     titleEn: 'Aperol Spritz',
-    descDe: 'Aperol, Prosecco, Soda oder Sprite, Orangenscheibe.',
-    descEn: 'Aperol, Prosecco, soda or Sprite, orange slice.',
+    descDe: 'Prosecco, Aperol, Sodawasser oder Sprite, frische Orangenscheibe.',
+    descEn: 'Prosecco, Aperol, soda water or Sprite, fresh orange slice.',
     price: '€7,5',
-    img: '/assets/cocktail-1.jpg'
-  },
-  {
-    id: 'mojito',
-    titleDe: 'Mojito',
-    titleEn: 'Mojito',
-    descDe: 'Weißer Rum, Limettensaft, Minzblätter, Zucker, Sodawasser.',
-    descEn: 'White rum, lime juice, mint leaves, sugar, soda water.',
-    price: '€7,5',
-    img: '/assets/cocktail-2.jpg'
-  },
-  {
-    id: 'negroni',
-    titleDe: 'Negroni',
-    titleEn: 'Negroni',
-    descDe: 'Gin, Campari, roter Wermut, Orangenschale.',
-    descEn: 'Gin, Campari, sweet red vermouth, orange peel.',
-    price: '€10',
-    img: '/assets/cocktail-3.jpg'
-  },
-  {
-    id: 'moscow-mule',
-    titleDe: 'Moscow Mule',
-    titleEn: 'Moscow Mule',
-    descDe: 'Wodka, Ginger Beer, Limettensaft, Limettenspalte.',
-    descEn: 'Vodka, ginger beer, lime juice, lime wedge.',
-    price: '€10',
-    img: '/assets/cocktail-4.jpg'
-  },
-  {
-    id: 'tequila-sunrise',
-    titleDe: 'Tequila Sunrise',
-    titleEn: 'Tequila Sunrise',
-    descDe: 'Tequila, Orangensaft, Grenadine, Orangenscheibe.',
-    descEn: 'Tequila, orange juice, grenadine, orange slice.',
-    price: '€10',
-    img: '/assets/cocktail-5.jpg'
-  },
-  {
-    id: 'long-island-tea',
-    titleDe: 'Long Island Iced Tea',
-    titleEn: 'Long Island Iced Tea',
-    descDe: 'Weißer Rum, Limettensaft, Zuckersirup, Cola, Gin, Wodka, Tequila.',
-    descEn: 'White rum, lime juice, sugar syrup, cola, gin, vodka, tequila.',
-    price: '€10',
-    img: '/assets/cocktail-6.jpg'
-  },
-  {
-    id: 'gin-tonic',
-    titleDe: 'Gin und Tonic',
-    titleEn: 'Gin and Tonic',
-    descDe: 'Gin, Tonic Water, Zitronenzeste.',
-    descEn: 'Gin, tonic water, lemon zest.',
-    price: '€10',
-    img: '/assets/cocktail-7.jpg'
+    img: '/assets/hero-flatlay.jpg'
   },
   {
     id: 'old-fashioned',
     titleDe: 'Old Fashioned',
     titleEn: 'Old Fashioned',
-    descDe: 'Whiskey, Zuckersirup, Orangen Bitters.',
+    descDe: 'Whiskey, feiner Zuckersirup, aromatische Orangen Bitters.',
     descEn: 'Whiskey, sugar syrup, aromatic orange bitters.',
     price: '€9,0',
-    img: '/assets/cocktail-8.jpg'
-  },
-  {
-    id: 'nimbu-pani-julep',
-    titleDe: 'Nimbu Pani Julep',
-    titleEn: 'Nimbu Pani Julep',
-    descDe: 'Weißer Rum, Limettensaft, Minzblätter, Zuckersirup, Chaat Masala.',
-    descEn: 'White rum, lime juice, mint leaves, sugar syrup, chaat masala.',
-    price: '€10',
-    img: '/assets/cocktail-9.jpg'
-  },
-  {
-    id: 'spicy-mango-martini',
-    titleDe: 'Spicy Mango Martini',
-    titleEn: 'Spicy Mango Martini',
-    descDe: 'Tequila, Mangopüree, Limettensaft, Triple Sec, Tajín-Gewürzrand.',
-    descEn: 'Tequila, mango puree, lime juice, triple sec, Tajín spice rim.',
-    price: '€10',
-    img: '/assets/cocktail-10.jpg'
+    img: '/assets/hero-flatlay.jpg'
   }
 ];
+
