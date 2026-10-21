@@ -388,11 +388,25 @@ export const BOTTLED_DRINKS: MenuItem[] = [
     img: '/assets/cola.png'
   },
   {
+    id: 'fanta',
+    titleDe: 'Fanta Orange',
+    titleEn: 'Fanta Orange',
+    price: '0,2L €1,9 | 0,33L €2,9',
+    img: '/assets/fanta.png'
+  },
+  {
     id: 'mezzo-mix',
     titleDe: 'Mezzo Mix',
     titleEn: 'Mezzo Mix',
     price: '0,2L €1,9 | 0,33L €2,9',
     img: '/assets/Mezo-Mix.png'
+  },
+  {
+    id: 'fuze-tea',
+    titleDe: 'Fuze Tea',
+    titleEn: 'Fuze Tea',
+    price: '0,33L €2,9',
+    img: '/assets/fuze-tea.png'
   },
   {
     id: 'vio-schorle',
@@ -435,7 +449,7 @@ export const ALKOHOLISCHE_GETRAENKE: MenuItem[] = [
     badgeDe: 'VEGAN',
     badgeEn: 'VEGAN',
     isVeganLeaf: true,
-    img: '/assets/hero-flatlay.jpg'
+    img: '/assets/bayreuther-hell.png'
   },
   {
     id: 'augustiner',
@@ -447,7 +461,7 @@ export const ALKOHOLISCHE_GETRAENKE: MenuItem[] = [
     badgeDe: 'VEGAN',
     badgeEn: 'VEGAN',
     isVeganLeaf: true,
-    img: '/assets/hero-flatlay.jpg'
+    img: '/assets/augustiner-lager.png'
   },
   {
     id: 'berliner-kindl',
@@ -459,7 +473,7 @@ export const ALKOHOLISCHE_GETRAENKE: MenuItem[] = [
     badgeDe: 'VEGAN',
     badgeEn: 'VEGAN',
     isVeganLeaf: true,
-    img: '/assets/hero-flatlay.jpg'
+    img: '/assets/berliner-kindl.png'
   }
 ];
 
@@ -471,7 +485,7 @@ export const COCKTAILS: MenuItem[] = [
     descDe: 'Prosecco, Aperol, Sodawasser oder Sprite, frische Orangenscheibe.',
     descEn: 'Prosecco, Aperol, soda water or Sprite, fresh orange slice.',
     price: '€7,5',
-    img: '/assets/hero-flatlay.jpg'
+    img: '/assets/aperol-spritz.png'
   },
   {
     id: 'old-fashioned',
@@ -480,7 +494,7 @@ export const COCKTAILS: MenuItem[] = [
     descDe: 'Whiskey, feiner Zuckersirup, aromatische Orangen Bitters.',
     descEn: 'Whiskey, sugar syrup, aromatic orange bitters.',
     price: '€9,0',
-    img: '/assets/hero-flatlay.jpg'
+    img: '/assets/old-fashioned.png'
   }
 ];
 

@@ -103,7 +103,11 @@ export const MenuCard: React.FC<MenuCardProps> = ({ item, lang = 'en' }) => {
             alt={title}
             itemProp="image"
             loading="lazy"
-            className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-600 ease-out"
+            className={`w-full h-full transition-transform duration-600 ease-out group-hover:scale-108 ${
+              item.img.toLowerCase().endsWith('.png') && (item.img.includes('water') || item.img.includes('still') || item.img.includes('cola') || item.img.includes('fanta') || item.img.includes('fuze') || item.img.includes('Mezo') || item.img.includes('vio') || item.img.includes('Thums'))
+                ? 'object-contain p-3.5 bg-white/70'
+                : 'object-cover'
+            }`}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-[#ebdcd0]/40 text-gray-400 font-bold">
