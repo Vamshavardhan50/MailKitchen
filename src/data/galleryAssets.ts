@@ -57,7 +57,8 @@ export const DEFAULT_GALLERY_ASSETS: GalleryAssetItem[] = [
   { id: 'asset-36', name: "Fanta Orange", path: "/assets/fanta.png", category: "Bottled Drinks" },
   { id: 'asset-37', name: "Mezzo Mix", path: "/assets/Mezo-Mix.png", category: "Bottled Drinks" },
   { id: 'asset-38', name: "VIO Bio Schorle", path: "/assets/vio-schorle.png", category: "Bottled Drinks" },
-  { id: 'asset-39', name: "Mineral Water", path: "/assets/water.png", category: "Bottled Drinks" }
+  { id: 'asset-39', name: "Mineral Water", path: "/assets/water.png", category: "Bottled Drinks" },
+  { id: 'asset-40', name: "Thums Up (Indian Cola)", path: "/assets/Thums-UP.png", category: "Bottled Drinks" }
 ];
 
 // Fast client-side image compression & WebP optimizer

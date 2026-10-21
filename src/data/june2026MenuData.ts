@@ -195,36 +195,37 @@ export const NACHTISCH_ITEMS: MenuItem[] = [
     id: 'mithai-auswahl',
     titleDe: 'Mithai-Auswahl (Indische Süßigkeiten)',
     titleEn: 'Mithai Selection (Indian sweets)',
-    descDe: 'Auswahl an traditionellen indischen Süßigkeiten.',
-    descEn: 'Selection of traditional Indian sweets.',
+    descDe: 'Auswahl an traditionellen indischen Süßigkeiten (Milk Cake & Spezialitäten).',
+    descEn: 'Selection of traditional Indian artisanal sweets (Milk Cake & specialties).',
     price: '€2,5',
     badgeDe: 'VEGETARISCH',
     badgeEn: 'VEGETARIAN',
-    img: '/assets/show1-But2Twuk.jpeg'
+    img: '/assets/MilkCake_Maati.png'
   },
   {
-    id: 'kulfi-stick',
-    titleDe: 'Indisches Kulfi-Eis am Stiel',
-    titleEn: 'Indian Kulfi Ice Cream on a Stick',
-    descDe: 'Traditionelles indisches Milcheis am Stiel.',
-    descEn: 'Traditional Indian kulfi ice cream on a stick.',
-    price: '€2,5',
+    id: 'brownie-meersalz',
+    titleDe: 'Brownie mit Meersalzflocken',
+    titleEn: 'Sea Salt Chocolate Brownie',
+    descDe: 'Saftiger Schokoladen-Brownie verfeinert mit feinen Meersalzflocken.',
+    descEn: 'Rich, fudgy chocolate brownie sprinkled with delicate sea salt flakes.',
+    price: '€3,5',
     badgeDe: 'VEGETARISCH',
     badgeEn: 'VEGETARIAN',
-    img: '/assets/milk-nLvx7kLn.png'
+    img: '/assets/Brownie mit Meersalzflocken_Maati.png'
   },
   {
     id: 'kulfi-cup',
     titleDe: 'Indisches Kulfi-Eis (Keramikbecher)',
     titleEn: 'Indian Kulfi Ice Cream (Ceramic Cup)',
-    descDe: 'Köstliches indisches Kulfi-Eis serviert in einem traditionellen Keramikbecher zum Mitnehmen.',
-    descEn: 'Delicious Indian kulfi ice cream served in a traditional souvenir ceramic cup.',
+    descDe: 'Köstliches traditionelles indisches Kulfi-Eis serviert in einem authentischen Keramikbecher zum Mitnehmen.',
+    descEn: 'Authentic traditional Indian kulfi ice cream served in a souvenir ceramic cup.',
     price: '€3,9',
     badgeDe: 'VEGETARISCH',
     badgeEn: 'VEGETARIAN',
     img: '/assets/wPT_69fdf67802a5542f2c8b6cfd.jpg'
   }
 ];
+
 
 export const COLD_DRINKS: MenuItem[] = [
   {
@@ -279,7 +280,7 @@ export const COLD_DRINKS: MenuItem[] = [
     titleEn: 'Sugarcane Juice',
     descDe: 'Frisch gepresster Zuckerrohrsaft mit einem Hauch von Ingwer und Limette.',
     descEn: 'Freshly pressed sugarcane juice with a hint of ginger and lime.',
-    price: 'M €2,5 | L €3,5',
+    price: 'M €3,5 | L €4,9',
     badgeDe: 'VEGAN',
     badgeEn: 'VEGAN',
     isVeganLeaf: true,
@@ -435,7 +436,7 @@ export const ALKOHOLISCHE_GETRAENKE: MenuItem[] = [
     id: 'berliner-kindl',
     titleDe: 'Berliner Kindl Natur Radler (0,5L)',
     titleEn: 'Berliner Kindl Natur Radler (0.5L)',
-    price: '€3,5',
+    price: '€3,9',
     img: '/assets/show4-8NQJNwyl.jpeg'
   }
 ];
@@ -508,9 +509,9 @@ export const COCKTAILS: MenuItem[] = [
     id: 'old-fashioned',
     titleDe: 'Old Fashioned',
     titleEn: 'Old Fashioned',
-    descDe: 'Rum, Limettensaft, Orgeat-Sirup, Minzzweig.',
-    descEn: 'Rum, lime juice, Orgeat syrup, mint sprig.',
-    price: '€10',
+    descDe: 'Whiskey, Zuckersirup, Orangen Bitters.',
+    descEn: 'Whiskey, sugar syrup, aromatic orange bitters.',
+    price: '€9,0',
     img: '/assets/cocktail-8.jpg'
   },
   {
