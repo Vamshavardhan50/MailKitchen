@@ -5,7 +5,7 @@ const tasks = [
   { tab: 'items', title: 'Food & drinks', description: 'Change a price, update a photo, add an item or mark it sold out.', action: 'Edit the menu', icon: Utensils, tone: 'orange' },
   { tab: 'homepage', title: 'Homepage', description: 'Update your welcome message, main photo and featured dishes.', action: 'Edit the homepage', icon: Home, tone: 'sage' },
   { tab: 'gallery', title: 'Your photos', description: 'Add restaurant and food photos, ready to use on your website.', action: 'Open photo library', icon: Image, tone: 'gold' },
-  { tab: 'contact', title: 'Opening hours & contact', description: 'Keep your hours, phone number, email and address up to date.', action: 'Update contact details', icon: Phone, tone: 'sage' },
+  { tab: 'contact', title: 'Contact Us page', description: 'Edit contact details, opening hours, the map link and directions.', action: 'Edit contact page', icon: Phone, tone: 'sage' },
   { tab: 'reservations', title: 'Table bookings', description: 'Manage the booking link and information for your guests.', action: 'Manage bookings', icon: Calendar, tone: 'peach' },
   { tab: 'categories', title: 'Menu sections', description: 'Organise sections such as Breakfast, Desserts and Cocktails.', action: 'Organise the menu', icon: FolderTree, tone: 'lavender' },
 ] as const;

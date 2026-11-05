@@ -500,6 +500,9 @@ export function useEventsContent() {
 // ContactContent Interface + Hook
 // ─────────────────────────────────────────────
 export interface ContactContent {
+  mobilePhone?: string;
+  directionsEn?: string;
+  directionsDe?: string;
   headlineEn?: string;
   headlineDe?: string;
   descEn?: string;
@@ -516,6 +519,9 @@ export interface ContactContent {
 }
 
 const DEFAULT_CONTACT: ContactContent = {
+  mobilePhone: '+49 172 9498262',
+  directionsEn: '• U-Bahn: U6 Kochstraße / Checkpoint Charlie (3 min walk) or U2 Stadtmitte (6 min walk)\n• Bus: M29 Charlottenstraße / U Kochstraße',
+  directionsDe: '• U-Bahn: U6 Kochstraße / Checkpoint Charlie (ca. 3 Min. zu Fuß) oder U2 Stadtmitte (ca. 6 Min. zu Fuß)\n• Bus: M29 Charlottenstraße / U Kochstraße',
   headlineEn: 'Get in Touch',
   headlineDe: 'Kontaktieren Sie uns',
   descEn: 'Have a question? Want to make a reservation? We\'d love to hear from you.',
@@ -526,7 +532,7 @@ const DEFAULT_CONTACT: ContactContent = {
   openingHoursEn: 'Mon – Wed: 11:00 – 16:00\nThu – Sat: 11:00 – 21:00\nSun: 11:30 – 18:00',
   openingHoursDe: 'Mo – Mi: 11:00 – 16:00\nDo – Sa: 11:00 – 21:00\nSo: 11:30 – 18:00',
   theforkWidgetId: '7beffe40-786f-496c-b196-48b939750c77',
-  googleMapsUrl: 'https://maps.google.com/?q=MAATI+Kitchen+Zimmerstrasse+56+Berlin',
+  googleMapsUrl: '',
   locationHeadlineEn: 'MAATI Berlin',
   locationHeadlineDe: 'MAATI Berlin',
 };

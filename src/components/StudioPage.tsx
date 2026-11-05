@@ -164,7 +164,7 @@ export const TAB_TITLES: Record<StudioTab, { title: string; route?: string; icon
   catering: { title: 'Corporate & Event Catering', route: '/catering' },
   events: { title: 'Private Events & Venue Hire', route: '/events' },
   about: { title: 'Brand Story & About Us', route: '/about' },
-  contact: { title: 'Location, Hours & Contact', route: '/contact' },
+  contact: { title: 'Contact Us page', route: '/contact' },
   reservations: { title: 'Table Reservations', route: '/contact' },
   jobs: { title: 'Careers & Job Openings', route: '/jobs' },
   printMenu: { title: 'Menu display settings', route: '/menu' },
@@ -3096,7 +3096,7 @@ export const StudioPage: React.FC = () => {
               <div>
                 <h2 className="text-[20px] font-black text-[#1e382f] flex items-center gap-2.5">
                   <Phone className="w-5 h-5 text-[#d85c27]" />
-                  <span>Contact Us & Table Reservation</span>
+                  <span>Contact Us page</span>
                 </h2>
                 <p className="text-[13px] text-[#666] mt-0.5">
                   Update the contact page and website footer. Booking settings are in Table bookings.
@@ -3132,7 +3132,7 @@ export const StudioPage: React.FC = () => {
               <div>
                 <h3 className="text-[14px] font-black text-[#1e382f] mb-0.5 flex items-center gap-1.5">
                   <span className="w-5 h-5 rounded-lg bg-[#1e382f] text-white text-[10px] font-black flex items-center justify-center">H</span>
-                  Location Page Headline <span className="text-[11px] font-normal text-gray-500 ml-1">(currently: "MAATI Berlin")</span>
+                  Contact page headline
                 </h3>
                 <p className="text-[11.5px] text-gray-500 mb-2">
                   This is the big heading shown at the top of the Contact Us / Location page.
@@ -3201,16 +3201,33 @@ export const StudioPage: React.FC = () => {
             </div>
 
             {/* Direct Contact Info */}
+            <label className="block text-[12px] font-bold text-[#333]">
+              Public transit &amp; walking directions ({adminContentLang.toUpperCase()})
+              <textarea
+                rows={3}
+                value={(adminContentLang === 'en' ? contactContent.directionsEn : contactContent.directionsDe) || ''}
+                onChange={(e) => _setContactContent({ ...contactContent, [adminContentLang === 'en' ? 'directionsEn' : 'directionsDe']: e.target.value })}
+                className="mt-1 w-full border rounded-xl px-3.5 py-2.5 text-[14px] font-normal"
+              />
+            </label>
             <div className="pt-2 border-t border-gray-100">
               <h3 className="text-[14px] font-bold text-[#1e382f] mb-3">Direct Contact Details</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[12px] font-bold text-[#333] mb-1">Phone Number</label>
-                  <input aria-label={`Phone Number`}
+                  <label className="block text-[12px] font-bold text-[#333] mb-1">Landline</label>
+                  <input aria-label="Landline"
                     type="text"
                     value={contactContent.phone || ''}
                     onChange={(e) => _setContactContent({ ...contactContent, phone: e.target.value })}
                     placeholder="+49 030 51891367"
+                    className="w-full border rounded-xl px-3.5 py-2.5 text-[13.5px] focus:outline-none focus:border-[#d85c27]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[12px] font-bold text-[#333] mb-1" htmlFor="contact-mobile">Mobile / WhatsApp</label>
+                  <input id="contact-mobile" type="tel"
+                    value={contactContent.mobilePhone || ''}
+                    onChange={(e) => _setContactContent({ ...contactContent, mobilePhone: e.target.value })}
                     className="w-full border rounded-xl px-3.5 py-2.5 text-[13.5px] focus:outline-none focus:border-[#d85c27]"
                   />
                 </div>
@@ -3234,6 +3251,14 @@ export const StudioPage: React.FC = () => {
                     className="w-full border rounded-xl px-3.5 py-2.5 text-[13.5px] focus:outline-none focus:border-[#d85c27]"
                   />
                 </div>
+                <label className="md:col-span-2 text-[12px] font-bold text-[#333]">
+                  Google Maps directions link
+                  <input type="url" pattern="https?://.+" value={contactContent.googleMapsUrl || ''}
+                    onChange={(e) => _setContactContent({ ...contactContent, googleMapsUrl: e.target.value })}
+                    placeholder="Leave blank to use the street address"
+                    className="mt-1 w-full border rounded-xl px-3.5 py-2.5 text-[13.5px] font-normal"
+                  />
+                </label>
               </div>
             </div>
 

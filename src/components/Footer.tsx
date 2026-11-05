@@ -1,4 +1,5 @@
 import React from 'react';
+import { phoneHref } from '../lib/phone';
 import { Link } from 'react-router-dom';
 import { MapPin, Phone, Mail, Facebook, Instagram } from 'lucide-react';
 import { useSiteSettings, useContactContent } from '../lib/sanityService';
@@ -20,9 +21,7 @@ export const Footer: React.FC<FooterProps> = ({ lang = 'en' }) => {
   const isDe = lang === 'de';
   const { settings } = useSiteSettings();
   const { content: contact } = useContactContent();
-  const phone = contact.phone || settings.phone || '+49 30 51891367';
-  const email = contact.email || settings.email || 'hello@maatikitchen.com';
-  const address = contact.address || settings.address || 'Zimmerstraße 56, 10117 Berlin';
+  const { phone, email, address } = contact;
 
   return (
     <footer className="bg-white text-[#1a1a1a] py-12 sm:py-16 md:py-20 px-5 sm:px-8 md:px-16 lg:px-24 border-t border-gray-100">
@@ -45,26 +44,26 @@ export const Footer: React.FC<FooterProps> = ({ lang = 'en' }) => {
 
           {/* Contact Details */}
           <div className="space-y-3 mb-6 text-[13.5px] sm:text-[14px] text-[#444]">
-            <div className="flex items-start gap-3">
+            {address && <div className="flex items-start gap-3">
               <MapPin className="w-4 h-4 text-[#d85c27] shrink-0 mt-0.5" />
               <span className="font-semibold uppercase tracking-wider text-[11px] leading-snug text-[#444]">
                 {address}
               </span>
-            </div>
+            </div>}
 
-            <div className="flex items-center gap-3">
+            {phone && <div className="flex items-center gap-3">
               <Phone className="w-4 h-4 text-[#d85c27] shrink-0" />
-              <a href={`tel:${phone.replace(/\s/g, '')}`} className="hover:text-[#d85c27] transition-colors">
+              <a href={phoneHref(phone)} className="hover:text-[#d85c27] transition-colors">
                 {phone}
               </a>
-            </div>
+            </div>}
 
-            <div className="flex items-center gap-3">
+            {email && <div className="flex items-center gap-3">
               <Mail className="w-4 h-4 text-[#d85c27] shrink-0" />
               <a href={`mailto:${email}`} className="hover:text-[#d85c27] transition-colors">
                 {email}
               </a>
-            </div>
+            </div>}
           </div>
 
           {/* Copyright */}

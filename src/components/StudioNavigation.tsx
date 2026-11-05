@@ -20,7 +20,7 @@ export function StudioHeader({ busy, help, refresh, logout }: { busy: boolean; h
 
 const sections = [
   ['overview', 'Dashboard', LayoutGrid], ['items', 'Food & drinks', Utensils], ['homepage', 'Homepage', Home],
-  ['gallery', 'Photos', Image], ['contact', 'Hours & contact', Clock], ['reservations', 'Bookings', Calendar],
+  ['gallery', 'Photos', Image], ['contact', 'Contact Us', Clock], ['reservations', 'Bookings', Calendar],
 ] as const;
 
 export function StudioNavigation({ active, open }: { active: StudioTab; open: (tab: StudioTab) => void }) {
