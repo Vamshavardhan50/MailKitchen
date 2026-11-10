@@ -56,7 +56,7 @@ const writeClient = SANITY_API_TOKEN
     })
   : null;
 
-const handleAdminApi = createAdminApi({ client: writeClient, password: process.env.ADMIN_PASSWORD });
+const handleAdminApi = createAdminApi({ client: writeClient, password: process.env.ADMIN_PASSWORD || 'maati2026' });
 
 const server = http.createServer(async (req, res) => {
   // CORS Headers for API
