@@ -27,12 +27,22 @@ export const isSanityConfigured = Boolean(
   SANITY_PROJECT_ID !== 'maati-local'
 );
 
+const isDevHost = typeof window !== 'undefined' && (
+  window.location.hostname === 'localhost' ||
+  window.location.hostname === '127.0.0.1' ||
+  window.location.hostname.endsWith('.local')
+);
+
 export const sanityConfig = {
   projectId: SANITY_PROJECT_ID,
   dataset: SANITY_DATASET,
   apiVersion: SANITY_API_VERSION,
   useCdn: false, // direct fresh data
   perspective: 'published' as const,
+  ...(isDevHost ? {
+    apiHost: `${window.location.origin}/sanity-proxy`,
+    useProjectHostname: false,
+  } : {}),
 };
 
 // Read-only client used across the website for fetching published content

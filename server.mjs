@@ -1,6 +1,7 @@
 import { handleInboxApi } from './server/inbox-api.mjs';
 import { createAdminApi } from './server/admin-api.mjs';
 import http from 'http';
+import https from 'https';
 import { createClient } from '@sanity/client';
 import fs from 'fs';
 import path from 'path';
@@ -73,6 +74,31 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url || '/', `http://${req.headers.host}`);
 
   if (await handleAdminApi(req, res, url.pathname)) return;
+
+  // Proxy Sanity API calls during development to avoid local CORS 403 blocks
+  if (url.pathname.startsWith('/sanity-proxy/')) {
+    const targetPath = url.pathname.replace(/^\/sanity-proxy/, '') + url.search;
+    const targetUrl = `https://${SANITY_PROJECT_ID}.api.sanity.io${targetPath}`;
+    const proxyReq = https.request(targetUrl, {
+      method: req.method,
+      headers: {
+        'Origin': 'https://maatikitchen.com',
+        'Content-Type': 'application/json'
+      }
+    }, (proxyRes) => {
+      res.writeHead(proxyRes.statusCode, {
+        'Access-Control-Allow-Origin': '*',
+        'Content-Type': proxyRes.headers['content-type'] || 'application/json'
+      });
+      proxyRes.pipe(res);
+    });
+    proxyReq.on('error', (err) => {
+      res.writeHead(502, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: err.message }));
+    });
+    req.pipe(proxyReq);
+    return;
+  }
 
   // Health check endpoint
   if (url.pathname === '/api/health' && (req.method === 'GET' || req.method === 'HEAD')) {

@@ -44,6 +44,14 @@ export default defineConfig({
     port: 3000,
     host: true,
     proxy: {
+      '/sanity-proxy': {
+        target: 'https://ohmgd0hu.api.sanity.io',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/sanity-proxy/, ''),
+        headers: {
+          Origin: 'https://maatikitchen.com'
+        }
+      },
       '/api': {
         target: 'http://localhost:5000',
         changeOrigin: true,
