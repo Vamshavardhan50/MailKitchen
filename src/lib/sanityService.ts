@@ -612,6 +612,26 @@ export interface CateringFaqItem {
   aDe: string;
 }
 
+export interface CateringAdditionItem {
+  id?: string;
+  itemEn: string;
+  itemDe: string;
+  priceEn: string;
+  priceDe: string;
+  detailEn: string;
+  detailDe: string;
+}
+
+export interface CateringDeliveryTermItem {
+  id?: string;
+  labelEn: string;
+  labelDe: string;
+  valueEn: string;
+  valueDe: string;
+  detailEn: string;
+  detailDe: string;
+}
+
 export interface CateringContent {
   badgeEn?: string;
   badgeDe?: string;
@@ -620,10 +640,85 @@ export interface CateringContent {
   heroDescEn?: string;
   heroDescDe?: string;
   packages?: CateringPackageItem[];
+  additions?: CateringAdditionItem[];
+  deliveryTerms?: CateringDeliveryTermItem[];
+  formTitleEn?: string;
+  formTitleDe?: string;
+  formSubtitleEn?: string;
+  formSubtitleDe?: string;
   faqs?: CateringFaqItem[];
   leadTimeEn?: string;
   leadTimeDe?: string;
 }
+
+export const DEFAULT_CATERING_ADDITIONS: CateringAdditionItem[] = [
+  {
+    id: 'naan-pockets',
+    itemEn: 'Naan Pockets',
+    itemDe: 'Naan Pockets',
+    priceEn: '€5.50 per person',
+    priceDe: '€5,50 pro Person',
+    detailEn: 'Cut-in-half warm toasted naan pockets with savory fillings',
+    detailDe: 'Halbierte, getoastete Naan-Brote mit verschiedenen Füllungen'
+  },
+  {
+    id: 'breakfast-setup',
+    itemEn: 'Breakfast Setup',
+    itemDe: 'Breakfast Setup',
+    priceEn: '€6.50 per person',
+    priceDe: '€6,50 pro Person',
+    detailEn: 'Chutney croissants, spiced yogurt granola jars & fresh fruit',
+    detailDe: 'Chutney-Croissants, Kardamom-Granola-Jars und Obst'
+  },
+  {
+    id: 'coffee-chai-bar',
+    itemEn: 'Coffee & Chai Bar',
+    itemDe: 'Coffee & Chai Bar',
+    priceEn: '€3.50 per person',
+    priceDe: '€3,50 pro Person',
+    detailEn: 'Slow-simmered whole-spice masala chai & specialty artisan coffee',
+    detailDe: 'Frisch gebrühter Masala Chai & Kaffeespezialitäten'
+  },
+  {
+    id: 'snack-station',
+    itemEn: 'Snack Station',
+    itemDe: 'Snack Station',
+    priceEn: '€4.00 per person',
+    priceDe: '€4,00 pro Person',
+    detailEn: 'Crispy sev, mini samosa bites, spiced cashews & house chutneys',
+    detailDe: 'Knuspriges Sev, Mini-Samosas, würzige Cashews & Chutneys'
+  }
+];
+
+export const DEFAULT_CATERING_DELIVERY_TERMS: CateringDeliveryTermItem[] = [
+  {
+    id: 'radius-5km',
+    labelEn: 'Delivery within 5 km',
+    labelDe: 'Lieferung im Umkreis bis 5 km',
+    valueEn: 'Free',
+    valueDe: 'Kostenlos',
+    detailEn: 'Covers Mitte, Kreuzberg and Friedrichshain.',
+    detailDe: 'Deckt Berlin Mitte, Kreuzberg und Friedrichshain ab.'
+  },
+  {
+    id: 'radius-15km',
+    labelEn: 'Delivery 5 km to 15 km',
+    labelDe: 'Lieferung 5 km bis 15 km',
+    valueEn: '€25',
+    valueDe: '€25',
+    detailEn: 'Flat delivery fee across Berlin metropolitan area.',
+    detailDe: 'Fester Lieferpreis im gesamten Berliner Stadtgebiet.'
+  },
+  {
+    id: 'lead-time',
+    labelEn: 'Order lead time',
+    labelDe: 'Vorlaufzeit der Bestellung',
+    valueEn: '24 – 48 hours',
+    valueDe: '24 – 48 Std.',
+    detailEn: 'Recommended lead time (express same-day on request).',
+    detailDe: 'Empfohlen für reibungslose Planung (kurzfristig auf Anfrage).'
+  }
+];
 
 export const DEFAULT_CATERING: CateringContent = {
   badgeEn: 'MAATI CATERING BERLIN',
@@ -634,6 +729,12 @@ export const DEFAULT_CATERING: CateringContent = {
   heroDescDe: 'Gesunde Bowls, getoastete Naan-Pockets und warme Buffets direkt aus unserer Küche in der Zimmerstraße zu Ihnen ins Büro geliefert. Frisch, unkompliziert und auf den Punkt.',
   leadTimeEn: '24 to 48 hours recommended. Call +49 30 51891367 for urgent requests.',
   leadTimeDe: 'Empfohlen: 24 bis 48 Std. Vorlauf. Für dringende Anfragen: +49 30 51891367.',
+  formTitleEn: 'Request Catering For Your Team or Event',
+  formTitleDe: 'Catering für Ihr Büro oder Event anfragen',
+  formSubtitleEn: 'Tell us about your event date and group size. We will respond within one business day.',
+  formSubtitleDe: 'Teilen Sie uns Ihre Wünsche mit. Wir senden Ihnen innerhalb von 24 Stunden ein detailliertes Angebot zu.',
+  additions: DEFAULT_CATERING_ADDITIONS,
+  deliveryTerms: DEFAULT_CATERING_DELIVERY_TERMS,
   packages: [
     {
       id: 'essentials',

@@ -219,46 +219,19 @@ export const CateringPage: React.FC<CateringPageProps> = ({ lang = 'en' }) => {
     features: isDe ? (p.featuresDe || p.featuresEn || []) : (p.featuresEn || p.featuresDe || []),
   }));
 
-  const ADDITIONS = [
-    {
-      item: isDe ? 'Naan Pockets' : 'Naan Pockets',
-      price: isDe ? '€5,50 pro Person' : '€5.50 per person',
-      detail: isDe ? 'Halbierte, getoastete Naan-Brote mit verschiedenen Füllungen' : 'Cut-in-half warm toasted naan pockets with savory fillings'
-    },
-    {
-      item: isDe ? 'Breakfast Setup' : 'Breakfast setup',
-      price: isDe ? '€6,50 pro Person' : '€6.50 per person',
-      detail: isDe ? 'Chutney-Croissants, Kardamom-Granola-Jars und Obst' : 'Chutney croissants, spiced yogurt granola jars & fresh fruit'
-    },
-    {
-      item: isDe ? 'Coffee & Chai Bar' : 'Coffee and chai bar',
-      price: isDe ? '€3,50 pro Person' : '€3.50 per person',
-      detail: isDe ? 'Frisch gebrühter Masala Chai & Kaffeespezialitäten' : 'Slow-simmered whole-spice masala chai & specialty artisan coffee'
-    },
-    {
-      item: isDe ? 'Snack Station' : 'Snack station',
-      price: isDe ? '€4,00 pro Person' : '€4.00 per person',
-      detail: isDe ? 'Knuspriges Sev, Mini-Samosas, würzige Cashews & Chutneys' : 'Crispy sev, mini samosa bites, spiced cashews & house chutneys'
-    }
-  ];
+  const rawAdditions = cmsCatering.additions ?? DEFAULT_CATERING.additions ?? [];
+  const ADDITIONS = rawAdditions.map(a => ({
+    item: isDe ? (a.itemDe || a.itemEn) : (a.itemEn || a.itemDe),
+    price: isDe ? (a.priceDe || a.priceEn) : (a.priceEn || a.priceDe),
+    detail: isDe ? (a.detailDe || a.detailEn) : (a.detailEn || a.detailDe)
+  }));
 
-  const DELIVERY_TERMS = [
-    {
-      label: isDe ? 'Lieferung im Umkreis bis 5 km' : 'Delivery within 5 km',
-      value: isDe ? 'Kostenlos' : 'Free',
-      detail: isDe ? 'Deckt Berlin Mitte, Kreuzberg und Friedrichshain ab.' : 'Covers Mitte, Kreuzberg and Friedrichshain.'
-    },
-    {
-      label: isDe ? 'Lieferung 5 km bis 15 km' : 'Delivery 5 km to 15 km',
-      value: '€25',
-      detail: isDe ? 'Fester Lieferpreis im gesamten Berliner Stadtgebiet.' : 'Flat delivery fee across Berlin metropolitan area.'
-    },
-    {
-      label: isDe ? 'Vorlaufzeit der Bestellung' : 'Order lead time',
-      value: (isDe ? cmsCatering.leadTimeDe : cmsCatering.leadTimeEn) || (isDe ? '24 – 48 Std.' : '24 – 48 hours'),
-      detail: isDe ? 'Empfohlen für reibungslose Planung (kurzfristig auf Anfrage).' : 'Recommended lead time (express same-day on request).'
-    }
-  ];
+  const rawDeliveryTerms = cmsCatering.deliveryTerms ?? DEFAULT_CATERING.deliveryTerms ?? [];
+  const DELIVERY_TERMS = rawDeliveryTerms.map(t => ({
+    label: isDe ? (t.labelDe || t.labelEn) : (t.labelEn || t.labelDe),
+    value: isDe ? (t.valueDe || t.valueEn) : (t.valueEn || t.valueDe),
+    detail: isDe ? (t.detailDe || t.detailEn) : (t.detailEn || t.detailDe)
+  }));
 
   const FAQS = (cmsCatering.faqs ?? DEFAULT_CATERING.faqs ?? []).map(faq => ({ q: isDe ? faq.qDe : faq.qEn, a: isDe ? faq.aDe : faq.aEn }));
 
@@ -727,11 +700,11 @@ export const CateringPage: React.FC<CateringPageProps> = ({ lang = 'en' }) => {
         <EnquiryForm
           lang={lang}
           defaultType="corporate-catering"
-          title={isDe ? 'Catering für Ihr Büro oder Event anfragen' : 'Request Catering For Your Team or Event'}
+          title={isDe ? (cmsCatering.formTitleDe || 'Catering für Ihr Büro oder Event anfragen') : (cmsCatering.formTitleEn || 'Request Catering For Your Team or Event')}
           subtitle={
             isDe
-              ? 'Teilen Sie uns Ihre Wünsche mit. Wir senden Ihnen innerhalb von 24 Stunden ein detailliertes Angebot zu.'
-              : 'Tell us about your event date and group size. We will respond within one business day.'
+              ? (cmsCatering.formSubtitleDe || 'Teilen Sie uns Ihre Wünsche mit. Wir senden Ihnen innerhalb von 24 Stunden ein detailliertes Angebot zu.')
+              : (cmsCatering.formSubtitleEn || 'Tell us about your event date and group size. We will respond within one business day.')
           }
         />
       </section>

@@ -81,6 +81,8 @@ import {
   CateringContent,
   CateringPackageItem,
   CateringFaqItem,
+  CateringAdditionItem,
+  CateringDeliveryTermItem,
   JobsContent,
   JobOpeningItem,
   AboutContent,
@@ -4221,11 +4223,272 @@ export const StudioPage: React.FC = () => {
               </div>
             </div>
 
-            {/* FAQs Section */}
+            {/* 3. Additions & Optional Stations */}
             <div className="space-y-4 pt-4 border-t border-gray-100">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-[14px] font-extrabold text-[#1e382f] uppercase tracking-wider">3. Frequently Asked Questions ({cateringContent.faqs?.length || 0})</h3>
+                  <h3 className="text-[14px] font-extrabold text-[#1e382f] uppercase tracking-wider">
+                    3. Additions & Optional Stations ({cateringContent.additions?.length || 0})
+                  </h3>
+                  <p className="text-[12px] text-gray-500">
+                    Add-on stations displayed right below the packages grid (e.g. Naan Pockets, Chai Bar, Snack Station).
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const newAddon: CateringAdditionItem = {
+                      id: 'addon_' + Date.now(),
+                      itemEn: 'New Station',
+                      itemDe: 'Neue Station',
+                      priceEn: '€5.00 per person',
+                      priceDe: '€5,00 pro Person',
+                      detailEn: 'Description of this station or add-on',
+                      detailDe: 'Beschreibung dieser Station oder Zusatzoption'
+                    };
+                    _setCateringContent({
+                      ...cateringContent,
+                      additions: [...(cateringContent.additions || []), newAddon]
+                    });
+                  }}
+                  className="bg-[#1e382f] hover:bg-[#2a4d41] text-white text-[12px] font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-all"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add Station</span>
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                {(cateringContent.additions || []).map((addon, aIdx) => (
+                  <div key={addon.id || aIdx} className="bg-[#fcf8f3] rounded-2xl p-4 border border-[#ebdcd0] space-y-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 flex-1">
+                        <span className="w-6 h-6 rounded-full bg-[#1e382f] text-white text-[11px] font-black flex items-center justify-center">
+                          {aIdx + 1}
+                        </span>
+                        <input
+                          type="text"
+                          aria-label="Station Name"
+                          value={adminContentLang === 'en' ? addon.itemEn : addon.itemDe}
+                          onChange={(e) => {
+                            const updated = [...(cateringContent.additions || [])];
+                            updated[aIdx] = adminContentLang === 'en'
+                              ? { ...updated[aIdx], itemEn: e.target.value }
+                              : { ...updated[aIdx], itemDe: e.target.value };
+                            _setCateringContent({ ...cateringContent, additions: updated });
+                          }}
+                          placeholder={adminContentLang === 'en' ? 'Station Name (e.g. Coffee & Chai Bar)' : 'Stationsname (z.B. Chai Bar)'}
+                          className="font-bold text-[14px] text-[#1e382f] border-b border-dashed border-[#d85c27] bg-transparent focus:outline-none flex-1"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        aria-label="Delete station"
+                        onClick={() => {
+                          const updated = (cateringContent.additions || []).filter((_, i) => i !== aIdx);
+                          _setCateringContent({ ...cateringContent, additions: updated });
+                        }}
+                        className="text-gray-400 hover:text-rose-600 p-1"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-bold text-gray-600 mb-1">
+                          Price Tag ({adminContentLang.toUpperCase()})
+                        </label>
+                        <input
+                          type="text"
+                          value={adminContentLang === 'en' ? addon.priceEn : addon.priceDe}
+                          onChange={(e) => {
+                            const updated = [...(cateringContent.additions || [])];
+                            updated[aIdx] = adminContentLang === 'en'
+                              ? { ...updated[aIdx], priceEn: e.target.value }
+                              : { ...updated[aIdx], priceDe: e.target.value };
+                            _setCateringContent({ ...cateringContent, additions: updated });
+                          }}
+                          placeholder={adminContentLang === 'en' ? 'e.g. €3.50 per person' : 'z.B. €3,50 pro Person'}
+                          className="w-full border rounded-xl px-3 py-1.5 text-[12.5px] bg-white focus:outline-none focus:border-[#d85c27]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-gray-600 mb-1">
+                          Short Detail ({adminContentLang.toUpperCase()})
+                        </label>
+                        <input
+                          type="text"
+                          value={adminContentLang === 'en' ? addon.detailEn : addon.detailDe}
+                          onChange={(e) => {
+                            const updated = [...(cateringContent.additions || [])];
+                            updated[aIdx] = adminContentLang === 'en'
+                              ? { ...updated[aIdx], detailEn: e.target.value }
+                              : { ...updated[aIdx], detailDe: e.target.value };
+                            _setCateringContent({ ...cateringContent, additions: updated });
+                          }}
+                          placeholder={adminContentLang === 'en' ? 'e.g. Slow-simmered whole spice chai' : 'z.B. Frisch gebrühter Masala Chai'}
+                          className="w-full border rounded-xl px-3 py-1.5 text-[12.5px] bg-white focus:outline-none focus:border-[#d85c27]"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 4. Delivery & Ordering Terms */}
+            <div className="space-y-4 pt-4 border-t border-gray-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-[14px] font-extrabold text-[#1e382f] uppercase tracking-wider">
+                    4. Delivery & Ordering Terms ({cateringContent.deliveryTerms?.length || 0})
+                  </h3>
+                  <p className="text-[12px] text-gray-500">
+                    Terms displayed next to the additions table (e.g. Free Delivery radius, fee, and order lead time).
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const newTerm: CateringDeliveryTermItem = {
+                      id: 'term_' + Date.now(),
+                      labelEn: 'Delivery Radius',
+                      labelDe: 'Liefergebiet',
+                      valueEn: 'Free',
+                      valueDe: 'Kostenlos',
+                      detailEn: 'Delivery details here',
+                      detailDe: 'Details zur Lieferung hier'
+                    };
+                    _setCateringContent({
+                      ...cateringContent,
+                      deliveryTerms: [...(cateringContent.deliveryTerms || []), newTerm]
+                    });
+                  }}
+                  className="bg-[#1e382f] hover:bg-[#2a4d41] text-white text-[12px] font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-all"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add Term</span>
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                {(cateringContent.deliveryTerms || []).map((term, tIdx) => (
+                  <div key={term.id || tIdx} className="bg-white rounded-2xl p-4 border border-[#ebdcd0] space-y-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 flex-1">
+                        <span className="w-6 h-6 rounded-full bg-[#d85c27] text-white text-[11px] font-black flex items-center justify-center">
+                          {tIdx + 1}
+                        </span>
+                        <input
+                          type="text"
+                          aria-label="Term Label"
+                          value={adminContentLang === 'en' ? term.labelEn : term.labelDe}
+                          onChange={(e) => {
+                            const updated = [...(cateringContent.deliveryTerms || [])];
+                            updated[tIdx] = adminContentLang === 'en'
+                              ? { ...updated[tIdx], labelEn: e.target.value }
+                              : { ...updated[tIdx], labelDe: e.target.value };
+                            _setCateringContent({ ...cateringContent, deliveryTerms: updated });
+                          }}
+                          placeholder={adminContentLang === 'en' ? 'Term Label (e.g. Delivery within 5 km)' : 'Bezeichnung (z.B. Lieferung bis 5 km)'}
+                          className="font-bold text-[14px] text-[#1e382f] border-b border-dashed border-[#d85c27] bg-transparent focus:outline-none flex-1"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        aria-label="Delete term"
+                        onClick={() => {
+                          const updated = (cateringContent.deliveryTerms || []).filter((_, i) => i !== tIdx);
+                          _setCateringContent({ ...cateringContent, deliveryTerms: updated });
+                        }}
+                        className="text-gray-400 hover:text-rose-600 p-1"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-bold text-gray-600 mb-1">
+                          Badge Value ({adminContentLang.toUpperCase()})
+                        </label>
+                        <input
+                          type="text"
+                          value={adminContentLang === 'en' ? term.valueEn : term.valueDe}
+                          onChange={(e) => {
+                            const updated = [...(cateringContent.deliveryTerms || [])];
+                            updated[tIdx] = adminContentLang === 'en'
+                              ? { ...updated[tIdx], valueEn: e.target.value }
+                              : { ...updated[tIdx], valueDe: e.target.value };
+                            _setCateringContent({ ...cateringContent, deliveryTerms: updated });
+                          }}
+                          placeholder={adminContentLang === 'en' ? 'e.g. Free or €25' : 'z.B. Kostenlos oder €25'}
+                          className="w-full border rounded-xl px-3 py-1.5 text-[12.5px] bg-[#faf6f0] focus:outline-none focus:border-[#d85c27]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-gray-600 mb-1">
+                          Coverage Detail ({adminContentLang.toUpperCase()})
+                        </label>
+                        <input
+                          type="text"
+                          value={adminContentLang === 'en' ? term.detailEn : term.detailDe}
+                          onChange={(e) => {
+                            const updated = [...(cateringContent.deliveryTerms || [])];
+                            updated[tIdx] = adminContentLang === 'en'
+                              ? { ...updated[tIdx], detailEn: e.target.value }
+                              : { ...updated[tIdx], detailDe: e.target.value };
+                            _setCateringContent({ ...cateringContent, deliveryTerms: updated });
+                          }}
+                          placeholder={adminContentLang === 'en' ? 'e.g. Covers Mitte, Kreuzberg, Friedrichshain' : 'z.B. Deckt Mitte, Kreuzberg und Friedrichshain ab'}
+                          className="w-full border rounded-xl px-3 py-1.5 text-[12.5px] bg-[#faf6f0] focus:outline-none focus:border-[#d85c27]"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 5. Catering Enquiry Form Settings */}
+            <div className="space-y-4 pt-4 border-t border-gray-100">
+              <h3 className="text-[14px] font-extrabold text-[#1e382f] uppercase tracking-wider">
+                5. Enquiry Form Header & Subtitle
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[12px] font-bold text-[#333] mb-1">
+                    Form Title ({adminContentLang.toUpperCase()})
+                  </label>
+                  <input
+                    type="text"
+                    value={adminContentLang === 'en' ? (cateringContent.formTitleEn || '') : (cateringContent.formTitleDe || '')}
+                    onChange={(e) => _setCateringContent(adminContentLang === 'en' ? { ...cateringContent, formTitleEn: e.target.value } : { ...cateringContent, formTitleDe: e.target.value })}
+                    placeholder="e.g. Request Catering For Your Team or Event"
+                    className="w-full border rounded-xl px-3.5 py-2 text-[13.5px] focus:outline-none focus:border-[#d85c27]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[12px] font-bold text-[#333] mb-1">
+                    Form Subtitle ({adminContentLang.toUpperCase()})
+                  </label>
+                  <input
+                    type="text"
+                    value={adminContentLang === 'en' ? (cateringContent.formSubtitleEn || '') : (cateringContent.formSubtitleDe || '')}
+                    onChange={(e) => _setCateringContent(adminContentLang === 'en' ? { ...cateringContent, formSubtitleEn: e.target.value } : { ...cateringContent, formSubtitleDe: e.target.value })}
+                    placeholder="e.g. Tell us about your event date and group size..."
+                    className="w-full border rounded-xl px-3.5 py-2 text-[13.5px] focus:outline-none focus:border-[#d85c27]"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* 6. FAQs Section */}
+            <div className="space-y-4 pt-4 border-t border-gray-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-[14px] font-extrabold text-[#1e382f] uppercase tracking-wider">6. Frequently Asked Questions ({cateringContent.faqs?.length || 0})</h3>
                   <p className="text-[12px] text-gray-500">Accordion questions answered directly on the Catering page.</p>
                 </div>
                 <button
