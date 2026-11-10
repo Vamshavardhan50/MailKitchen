@@ -342,18 +342,37 @@ export const StudioPage: React.FC = () => {
     showToast(`${label} copied to clipboard!`);
   };
 
+  const formatDateTime = (isoString?: string) => {
+    if (!isoString) return 'Recent';
+    try {
+      const d = new Date(isoString);
+      if (isNaN(d.getTime())) return isoString;
+      return d.toLocaleString('de-DE', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch {
+      return isoString;
+    }
+  };
+
   const exportInquiriesCSV = () => {
     if (!inquiries.length) { showToast('No inquiries to export.'); return; }
-    const headers = ['Date', 'Type', 'Status', 'Name', 'Email', 'Phone', 'Guests', 'Event Date', 'Company', 'Manager Notes', 'Message'];
+    const headers = ['Received Date', 'Received Time', 'Type', 'Status', 'Name', 'Email', 'Phone', 'Event Date', 'Event Time', 'Guests', 'Company', 'Manager Notes', 'Message'];
     const rows = inquiries.map(item => [
       item.receivedAt ? new Date(item.receivedAt).toISOString().split('T')[0] : '',
+      item.receivedAt ? new Date(item.receivedAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : '',
       item.enquiryType || 'General',
       item.status || 'new',
       `"${(item.name || '').replace(/"/g, '""')}"`,
       `"${(item.email || '').replace(/"/g, '""')}"`,
       `"${(item.phone || '').replace(/"/g, '""')}"`,
-      item.guests || '',
       item.date || '',
+      `"${(item.time || '').replace(/"/g, '""')}"`,
+      item.guests || '',
       `"${(item.company || '').replace(/"/g, '""')}"`,
       `"${(item.managerNotes || '').replace(/"/g, '""')}"`,
       `"${(item.message || '').replace(/"/g, '""')}"`,
@@ -371,9 +390,10 @@ export const StudioPage: React.FC = () => {
 
   const exportApplicationsCSV = () => {
     if (!applications.length) { showToast('No applications to export.'); return; }
-    const headers = ['Date', 'Position', 'Status', 'Full Name', 'Email', 'Phone', 'Availability', 'Experience', 'HR Notes', 'Message'];
+    const headers = ['Submitted Date', 'Submitted Time', 'Position', 'Status', 'Full Name', 'Email', 'Phone', 'Availability', 'Experience', 'HR Notes', 'Message'];
     const rows = applications.map(item => [
       item.submittedAt ? new Date(item.submittedAt).toISOString().split('T')[0] : '',
+      item.submittedAt ? new Date(item.submittedAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : '',
       `"${(item.position || '').replace(/"/g, '""')}"`,
       item.status || 'new',
       `"${(item.fullName || '').replace(/"/g, '""')}"`,
@@ -3793,8 +3813,14 @@ export const StudioPage: React.FC = () => {
                                 {item.status || 'new'}
                               </span>
                             </div>
-                            <div className="flex flex-wrap items-center gap-3 text-[13px] text-gray-600">
+                            <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 text-[13px] text-gray-600">
                               <span>📅 Date: <strong>{item.date || 'TBD'}</strong></span>
+                              {item.time && (
+                                <>
+                                  <span>•</span>
+                                  <span>⏰ Time: <strong>{item.time}</strong></span>
+                                </>
+                              )}
                               <span>•</span>
                               <span>👥 Guests: <strong>{item.guests || '-'}</strong></span>
                               {item.company && (
@@ -3804,8 +3830,9 @@ export const StudioPage: React.FC = () => {
                                 </>
                               )}
                               <span>•</span>
-                              <span className="text-gray-400 text-[11.5px]">
-                                {item.receivedAt ? new Date(item.receivedAt).toLocaleDateString() : 'Recent'}
+                              <span className="inline-flex items-center gap-1.5 text-gray-600 font-medium text-[12px] bg-amber-50/80 border border-amber-200/60 px-2.5 py-0.5 rounded-lg" title={item.receivedAt ? new Date(item.receivedAt).toISOString() : ''}>
+                                <Clock className="w-3.5 h-3.5 text-[#d85c27]" />
+                                <span>Received: <strong>{formatDateTime(item.receivedAt)}</strong></span>
                               </span>
                             </div>
                           </div>
@@ -4055,8 +4082,9 @@ export const StudioPage: React.FC = () => {
                                 </>
                               )}
                               <span>•</span>
-                              <span className="text-gray-400 text-[11.5px]">
-                                {item.submittedAt ? new Date(item.submittedAt).toLocaleDateString() : 'Recent'}
+                              <span className="inline-flex items-center gap-1.5 text-gray-600 font-medium text-[12px] bg-amber-50/80 border border-amber-200/60 px-2.5 py-0.5 rounded-lg" title={item.submittedAt ? new Date(item.submittedAt).toISOString() : ''}>
+                                <Clock className="w-3.5 h-3.5 text-[#d85c27]" />
+                                <span>Applied: <strong>{formatDateTime(item.submittedAt)}</strong></span>
                               </span>
                             </div>
                           </div>

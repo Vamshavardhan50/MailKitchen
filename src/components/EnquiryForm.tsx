@@ -31,6 +31,7 @@ export const EnquiryForm: React.FC<EnquiryFormProps> = ({
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [date, setDate] = useState('');
+  const [time, setTime] = useState('');
   const [guests, setGuests] = useState<number | ''>('');
   const [company, setCompany] = useState('');
   const [message, setMessage] = useState('');
@@ -91,6 +92,7 @@ export const EnquiryForm: React.FC<EnquiryFormProps> = ({
             email: email.trim(),
             phone: phone.trim(),
             date,
+            time: time.trim(),
             guests: Number(guests),
             company: company.trim(),
             message: message.trim(),
@@ -310,6 +312,21 @@ export const EnquiryForm: React.FC<EnquiryFormProps> = ({
                 min={todayStr}
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
+                className="w-full bg-[#fbf8f4] border border-[#ebdcd0] rounded-2xl px-4 py-3.5 text-[15px] text-[#1a1a1a] focus:outline-none focus:border-[#d85c27] transition-colors"
+              />
+            </div>
+
+            {/* Event / Delivery Time (Optional) */}
+            <div>
+              <label htmlFor="event_time" className="block text-[13px] font-bold text-[#1e382f] mb-2 uppercase tracking-wider">
+                {isDe ? 'Uhrzeit / Zeitfenster (optional)' : 'Preferred Time / Window (optional)'}
+              </label>
+              <input
+                id="event_time"
+                type="text"
+                placeholder={isDe ? 'z. B. 12:30 Uhr oder 18:00 - 21:00' : 'e.g. 12:30 PM or 18:00 - 21:00'}
+                value={time}
+                onChange={(e) => setTime(e.target.value)}
                 className="w-full bg-[#fbf8f4] border border-[#ebdcd0] rounded-2xl px-4 py-3.5 text-[15px] text-[#1a1a1a] focus:outline-none focus:border-[#d85c27] transition-colors"
               />
             </div>

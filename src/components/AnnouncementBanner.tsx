@@ -63,3 +63,4 @@ export const AnnouncementBanner: React.FC<AnnouncementBannerProps> = ({ lang }) 
     </aside>
   );
 };
+

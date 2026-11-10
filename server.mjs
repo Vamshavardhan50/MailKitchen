@@ -159,7 +159,7 @@ const server = http.createServer(async (req, res) => {
     req.on('end', async () => {
       try {
         const payload = JSON.parse(body || '{}');
-        const { enquiryType, name, email, phone, date, guests, company, message, consent, lang } = payload;
+        const { enquiryType, name, email, phone, date, time, guests, company, message, consent, lang } = payload;
 
         if (!name || !email || !phone || !date || !guests || !consent) {
           res.writeHead(400, { 'Content-Type': 'application/json' });
@@ -177,6 +177,7 @@ const server = http.createServer(async (req, res) => {
           email: email.trim(),
           phone: phone.trim(),
           date,
+          time: (time || '').trim(),
           guests: Number(guests),
           company: (company || '').trim(),
           message: (message || '').trim(),

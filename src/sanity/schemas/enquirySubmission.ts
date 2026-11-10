@@ -63,6 +63,12 @@ export const enquirySubmissionSchema = {
       readOnly: true,
     },
     {
+      name: 'time',
+      title: 'Requested Event / Delivery Time',
+      type: 'string',
+      readOnly: true,
+    },
+    {
       name: 'guests',
       title: 'Expected Guest Count',
       type: 'number',
