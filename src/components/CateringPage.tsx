@@ -50,30 +50,83 @@ export const CateringPage: React.FC<CateringPageProps> = ({ lang = 'en' }) => {
     setOpenFaq(openFaq === idx ? null : idx);
   };
 
-  // Schema Service structured data linked to restaurant ID
+  // Comprehensive Schema: Restaurant + Service catering structured data
   const cateringSchema = {
     '@context': 'https://schema.org',
-    '@type': 'Service',
-    'serviceType': 'Catering',
-    'name': isDe ? 'MAATI Indisches Firmen- und Event-Catering' : 'MAATI Indian Corporate & Event Catering',
-    'description': description,
-    'areaServed': {
-      '@type': 'City',
-      'name': 'Berlin'
-    },
-    'provider': {
-      '@type': 'Restaurant',
-      '@id': 'https://maatikitchen.com/#restaurant',
-      'name': 'MAATI Kitchen',
-      'telephone': '+49 30 51891367',
-      'address': {
-        '@type': 'PostalAddress',
-        'streetAddress': 'Zimmerstraße 56',
-        'addressLocality': 'Berlin',
-        'postalCode': '10117',
-        'addressCountry': 'DE'
+    '@graph': [
+      {
+        '@type': 'Restaurant',
+        '@id': 'https://maatikitchen.com/#restaurant',
+        'name': 'MAATI Kitchen',
+        'alternateName': isDe ? 'MAATI Indisches Restaurant & Catering Berlin' : 'MAATI Kitchen Indian Restaurant & Catering Berlin',
+        'image': [
+          'https://maatikitchen.com/assets/circle-Bq5xyFQD.png',
+          'https://maatikitchen.com/assets/hero-flatlay.jpg'
+        ],
+        'logo': 'https://maatikitchen.com/assets/logo-C86A0r1B.png',
+        'url': canonicalUrl,
+        'telephone': '+49 30 51891367',
+        'email': 'hello@maatikitchen.com',
+        'priceRange': '€€',
+        'servesCuisine': 'Indian, Fast Casual, Bowls, Vegan Options, Vegetarian Options',
+        'hasMenu': isDe ? 'https://maatikitchen.com/de/menu' : 'https://maatikitchen.com/menu',
+        'acceptsReservations': true,
+        'address': {
+          '@type': 'PostalAddress',
+          'streetAddress': 'Zimmerstraße 56',
+          'addressLocality': 'Berlin',
+          'postalCode': '10117',
+          'addressCountry': 'DE'
+        },
+        'geo': {
+          '@type': 'GeoCoordinates',
+          'latitude': 52.5081,
+          'longitude': 13.3949
+        },
+        'makesOffer': {
+          '@type': 'Offer',
+          'itemOffered': {
+            '@type': 'Service',
+            '@id': `${canonicalUrl}#service`,
+            'name': isDe ? 'Indisches Catering Berlin' : 'Indian Catering Berlin',
+            'serviceType': 'Catering',
+            'description': description,
+            'areaServed': {
+              '@type': 'City',
+              'name': 'Berlin'
+            },
+            'provider': {
+              '@type': 'Restaurant',
+              '@id': 'https://maatikitchen.com/#restaurant'
+            }
+          }
+        }
+      },
+      {
+        '@type': 'Service',
+        '@id': `${canonicalUrl}#service`,
+        'name': isDe ? 'Indisches Catering Berlin' : 'Indian Catering Berlin',
+        'serviceType': 'Catering',
+        'description': description,
+        'areaServed': {
+          '@type': 'City',
+          'name': 'Berlin'
+        },
+        'provider': {
+          '@type': 'Restaurant',
+          '@id': 'https://maatikitchen.com/#restaurant',
+          'name': 'MAATI Kitchen',
+          'telephone': '+49 30 51891367',
+          'address': {
+            '@type': 'PostalAddress',
+            'streetAddress': 'Zimmerstraße 56',
+            'addressLocality': 'Berlin',
+            'postalCode': '10117',
+            'addressCountry': 'DE'
+          }
+        }
       }
-    }
+    ]
   };
 
   const CATEGORIES = [
@@ -225,16 +278,38 @@ export const CateringPage: React.FC<CateringPageProps> = ({ lang = 'en' }) => {
         <div className="bg-[#1e382f] text-white rounded-[32px] sm:rounded-[44px] p-8 sm:p-14 lg:p-20 relative overflow-hidden shadow-2xl">
           <div className="max-w-[800px] relative z-10 space-y-6">
             <span className="bg-[#d85c27] text-white text-[11px] sm:text-[12px] font-black tracking-[0.2em] px-4 py-1.5 rounded-full uppercase inline-block">
-              {(isDe ? cmsCatering.badgeDe : cmsCatering.badgeEn) || (isDe ? 'MAATI CATERING BERLIN MITTE' : 'MAATI CATERING BERLIN MITTE')}
+              {(isDe ? cmsCatering.badgeDe : cmsCatering.badgeEn) || (isDe ? 'MAATI CATERING BERLIN' : 'MAATI CATERING BERLIN')}
             </span>
             <h1 className="text-[36px] sm:text-[48px] md:text-[60px] font-black leading-[1.08] tracking-tight text-white">
-              {(isDe ? cmsCatering.heroTitleDe : cmsCatering.heroTitleEn) || (isDe ? 'Business Catering für Teams & Events' : 'Corporate Catering That Brings Teams Together')}
+              {(isDe ? cmsCatering.heroTitleDe : cmsCatering.heroTitleEn) || (isDe ? 'Indisches Catering Berlin' : 'Indian Catering Berlin')}
             </h1>
             <p className="text-white/85 text-[16px] sm:text-[19px] leading-relaxed max-w-[680px]">
               {(isDe ? cmsCatering.heroDescDe : cmsCatering.heroDescEn) || (isDe
-                ? 'Gesunde Bowls, getoastete Naan-Pockets und Sharing-Platten direkt aus unserer Küche in der Zimmerstraße zu Ihnen ins Büro geliefert. Frisch, unkompliziert und auf den Punkt.'
+                ? 'Gesunde Bowls, getoastete Naan-Pockets und warme Buffets direkt aus unserer Küche in der Zimmerstraße zu Ihnen ins Büro geliefert. Frisch, unkompliziert und auf den Punkt.'
                 : 'Vibrant Indian bowls, toasted naan pockets, and sharing platters crafted for Berlin’s top offices. Delivered warm, on time, and effortlessly customized to every diet.')}
             </p>
+
+            {/* Visible Service & Area Served text (Schema Alignment & SEO) */}
+            <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-4 sm:p-5 text-[13px] sm:text-[14px] text-white/95 max-w-[680px]">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <span className="font-extrabold text-[#f39c12] uppercase tracking-wider block text-[11px]">
+                    {isDe ? 'Service' : 'Service'}
+                  </span>
+                  <span className="font-semibold">
+                    {isDe ? 'Indisches Firmen- & Event-Catering' : 'Indian Corporate & Event Catering'}
+                  </span>
+                </div>
+                <div>
+                  <span className="font-extrabold text-[#f39c12] uppercase tracking-wider block text-[11px]">
+                    {isDe ? 'Einsatzgebiet' : 'Area Served'}
+                  </span>
+                  <span className="font-semibold">
+                    {isDe ? 'Berlin (Mitte, Kreuzberg, Friedrichshain & ganz Berlin)' : 'Berlin (Mitte, Kreuzberg, Friedrichshain & Greater Berlin)'}
+                  </span>
+                </div>
+              </div>
+            </div>
 
             {/* Quick USPs Pills */}
             <div className="flex flex-wrap items-center gap-3 pt-1">

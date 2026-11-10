@@ -102,6 +102,56 @@ export const EnquiryForm: React.FC<EnquiryFormProps> = ({
         if (!response.ok || !result.success) throw new Error('Submission failed');
         window.dispatchEvent(new Event('maati_enquiry_received'));
 
+        // ── GA4 Key Event / Conversion Tracking for Quote & Enquiry Submissions ──
+        if (typeof window !== 'undefined') {
+          // 1. Google Tag Manager / GA4 dataLayer
+          const dataLayer = (window as any).dataLayer || [];
+          (window as any).dataLayer = dataLayer;
+
+          // Standard GA4 Lead Event (Configurable as Key Event in GA4 Admin)
+          dataLayer.push({
+            event: 'generate_lead',
+            event_category: 'Catering',
+            event_action: 'Quote Request',
+            event_label: enquiryType,
+            lead_type: enquiryType,
+            guests: Number(guests) || 0,
+            company: company.trim() || undefined,
+            currency: 'EUR',
+            value: Number(guests) ? Number(guests) * 15 : 0,
+            page_location: window.location.href,
+            page_path: window.location.pathname,
+            lang: lang
+          });
+
+          // Explicit quote request event for catering
+          dataLayer.push({
+            event: 'catering_quote_request',
+            enquiry_type: enquiryType,
+            guests_count: Number(guests) || 0,
+            company: company.trim() || undefined,
+            date: date,
+            lang: lang
+          });
+
+          // 2. Direct gtag API call (ensures GA4 tracks key event even if GTM trigger has delay)
+          if (typeof (window as any).gtag === 'function') {
+            (window as any).gtag('event', 'generate_lead', {
+              event_category: 'Catering',
+              event_label: enquiryType,
+              lead_type: enquiryType,
+              currency: 'EUR',
+              value: Number(guests) ? Number(guests) * 15 : 0,
+              guests: Number(guests) || 0
+            });
+            (window as any).gtag('event', 'catering_quote_request', {
+              enquiry_type: enquiryType,
+              guests_count: Number(guests) || 0,
+              event_category: 'Catering'
+            });
+          }
+        }
+
         setSuccessMsg(
           isDe
             ? 'Vielen Dank für Ihre Anfrage. Wir haben sie erhalten und melden uns innerhalb eines Werktages bei Ihnen. Bei dringenden Anliegen erreichen Sie uns telefonisch unter der unten genannten Nummer (+49 30 51891367).\n\nMAATI Kitchen, Zimmerstrasse 56, 10117 Berlin.'

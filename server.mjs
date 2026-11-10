@@ -330,12 +330,24 @@ const server = http.createServer(async (req, res) => {
     fs.createReadStream(filePath).pipe(res);
   } else {
     if (path.extname(decodedPath)) { res.writeHead(404, { 'Content-Type': 'text/plain' }); res.end('Asset not found'); return; }
-    // SPA fallback — all unmatched routes return index.html so React Router handles them
-    const indexPath = path.join(DIST_DIR, 'index.html');
-    if (fs.existsSync(indexPath)) {
+    // SPA fallback — Route-aware fallback ensuring raw HTML never serves English homepage canonical for German or subpage routes
+    const isDeRoute = decodedPath.startsWith('/de');
+    const deIndexPath = path.join(DIST_DIR, 'de', 'index.html');
+    const enIndexPath = path.join(DIST_DIR, 'index.html');
+    const fallbackPath = isDeRoute && fs.existsSync(deIndexPath) ? deIndexPath : enIndexPath;
+
+    if (fs.existsSync(fallbackPath)) {
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-      fs.createReadStream(indexPath).pipe(res);
+      try {
+        let content = fs.readFileSync(fallbackPath, 'utf8');
+        // Ensure canonical is always self-referencing to the requested path
+        const dynamicCanonical = `https://maatikitchen.com${decodedPath === '/' ? '' : decodedPath}`;
+        content = content.replace(/<link\s+rel=["']canonical["'][^>]*>/i, `<link rel="canonical" href="${dynamicCanonical}" />`);
+        res.end(content);
+      } catch {
+        fs.createReadStream(fallbackPath).pipe(res);
+      }
     } else {
       res.writeHead(404, { 'Content-Type': 'text/plain' });
       res.end('404 — run npm run build first');

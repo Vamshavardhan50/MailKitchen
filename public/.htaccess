@@ -1,8 +1,16 @@
+DirectoryIndex index.html
+
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
 
-  # ── Handle Hostinger SPA Routing (Prevent 404 on page refresh for /menu, /jobs, /de/*) ──
+  # ── Handle Hostinger Static Pre-rendered Routing & SPA Fallback ──
+  # 1. If directory exists and contains index.html, serve it directly
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteCond %{REQUEST_FILENAME}/index.html -f
+  RewriteRule ^(.*)$ $1/index.html [L]
+
+  # 2. Skip existing files
   RewriteRule ^index\.html$ - [L]
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
