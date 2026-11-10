@@ -10,22 +10,64 @@ interface NavbarProps {
   onOpenSearch: () => void;
 }
 
+// Helper to compute equivalent URLs between English and German routes
+function getLanguagePaths(pathname: string) {
+  const clean = pathname.endsWith('/') && pathname.length > 1 ? pathname.slice(0, -1) : pathname;
+  const isGerman = clean.startsWith('/de');
+
+  let enPath = '/';
+  let dePath = '/de';
+
+  if (isGerman) {
+    const sub = clean.replace(/^\/de/, '') || '/';
+    if (sub === '/' || sub === '') {
+      enPath = '/';
+      dePath = '/de';
+    } else if (sub === '/speisekarte') {
+      enPath = '/menu';
+      dePath = '/de/menu';
+    } else if (sub === '/kontakt') {
+      enPath = '/contact';
+      dePath = '/de/contact';
+    } else if (sub === '/karriere') {
+      enPath = '/jobs';
+      dePath = '/de/jobs';
+    } else if (sub === '/anfahrt') {
+      enPath = '/locations';
+      dePath = '/de/locations';
+    } else if (sub === '/datenschutz') {
+      enPath = '/privacy';
+      dePath = '/de/privacy';
+    } else if (sub === '/agb') {
+      enPath = '/terms';
+      dePath = '/de/terms';
+    } else {
+      enPath = sub;
+      dePath = clean;
+    }
+  } else {
+    if (clean === '' || clean === '/') {
+      enPath = '/';
+      dePath = '/de';
+    } else if (clean === '/careers') {
+      enPath = '/jobs';
+      dePath = '/de/jobs';
+    } else {
+      enPath = clean;
+      dePath = `/de${clean}`;
+    }
+  }
+
+  return { enPath, dePath };
+}
+
 export const Navbar: React.FC<NavbarProps> = ({ lang, setLang, onOpenReservation, onOpenSearch }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
   const text = DICTIONARY[lang];
   const isDe = lang === 'de';
 
-  // Compute equivalent URL in the opposite language
-  const currentPath = location.pathname;
-  let targetPath = '';
-  if (isDe) {
-    // Current is German, strip /de prefix
-    targetPath = currentPath.replace(/^\/de(\/|$)/, '$1') || '/';
-  } else {
-    // Current is English, add /de prefix
-    targetPath = currentPath === '/' ? '/de' : `/de${currentPath}`;
-  }
+  const { enPath, dePath } = getLanguagePaths(location.pathname);
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-[#1e382f] text-white shadow-lg" style={{ height: '72px' }}>
@@ -80,15 +122,32 @@ export const Navbar: React.FC<NavbarProps> = ({ lang, setLang, onOpenReservation
           >
             <Search className="w-5 h-5" />
           </button>
-          <Link
-            to={targetPath}
-            onClick={() => setLang(isDe ? 'en' : 'de')}
-            className="flex items-center gap-1 bg-white/10 hover:bg-white/20 text-white text-[11.5px] font-bold px-2.5 py-1.5 rounded-full border border-white/15 transition-all active-press"
-            aria-label={isDe ? 'Switch to English' : 'Auf Deutsch wechseln'}
-          >
-            <Globe className="w-3.5 h-3.5 text-[#d85c27]" />
-            <span className="uppercase font-black">{lang}</span>
-          </Link>
+          
+          {/* Mobile Dual Language Switcher */}
+          <div className="flex items-center bg-white/10 p-0.5 rounded-full border border-white/15">
+            <Link
+              to={enPath}
+              onClick={() => setLang('en')}
+              className={`px-2 py-1 text-[11px] font-extrabold rounded-full transition-all ${
+                !isDe
+                  ? 'bg-[#d85c27] text-white shadow-xs'
+                  : 'text-white/70 hover:text-white'
+              }`}
+            >
+              EN
+            </Link>
+            <Link
+              to={dePath}
+              onClick={() => setLang('de')}
+              className={`px-2 py-1 text-[11px] font-extrabold rounded-full transition-all ${
+                isDe
+                  ? 'bg-[#d85c27] text-white shadow-xs'
+                  : 'text-white/70 hover:text-white'
+              }`}
+            >
+              DE
+            </Link>
+          </div>
         </div>
 
         {/* RIGHT CONTROLS (DESKTOP) */}
@@ -108,17 +167,33 @@ export const Navbar: React.FC<NavbarProps> = ({ lang, setLang, onOpenReservation
             {isDe ? 'Tisch reservieren' : 'Book A Table'}
           </button>
 
-          {/* Language Switcher as a Real Link keeping visitor on equivalent page */}
-          <Link
-            to={targetPath}
-            onClick={() => setLang(isDe ? 'en' : 'de')}
-            className="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-white text-[13px] font-bold px-3 py-2 rounded-full transition-colors border border-white/15 active-press"
-            title={isDe ? 'Switch to English' : 'Auf Deutsch umschalten'}
-          >
-            <Globe className="w-4 h-4 text-[#d85c27]" />
-            <span className="uppercase">{lang}</span>
-            <ChevronDown className="w-3 h-3 opacity-70" />
-          </Link>
+          {/* Dual Bilingual Language Switcher (EN | DE) */}
+          <div className="flex items-center bg-white/10 p-1 rounded-full border border-white/15">
+            <Link
+              to={enPath}
+              onClick={() => setLang('en')}
+              className={`px-3 py-1.5 text-[12.5px] font-extrabold rounded-full transition-all ${
+                !isDe
+                  ? 'bg-[#d85c27] text-white shadow-sm'
+                  : 'text-white/75 hover:text-white hover:bg-white/10'
+              }`}
+              title="Switch to English"
+            >
+              EN
+            </Link>
+            <Link
+              to={dePath}
+              onClick={() => setLang('de')}
+              className={`px-3 py-1.5 text-[12.5px] font-extrabold rounded-full transition-all ${
+                isDe
+                  ? 'bg-[#d85c27] text-white shadow-sm'
+                  : 'text-white/75 hover:text-white hover:bg-white/10'
+              }`}
+              title="Auf Deutsch wechseln"
+            >
+              DE
+            </Link>
+          </div>
         </div>
 
       </div>
@@ -201,14 +276,26 @@ export const Navbar: React.FC<NavbarProps> = ({ lang, setLang, onOpenReservation
 
             <div className="pt-2 flex items-center justify-between text-white/70 text-[12.5px] border-t border-white/10">
               <span>{isDe ? 'Sprache' : 'Language'}</span>
-              <Link
-                to={targetPath}
-                onClick={() => { setLang(isDe ? 'en' : 'de'); setMobileOpen(false); }}
-                className="flex items-center gap-1.5 bg-white/10 px-3 py-1.5 rounded-full text-white font-bold active-press"
-              >
-                <Globe className="w-3.5 h-3.5 text-[#d85c27]" />
-                <span>{lang === 'en' ? 'Auf Deutsch wechseln' : 'Switch to English'}</span>
-              </Link>
+              <div className="flex items-center bg-white/10 p-0.5 rounded-full border border-white/15">
+                <Link
+                  to={enPath}
+                  onClick={() => { setLang('en'); setMobileOpen(false); }}
+                  className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${
+                    !isDe ? 'bg-[#d85c27] text-white shadow-xs' : 'text-white/70 hover:text-white'
+                  }`}
+                >
+                  English
+                </Link>
+                <Link
+                  to={dePath}
+                  onClick={() => { setLang('de'); setMobileOpen(false); }}
+                  className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${
+                    isDe ? 'bg-[#d85c27] text-white shadow-xs' : 'text-white/70 hover:text-white'
+                  }`}
+                >
+                  Deutsch
+                </Link>
+              </div>
             </div>
           </nav>
         </div>

@@ -87,3 +87,4 @@ test('pre-rendered /catering in English contains self-referencing canonical and 
   assert.match(content, /Service:\s*Indian Corporate &amp; Event Catering/i);
   assert.match(content, /Area Served:\s*Berlin/i);
 });
+

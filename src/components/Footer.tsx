@@ -30,7 +30,7 @@ export const Footer: React.FC<FooterProps> = ({ lang = 'en' }) => {
         {/* ── LEFT COLUMN ── */}
         <div className="flex-1 max-w-[420px]">
           {/* Brand Logo */}
-          <Link to="/" className="inline-block mb-3 sm:mb-4">
+          <Link to={isDe ? '/de' : '/'} className="inline-block mb-3 sm:mb-4">
             <h2 className="text-[#d85c27] font-black text-[24px] sm:text-[26px] tracking-normal uppercase leading-none">
               MAATI
             </h2>

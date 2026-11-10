@@ -626,19 +626,19 @@ export interface CateringContent {
 }
 
 export const DEFAULT_CATERING: CateringContent = {
-  badgeEn: 'MAATI CATERING BERLIN MITTE',
-  badgeDe: 'MAATI CATERING BERLIN MITTE',
-  heroTitleEn: 'Corporate Catering That Brings Teams Together',
-  heroTitleDe: 'Business Catering für Teams & Events',
+  badgeEn: 'MAATI CATERING BERLIN',
+  badgeDe: 'MAATI CATERING BERLIN',
+  heroTitleEn: 'Indian Catering Berlin',
+  heroTitleDe: 'Indisches Catering Berlin',
   heroDescEn: 'Vibrant Indian bowls, toasted naan pockets, and sharing platters crafted for Berlin’s top offices. Delivered warm, on time, and effortlessly customized to every diet.',
-  heroDescDe: 'Gesunde Bowls, getoastete Naan-Pockets und Sharing-Platten direkt aus unserer Küche in der Zimmerstraße zu Ihnen ins Büro geliefert. Frisch, unkompliziert und auf den Punkt.',
+  heroDescDe: 'Gesunde Bowls, getoastete Naan-Pockets und warme Buffets direkt aus unserer Küche in der Zimmerstraße zu Ihnen ins Büro geliefert. Frisch, unkompliziert und auf den Punkt.',
   leadTimeEn: '24 to 48 hours recommended. Call +49 30 51891367 for urgent requests.',
   leadTimeDe: 'Empfohlen: 24 bis 48 Std. Vorlauf. Für dringende Anfragen: +49 30 51891367.',
   packages: [
     {
       id: 'essentials',
       name: 'The Team Lunch',
-      nameDe: 'The Team Lunch',
+      nameDe: 'Team Lunch',
       price: '€11.90',
       priceDetailEn: 'per person',
       priceDetailDe: 'pro Person',
@@ -663,7 +663,7 @@ export const DEFAULT_CATERING: CateringContent = {
       id: 'workshop',
       popular: true,
       name: 'The Meeting & Workshop',
-      nameDe: 'The Meeting & Workshop',
+      nameDe: 'Meeting & Workshop Paket',
       price: '€14.90',
       priceDetailEn: 'per person',
       priceDetailDe: 'pro Person',
@@ -687,7 +687,7 @@ export const DEFAULT_CATERING: CateringContent = {
     {
       id: 'crowd-pleaser',
       name: 'The Crowd-Pleaser',
-      nameDe: 'The Crowd-Pleaser',
+      nameDe: 'Großes Team-Event Paket',
       price: '€18.50',
       priceDetailEn: 'per person',
       priceDetailDe: 'pro Person',
@@ -711,7 +711,7 @@ export const DEFAULT_CATERING: CateringContent = {
     {
       id: 'chafing-buffet',
       name: 'Full Chafing Buffet',
-      nameDe: 'Full Chafing Buffet',
+      nameDe: 'Warmes Chafing-Buffet',
       price: '€24.50',
       priceDetailEn: 'per person',
       priceDetailDe: 'pro Person',

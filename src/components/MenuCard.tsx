@@ -12,22 +12,22 @@ const getDietBadge = (item: SanityMenuItem | MenuItem, isDe: boolean) => {
   if ('foodType' in item && item.foodType) {
     if (item.foodType === 'vegan') return { text: 'VEGAN', color: '#2d6a4f' };
     if (item.foodType === 'vegetarian') return { text: isDe ? 'VEGETARISCH' : 'VEGETARIAN', color: '#1e382f' };
-    return { text: 'NON-VEGETARIAN', color: '#d85c27' };
+    return { text: isDe ? 'HÄHNCHEN / FLEISCH' : 'NON-VEGETARIAN', color: '#d85c27' };
   }
 
-  const badge = isDe ? item.badgeDe : item.badgeEn;
+  const badge = isDe ? item.badgeDe || item.badgeEn : item.badgeEn || item.badgeDe;
   if (badge === 'VEGAN') return { text: 'VEGAN', color: '#2d6a4f' };
   if (badge === 'VEGETARISCH' || badge === 'VEGETARIAN' || badge === 'VEGTARIAN') return { text: isDe ? 'VEGETARISCH' : 'VEGETARIAN', color: '#1e382f' };
-  if (badge) return { text: 'NON-VEGETARIAN', color: '#d85c27' };
+  if (badge) return { text: isDe ? 'HÄHNCHEN / FLEISCH' : 'NON-VEGETARIAN', color: '#d85c27' };
   return null;
 };
 
 export const MenuCard: React.FC<MenuCardProps> = ({ item, lang = 'en' }) => {
   const [failedImage, setFailedImage] = useState<string>();
   const isDe = lang === 'de';
-  const title = (isDe ? item.titleDe : item.titleEn) || item.titleEn || item.titleDe;
-  const desc = isDe ? item.descDe : item.descEn;
-  const price = (isDe ? item.priceDe : item.priceEn) || item.price;
+  const title = (isDe ? item.titleDe || item.titleEn : item.titleEn || item.titleDe) || item.titleEn || item.titleDe;
+  const desc = (isDe ? item.descDe || item.descEn : item.descEn || item.descDe) || (item as any).desc;
+  const price = (isDe ? item.priceDe || item.price : item.priceEn || item.price) || item.price;
   
   const dietBadge = getDietBadge(item, isDe);
   const isVegan =

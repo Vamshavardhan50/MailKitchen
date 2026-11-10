@@ -16,23 +16,25 @@ import {
 interface SearchModalProps {
   isOpen: boolean;
   onClose: () => void;
+  lang?: 'de' | 'en';
 }
 
-export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => {
+export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose, lang = 'en' }) => {
+  const isDe = lang === 'de';
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<{ id: string; title: string; desc?: string; price: string; img?: string }[]>([]);
 
   const ALL_ITEMS = [
-    ...BREAKFAST_ITEMS.map((i) => ({ id: i.id, title: `${i.titleDe} / ${i.titleEn}`, desc: i.descDe || i.descEn, price: i.price, img: i.img })),
-    { id: NAAN_POCKET_ITEM.id, title: `${NAAN_POCKET_ITEM.titleDe} / ${NAAN_POCKET_ITEM.titleEn}`, desc: NAAN_POCKET_ITEM.descDe || NAAN_POCKET_ITEM.descEn, price: NAAN_POCKET_ITEM.price, img: NAAN_POCKET_ITEM.img },
-    ...HAUSSPEZIALITAETEN_ITEMS.map((i) => ({ id: i.id, title: `${i.titleDe} / ${i.titleEn}`, desc: i.descDe || i.descEn, price: i.price, img: i.img })),
-    ...AUF_BESTELLUNG_ITEMS.map((i) => ({ id: i.id, title: `${i.titleDe} / ${i.titleEn}`, desc: i.descDe || i.descEn, price: i.price, img: i.img })),
-    ...NACHTISCH_ITEMS.map((i) => ({ id: i.id, title: `${i.titleDe} / ${i.titleEn}`, desc: i.descDe || i.descEn, price: i.price, img: i.img })),
-    ...COLD_DRINKS.map((d) => ({ id: d.id, title: `${d.titleDe} / ${d.titleEn}`, desc: d.descDe || d.descEn, price: d.price, img: d.img })),
-    ...HOT_DRINKS.map((d) => ({ id: d.id, title: `${d.titleDe} / ${d.titleEn}`, desc: d.descDe || d.descEn, price: d.price, img: d.img })),
-    ...ALKOHOLISCHE_GETRAENKE.map((d) => ({ id: d.id, title: `${d.titleDe} / ${d.titleEn}`, desc: d.descDe || d.descEn, price: d.price, img: d.img })),
-    ...COCKTAILS.map((d) => ({ id: d.id, title: `${d.titleDe} / ${d.titleEn}`, desc: d.descDe || d.descEn, price: d.price, img: d.img }))
+    ...BREAKFAST_ITEMS.map((i) => ({ id: i.id, title: isDe ? i.titleDe : i.titleEn, desc: isDe ? i.descDe : i.descEn, price: i.price, img: i.img })),
+    { id: NAAN_POCKET_ITEM.id, title: isDe ? NAAN_POCKET_ITEM.titleDe : NAAN_POCKET_ITEM.titleEn, desc: isDe ? NAAN_POCKET_ITEM.descDe : NAAN_POCKET_ITEM.descEn, price: NAAN_POCKET_ITEM.price, img: NAAN_POCKET_ITEM.img },
+    ...HAUSSPEZIALITAETEN_ITEMS.map((i) => ({ id: i.id, title: isDe ? i.titleDe : i.titleEn, desc: isDe ? i.descDe : i.descEn, price: i.price, img: i.img })),
+    ...AUF_BESTELLUNG_ITEMS.map((i) => ({ id: i.id, title: isDe ? i.titleDe : i.titleEn, desc: isDe ? i.descDe : i.descEn, price: i.price, img: i.img })),
+    ...NACHTISCH_ITEMS.map((i) => ({ id: i.id, title: isDe ? i.titleDe : i.titleEn, desc: isDe ? i.descDe : i.descEn, price: i.price, img: i.img })),
+    ...COLD_DRINKS.map((d) => ({ id: d.id, title: isDe ? d.titleDe : d.titleEn, desc: isDe ? d.descDe : d.descEn, price: d.price, img: d.img })),
+    ...HOT_DRINKS.map((d) => ({ id: d.id, title: isDe ? d.titleDe : d.titleEn, desc: isDe ? d.descDe : d.descEn, price: d.price, img: d.img })),
+    ...ALKOHOLISCHE_GETRAENKE.map((d) => ({ id: d.id, title: isDe ? d.titleDe : d.titleEn, desc: isDe ? d.descDe : d.descEn, price: d.price, img: d.img })),
+    ...COCKTAILS.map((d) => ({ id: d.id, title: isDe ? d.titleDe : d.titleEn, desc: isDe ? d.descDe : d.descEn, price: d.price, img: d.img }))
   ];
 
   useEffect(() => {
@@ -72,7 +74,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => 
 
   const handleItemClick = (itemId: string) => {
     onClose();
-    navigate('/menu');
+    navigate(isDe ? '/de/menu' : '/menu');
     setTimeout(() => {
       const el = document.getElementById(itemId);
       if (el) {
@@ -103,7 +105,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => 
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search menu items (e.g. Butter Chicken, Lassi)..."
+            placeholder={isDe ? "Speisekarte durchsuchen (z.B. Butter Chicken, Vegan, Mango)..." : "Search menu items (e.g. Butter Chicken, Lassi)..."}
             autoFocus
             className="w-full bg-transparent text-[15px] sm:text-[16px] font-medium text-[#1a1a1a] focus:outline-none placeholder:text-gray-400"
           />

@@ -326,6 +326,7 @@ export const App: React.FC = () => {
       <SearchModal
         isOpen={isSearchOpen}
         onClose={() => setIsSearchOpen(false)}
+        lang={lang}
       />
 
       {/* RESERVATION MODAL (Popup available from everywhere) */}
