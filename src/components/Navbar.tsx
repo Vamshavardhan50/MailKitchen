@@ -122,28 +122,26 @@ export const Navbar: React.FC<NavbarProps> = ({ lang, setLang, onOpenReservation
           >
             <Search className="w-5 h-5" />
           </button>
-          
+
           {/* Mobile Dual Language Switcher */}
           <div className="flex items-center bg-white/10 p-0.5 rounded-full border border-white/15">
             <Link
               to={enPath}
               onClick={() => setLang('en')}
-              className={`px-2 py-1 text-[11px] font-extrabold rounded-full transition-all ${
-                !isDe
+              className={`px-2 py-1 text-[11px] font-extrabold rounded-full transition-all ${!isDe
                   ? 'bg-[#d85c27] text-white shadow-xs'
                   : 'text-white/70 hover:text-white'
-              }`}
+                }`}
             >
               EN
             </Link>
             <Link
               to={dePath}
               onClick={() => setLang('de')}
-              className={`px-2 py-1 text-[11px] font-extrabold rounded-full transition-all ${
-                isDe
+              className={`px-2 py-1 text-[11px] font-extrabold rounded-full transition-all ${isDe
                   ? 'bg-[#d85c27] text-white shadow-xs'
                   : 'text-white/70 hover:text-white'
-              }`}
+                }`}
             >
               DE
             </Link>
@@ -172,11 +170,10 @@ export const Navbar: React.FC<NavbarProps> = ({ lang, setLang, onOpenReservation
             <Link
               to={enPath}
               onClick={() => setLang('en')}
-              className={`px-3 py-1.5 text-[12.5px] font-extrabold rounded-full transition-all ${
-                !isDe
+              className={`px-3 py-1.5 text-[12.5px] font-extrabold rounded-full transition-all ${!isDe
                   ? 'bg-[#d85c27] text-white shadow-sm'
                   : 'text-white/75 hover:text-white hover:bg-white/10'
-              }`}
+                }`}
               title="Switch to English"
             >
               EN
@@ -184,11 +181,10 @@ export const Navbar: React.FC<NavbarProps> = ({ lang, setLang, onOpenReservation
             <Link
               to={dePath}
               onClick={() => setLang('de')}
-              className={`px-3 py-1.5 text-[12.5px] font-extrabold rounded-full transition-all ${
-                isDe
+              className={`px-3 py-1.5 text-[12.5px] font-extrabold rounded-full transition-all ${isDe
                   ? 'bg-[#d85c27] text-white shadow-sm'
                   : 'text-white/75 hover:text-white hover:bg-white/10'
-              }`}
+                }`}
               title="Auf Deutsch wechseln"
             >
               DE
@@ -280,18 +276,16 @@ export const Navbar: React.FC<NavbarProps> = ({ lang, setLang, onOpenReservation
                 <Link
                   to={enPath}
                   onClick={() => { setLang('en'); setMobileOpen(false); }}
-                  className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${
-                    !isDe ? 'bg-[#d85c27] text-white shadow-xs' : 'text-white/70 hover:text-white'
-                  }`}
+                  className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${!isDe ? 'bg-[#d85c27] text-white shadow-xs' : 'text-white/70 hover:text-white'
+                    }`}
                 >
                   English
                 </Link>
                 <Link
                   to={dePath}
                   onClick={() => { setLang('de'); setMobileOpen(false); }}
-                  className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${
-                    isDe ? 'bg-[#d85c27] text-white shadow-xs' : 'text-white/70 hover:text-white'
-                  }`}
+                  className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${isDe ? 'bg-[#d85c27] text-white shadow-xs' : 'text-white/70 hover:text-white'
+                    }`}
                 >
                   Deutsch
                 </Link>

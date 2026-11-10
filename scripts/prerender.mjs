@@ -257,6 +257,30 @@ const ROUTES = [
     serviceText: 'Service: Indian Corporate & Event Catering (Team Bowls, Naan Platters, Finger Food & Buffets)',
     areaServedText: 'Area Served: Berlin (Mitte, Kreuzberg, Friedrichshain & Greater Berlin)',
     bodyText: `MAATI Kitchen delivers authentic, vibrant Indian catering across Berlin. From modular office team bowls to crisp naan pocket platters and warm chafing buffets. Suitable for 10 to 200+ guests with 100% vegan, vegetarian, and meat options. Punctual delivery, setup, and 14-day invoice payment terms for companies.`,
+    extraHtml: `
+      <section class="mt-8 pt-8 border-t border-[#ebdcd0]">
+        <h3 class="text-2xl font-black text-[#1e382f] mb-2">Additions &amp; Optional Stations</h3>
+        <p class="text-[#666] text-sm mb-6">Customize any of our core catering packages with these popular add-on stations:</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="p-4 bg-white rounded-xl border border-[#ebdcd0] shadow-sm">
+            <p class="font-extrabold text-[#1e382f]">Naan Pockets <span class="text-[#d85c27] text-sm font-bold">(€5.50 per person)</span></p>
+            <p class="text-xs text-[#666] mt-1">Cut-in-half warm toasted naan pockets with savory fillings</p>
+          </div>
+          <div class="p-4 bg-white rounded-xl border border-[#ebdcd0] shadow-sm">
+            <p class="font-extrabold text-[#1e382f]">Breakfast Setup <span class="text-[#d85c27] text-sm font-bold">(€6.50 per person)</span></p>
+            <p class="text-xs text-[#666] mt-1">Chutney croissants, spiced yogurt granola jars &amp; fresh fruit</p>
+          </div>
+          <div class="p-4 bg-white rounded-xl border border-[#ebdcd0] shadow-sm">
+            <p class="font-extrabold text-[#1e382f]">Coffee &amp; Chai Bar <span class="text-[#d85c27] text-sm font-bold">(€3.50 per person)</span></p>
+            <p class="text-xs text-[#666] mt-1">Slow-simmered whole-spice masala chai &amp; specialty artisan coffee</p>
+          </div>
+          <div class="p-4 bg-white rounded-xl border border-[#ebdcd0] shadow-sm">
+            <p class="font-extrabold text-[#1e382f]">Snack Station <span class="text-[#d85c27] text-sm font-bold">(€4.00 per person)</span></p>
+            <p class="text-xs text-[#666] mt-1">Crispy sev, mini samosa bites, spiced cashews &amp; house chutneys</p>
+          </div>
+        </div>
+      </section>
+    `,
     schema: {
       '@context': 'https://schema.org',
       '@graph': [
@@ -311,6 +335,30 @@ const ROUTES = [
     serviceText: 'Service: Indisches Firmen- & Event-Catering (Team Bowls, Naan-Platten, Fingerfood & Buffets)',
     areaServedText: 'Einsatzgebiet: Berlin (Mitte, Kreuzberg, Friedrichshain & ganz Berlin)',
     bodyText: `MAATI Kitchen liefert frisches indisches Catering in ganz Berlin. Gesunde modulare Lunch Bowls, getoastete Naan-Pockets, Fingerfood und warme Chafing-Buffets direkt in Ihr Büro. Ab 10 bis 200+ Personen. Über 70% vegan & vegetarisch, pünktliche Berliner Lieferung und 14 Tage Zahlungsziel auf Rechnung.`,
+    extraHtml: `
+      <section class="mt-8 pt-8 border-t border-[#ebdcd0]">
+        <h3 class="text-2xl font-black text-[#1e382f] mb-2">Zusatzoptionen &amp; Stationen (Add-ons)</h3>
+        <p class="text-[#666] text-sm mb-6">Ergänzen Sie Ihr gewähltes Catering-Paket flexibel mit unseren beliebten Stationen:</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="p-4 bg-white rounded-xl border border-[#ebdcd0] shadow-sm">
+            <p class="font-extrabold text-[#1e382f]">Naan Pockets <span class="text-[#d85c27] text-sm font-bold">(€5,50 pro Person)</span></p>
+            <p class="text-xs text-[#666] mt-1">Halbierte, getoastete Naan-Brote mit verschiedenen Füllungen</p>
+          </div>
+          <div class="p-4 bg-white rounded-xl border border-[#ebdcd0] shadow-sm">
+            <p class="font-extrabold text-[#1e382f]">Breakfast Setup <span class="text-[#d85c27] text-sm font-bold">(€6,50 pro Person)</span></p>
+            <p class="text-xs text-[#666] mt-1">Chutney-Croissants, Kardamom-Granola-Jars und Obst</p>
+          </div>
+          <div class="p-4 bg-white rounded-xl border border-[#ebdcd0] shadow-sm">
+            <p class="font-extrabold text-[#1e382f]">Coffee &amp; Chai Bar <span class="text-[#d85c27] text-sm font-bold">(€3,50 pro Person)</span></p>
+            <p class="text-xs text-[#666] mt-1">Frisch gebrühter Masala Chai &amp; Kaffeespezialitäten</p>
+          </div>
+          <div class="p-4 bg-white rounded-xl border border-[#ebdcd0] shadow-sm">
+            <p class="font-extrabold text-[#1e382f]">Snack Station <span class="text-[#d85c27] text-sm font-bold">(€4,00 pro Person)</span></p>
+            <p class="text-xs text-[#666] mt-1">Knuspriges Sev, Mini-Samosas, würzige Cashews &amp; Chutneys</p>
+          </div>
+        </div>
+      </section>
+    `,
     schema: {
       '@context': 'https://schema.org',
       '@graph': [
@@ -795,6 +843,7 @@ for (const route of ROUTES) {
             ` : ''}
 
             <p class="text-base sm:text-lg text-[#444] leading-relaxed max-w-[850px]">${escapeHtml(route.bodyText)}</p>
+            ${route.extraHtml || ''}
           </article>
         </main>
 

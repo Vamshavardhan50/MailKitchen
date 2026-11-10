@@ -540,57 +540,85 @@ export const CateringPage: React.FC<CateringPageProps> = ({ lang = 'en' }) => {
             })}
           </div>
 
-          {/* Additions and Delivery Terms Section (Visible Text for Search Engines) */}
-          <div className="mt-14 pt-10 border-t border-white/10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* Additions and Delivery Terms Section */}
+          <div id="additions-and-stations" className="mt-16 pt-12 border-t border-[#ebdcd0] grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
             {/* Additions */}
-            <div className="lg:col-span-7 bg-white/10 backdrop-blur-sm rounded-[28px] p-6 sm:p-8 border border-white/10 space-y-4">
-              <div className="flex items-center gap-3 mb-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#d85c27]" />
-                <h3 className="text-[20px] font-black text-white">
-                  {isDe ? 'Zusatzoptionen & Stationen (Add-ons)' : 'Additions & Optional Stations'}
-                </h3>
-              </div>
-              <p className="text-white/70 text-[13.5px]">
-                {isDe
-                  ? 'Ergänzen Sie Ihr gewähltes Catering-Paket flexibel mit unseren beliebten Stationen:'
-                  : 'Customize any of our core catering packages with these popular add-on stations:'}
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                {ADDITIONS.map((addon, aIdx) => (
-                  <div key={aIdx} className="bg-black/20 rounded-2xl p-4 border border-white/5 space-y-1">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-extrabold text-white text-[14.5px]">{addon.item}</span>
-                      <span className="text-[#d85c27] font-black text-[13px] whitespace-nowrap">{addon.price}</span>
+            <div className="lg:col-span-7 bg-[#1e382f] text-white rounded-[32px] p-7 sm:p-9 shadow-xl border border-[#1e382f] flex flex-col justify-between space-y-6">
+              <div>
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="w-3 h-3 rounded-full bg-[#d85c27] shadow-[0_0_12px_rgba(216,92,39,0.6)]" />
+                  <h3 className="text-[22px] sm:text-[24px] font-black text-white tracking-tight">
+                    {isDe ? 'Zusatzoptionen & Stationen (Add-ons)' : 'Additions & Optional Stations'}
+                  </h3>
+                </div>
+                <p className="text-white/80 text-[14px] leading-relaxed">
+                  {isDe
+                    ? 'Ergänzen Sie Ihr gewähltes Catering-Paket flexibel mit unseren beliebten Stationen:'
+                    : 'Customize any of our core catering packages with these popular add-on stations:'}
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
+                  {ADDITIONS.map((addon, aIdx) => (
+                    <div
+                      key={aIdx}
+                      className="bg-white/10 hover:bg-white/[0.14] transition-all rounded-2xl p-4 border border-white/10 space-y-2 flex flex-col justify-between"
+                    >
+                      <div className="flex items-baseline justify-between gap-2">
+                        <span className="font-extrabold text-white text-[15px]">{addon.item}</span>
+                        <span className="text-[#d85c27] font-black text-[13px] bg-black/40 px-2.5 py-0.5 rounded-full whitespace-nowrap">
+                          {addon.price}
+                        </span>
+                      </div>
+                      <p className="text-white/70 text-[12.5px] leading-snug">{addon.detail}</p>
                     </div>
-                    <p className="text-white/60 text-[12px] leading-snug">{addon.detail}</p>
-                  </div>
-                ))}
+                  ))}
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-white/10 flex items-center justify-between text-[12px] text-white/60">
+                <span>{isDe ? '✓ Flexibel mit jedem Paket kombinierbar' : '✓ Seamlessly pairs with any core package'}</span>
+                <a href="#enquiry" className="text-[#d85c27] hover:underline font-bold">
+                  {isDe ? 'Jetzt anfragen →' : 'Inquire now →'}
+                </a>
               </div>
             </div>
 
             {/* Delivery Terms */}
-            <div className="lg:col-span-5 bg-white/10 backdrop-blur-sm rounded-[28px] p-6 sm:p-8 border border-white/10 space-y-4">
-              <div className="flex items-center gap-3 mb-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#d85c27]" />
-                <h3 className="text-[20px] font-black text-white">
-                  {isDe ? 'Lieferung & Bestellkonditionen' : 'Delivery & Ordering Terms'}
-                </h3>
-              </div>
-              <p className="text-white/70 text-[13.5px]">
-                {isDe
-                  ? 'Transparente Konditionen und pünktliche Zustellung in ganz Berlin:'
-                  : 'Clear transparent delivery terms across the entire Berlin area:'}
-              </p>
-              <div className="space-y-3 pt-2">
-                {DELIVERY_TERMS.map((term, tIdx) => (
-                  <div key={tIdx} className="bg-black/20 rounded-2xl p-4 border border-white/5 flex flex-col gap-1">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-extrabold text-white text-[14px]">{term.label}</span>
-                      <span className="bg-[#d85c27] text-white text-[12px] font-black px-2.5 py-0.5 rounded-full">{term.value}</span>
+            <div className="lg:col-span-5 bg-white rounded-[32px] p-7 sm:p-9 shadow-md border border-[#ebdcd0] flex flex-col justify-between space-y-6">
+              <div>
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="w-3 h-3 rounded-full bg-[#d85c27]" />
+                  <h3 className="text-[22px] sm:text-[24px] font-black text-[#1e382f] tracking-tight">
+                    {isDe ? 'Lieferung & Bestellkonditionen' : 'Delivery & Ordering Terms'}
+                  </h3>
+                </div>
+                <p className="text-[#666] text-[14px] leading-relaxed">
+                  {isDe
+                    ? 'Transparente Konditionen und pünktliche Zustellung in ganz Berlin:'
+                    : 'Clear transparent delivery terms across the entire Berlin metropolitan area:'}
+                </p>
+
+                <div className="space-y-3.5 pt-4">
+                  {DELIVERY_TERMS.map((term, tIdx) => (
+                    <div
+                      key={tIdx}
+                      className="bg-[#faf6f0] rounded-2xl p-4 border border-[#ebdcd0]/70 flex flex-col gap-1.5 transition-all hover:border-[#d85c27]/40"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-extrabold text-[#1e382f] text-[14.5px]">{term.label}</span>
+                        <span className="bg-[#d85c27] text-white text-[12px] font-black px-2.5 py-0.5 rounded-full whitespace-nowrap">
+                          {term.value}
+                        </span>
+                      </div>
+                      <p className="text-[#666] text-[12.5px] leading-snug">{term.detail}</p>
                     </div>
-                    <p className="text-white/60 text-[12px]">{term.detail}</p>
-                  </div>
-                ))}
+                  ))}
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-gray-100 flex items-center justify-between text-[12px] text-[#888]">
+                <span>{isDe ? '✓ Pünktlich auf die Minute geliefert' : '✓ Punctual on-the-minute delivery'}</span>
+                <span className="font-bold text-[#1e382f]">{isDe ? 'Berlin-weit' : 'All of Berlin'}</span>
               </div>
             </div>
           </div>

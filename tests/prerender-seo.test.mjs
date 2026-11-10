@@ -62,9 +62,13 @@ test('pre-rendered /de/catering contains dedicated German metadata, server-rende
   assert.match(content, /"Restaurant"/);
   assert.match(content, /"Service"/);
   assert.match(content, /"serviceType":\s*"Catering"/);
+
+  // Check visible Additions & Optional Stations
+  assert.match(content, /Zusatzoptionen &amp; Stationen \(Add-ons\)/i);
+  assert.match(content, /Naan Pockets/i);
 });
 
-test('pre-rendered /catering in English contains self-referencing canonical and reciprocal hreflang', () => {
+test('pre-rendered /catering in English contains self-referencing canonical, reciprocal hreflang, and Additions & Optional Stations', () => {
   const enCateringFile = path.join(DIST_DIR, 'catering', 'index.html');
   assert.ok(fs.existsSync(enCateringFile), 'dist/catering/index.html must exist');
 
@@ -86,5 +90,10 @@ test('pre-rendered /catering in English contains self-referencing canonical and 
   // Check visible Service & area served text
   assert.match(content, /Service:\s*Indian Corporate &amp; Event Catering/i);
   assert.match(content, /Area Served:\s*Berlin/i);
+
+  // Check visible Additions & Optional Stations
+  assert.match(content, /Additions &amp; Optional Stations/i);
+  assert.match(content, /Naan Pockets/i);
+  assert.match(content, /Coffee &amp; Chai Bar/i);
 });
 
