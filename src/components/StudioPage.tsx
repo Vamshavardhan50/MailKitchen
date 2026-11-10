@@ -2973,6 +2973,75 @@ export const StudioPage: React.FC = () => {
               </div>
             </div>
 
+            {/* Announcement / Alert Banner */}
+            <div className="pt-4 border-t border-gray-100">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-[15px] font-black text-[#1e382f] flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-lg bg-emerald-600 text-white text-[11px] font-black flex items-center justify-center">📢</span>
+                    Site-Wide Announcement Banner
+                  </h3>
+                  <p className="text-[12px] text-gray-500 mt-0.5">
+                    Display a temporary announcement strip across the top of the entire website (e.g. holidays, special events, weather updates).
+                  </p>
+                </div>
+                <label className="flex items-center gap-2 cursor-pointer bg-gray-50 hover:bg-gray-100 px-3 py-1.5 rounded-xl border border-gray-200 transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={!!siteSettings.announcementEnabled}
+                    onChange={(e) => setSiteSettings({ ...siteSettings, announcementEnabled: e.target.checked })}
+                    className="w-4 h-4 rounded text-[#d85c27] focus:ring-[#d85c27]"
+                  />
+                  <span className="text-[12px] font-extrabold text-[#1e382f]">
+                    {siteSettings.announcementEnabled ? 'Active on site' : 'Disabled'}
+                  </span>
+                </label>
+              </div>
+
+              {siteSettings.announcementEnabled && (
+                <div className="bg-[#fcf8f3] border border-[#ebdcd0] rounded-2xl p-4 sm:p-5 space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[11.5px] font-bold text-gray-700 mb-1">
+                        Announcement Text (English)
+                      </label>
+                      <input
+                        type="text"
+                        value={siteSettings.announcementTextEn || ''}
+                        onChange={(e) => setSiteSettings({ ...siteSettings, announcementTextEn: e.target.value })}
+                        placeholder="e.g. We are open on Easter Monday from 11:30! Reserve your table now."
+                        className="w-full bg-white border border-gray-200 rounded-xl px-3.5 py-2.5 text-[13px] focus:outline-none focus:border-[#d85c27]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11.5px] font-bold text-gray-700 mb-1">
+                        Announcement Text (German)
+                      </label>
+                      <input
+                        type="text"
+                        value={siteSettings.announcementTextDe || ''}
+                        onChange={(e) => setSiteSettings({ ...siteSettings, announcementTextDe: e.target.value })}
+                        placeholder="z. B. Wir haben am Ostermontag ab 11:30 geöffnet! Jetzt Tisch reservieren."
+                        className="w-full bg-white border border-gray-200 rounded-xl px-3.5 py-2.5 text-[13px] focus:outline-none focus:border-[#d85c27]"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[11.5px] font-bold text-gray-700 mb-1">
+                      Optional Link / Destination URL (e.g. /menu, /events, or external link)
+                    </label>
+                    <input
+                      type="text"
+                      value={siteSettings.announcementLink || ''}
+                      onChange={(e) => setSiteSettings({ ...siteSettings, announcementLink: e.target.value })}
+                      placeholder="/menu"
+                      className="w-full bg-white border border-gray-200 rounded-xl px-3.5 py-2.5 text-[13px] focus:outline-none focus:border-[#d85c27]"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div className="pt-2">
               <button
                 type="submit"
@@ -3471,14 +3540,27 @@ export const StudioPage: React.FC = () => {
                       )}
                     </div>
                     <div className="flex-1 space-y-1.5">
-                      <button
-                        type="button"
-                        onClick={() => handleOptimizedImageUpload((url) => _setPrintMenuContent({ ...printMenuContent, page1Image: url }))}
-                        className="bg-[#1e382f] text-white text-[12px] font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-sm hover:bg-[#142620] transition-colors"
-                      >
-                        <Upload className="w-3.5 h-3.5 text-[#d85c27]" />
-                        <span>Upload New Graphic</span>
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleOptimizedImageUpload((url) => _setPrintMenuContent({ ...printMenuContent, page1Image: url }))}
+                          className="bg-[#1e382f] text-white text-[12px] font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-sm hover:bg-[#142620] transition-colors"
+                        >
+                          <Upload className="w-3.5 h-3.5 text-[#d85c27]" />
+                          <span>Upload New Graphic</span>
+                        </button>
+                        {printMenuContent.page1Image && (
+                          <a
+                            href={printMenuContent.page1Image}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="bg-white border border-[#ebdcd0] text-[#1e382f] hover:bg-gray-50 text-[12px] font-bold px-3 py-2 rounded-xl flex items-center gap-1.5 transition-colors"
+                          >
+                            <Download className="w-3.5 h-3.5 text-[#d85c27]" />
+                            <span>Download Full Graphic</span>
+                          </a>
+                        )}
+                      </div>
                       <p className="text-[10.5px] text-gray-500">Auto-compressed PNG, JPEG, or WebP</p>
                     </div>
                   </div>
@@ -3545,14 +3627,27 @@ export const StudioPage: React.FC = () => {
                       )}
                     </div>
                     <div className="flex-1 space-y-1.5">
-                      <button
-                        type="button"
-                        onClick={() => handleOptimizedImageUpload((url) => _setPrintMenuContent({ ...printMenuContent, page2Image: url }))}
-                        className="bg-[#1e382f] text-white text-[12px] font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-sm hover:bg-[#142620] transition-colors"
-                      >
-                        <Upload className="w-3.5 h-3.5 text-[#d85c27]" />
-                        <span>Upload New Graphic</span>
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleOptimizedImageUpload((url) => _setPrintMenuContent({ ...printMenuContent, page2Image: url }))}
+                          className="bg-[#1e382f] text-white text-[12px] font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-sm hover:bg-[#142620] transition-colors"
+                        >
+                          <Upload className="w-3.5 h-3.5 text-[#d85c27]" />
+                          <span>Upload New Graphic</span>
+                        </button>
+                        {printMenuContent.page2Image && (
+                          <a
+                            href={printMenuContent.page2Image}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="bg-white border border-[#ebdcd0] text-[#1e382f] hover:bg-gray-50 text-[12px] font-bold px-3 py-2 rounded-xl flex items-center gap-1.5 transition-colors"
+                          >
+                            <Download className="w-3.5 h-3.5 text-[#d85c27]" />
+                            <span>Download Full Graphic</span>
+                          </a>
+                        )}
+                      </div>
                       <p className="text-[10.5px] text-gray-500">Auto-compressed PNG, JPEG, or WebP</p>
                     </div>
                   </div>

@@ -23,22 +23,28 @@ function getLanguagePaths(pathname: string) {
     if (sub === '/' || sub === '') {
       enPath = '/';
       dePath = '/de';
-    } else if (sub === '/speisekarte') {
+    } else if (sub === '/speisekarte' || sub === '/menu') {
       enPath = '/menu';
       dePath = '/de/menu';
-    } else if (sub === '/kontakt') {
+    } else if (sub === '/ueber-uns' || sub === '/about') {
+      enPath = '/about';
+      dePath = '/de/about';
+    } else if (sub === '/veranstaltungen' || sub === '/events') {
+      enPath = '/events';
+      dePath = '/de/events';
+    } else if (sub === '/kontakt' || sub === '/contact') {
       enPath = '/contact';
       dePath = '/de/contact';
-    } else if (sub === '/karriere') {
+    } else if (sub === '/karriere' || sub === '/jobs') {
       enPath = '/jobs';
       dePath = '/de/jobs';
-    } else if (sub === '/anfahrt') {
+    } else if (sub === '/anfahrt' || sub === '/locations') {
       enPath = '/locations';
       dePath = '/de/locations';
-    } else if (sub === '/datenschutz') {
+    } else if (sub === '/datenschutz' || sub === '/privacy') {
       enPath = '/privacy';
       dePath = '/de/privacy';
-    } else if (sub === '/agb') {
+    } else if (sub === '/agb' || sub === '/terms') {
       enPath = '/terms';
       dePath = '/de/terms';
     } else {

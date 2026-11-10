@@ -171,6 +171,10 @@ export interface SiteSettings {
   facebook?: string;
   tiktok?: string;
   googleMapsUrl?: string;
+  announcementEnabled?: boolean;
+  announcementTextEn?: string;
+  announcementTextDe?: string;
+  announcementLink?: string;
 }
 
 // ── Helper to convert local item into SanityMenuItem format ──
@@ -450,6 +454,10 @@ const DEFAULT_SETTINGS: SiteSettings = {
   facebook: 'https://facebook.com',
   tiktok: 'https://tiktok.com/@maatikitchen',
   googleMapsUrl: 'https://maps.google.com/?q=MAATI+Kitchen+Zimmerstrasse+56+Berlin',
+  announcementEnabled: false,
+  announcementTextEn: '',
+  announcementTextDe: '',
+  announcementLink: '',
 };
 
 export function useSiteSettings() {

@@ -19,6 +19,7 @@ import { JobsPage } from './components/JobsPage';
 import { MenuCategoryLanding } from './components/MenuCategoryLanding';
 import { NotFoundPage } from './components/NotFoundPage';
 import { CookieConsentBanner } from './components/CookieConsentBanner';
+import { AnnouncementBanner } from './components/AnnouncementBanner';
 
 export const App: React.FC = () => {
   const location = useLocation();
@@ -43,12 +44,15 @@ export const App: React.FC = () => {
     <div className="min-h-screen flex flex-col bg-[#f5f0e8]">
       <ScrollToTop />
       {!isStudio && (
-        <Navbar
-          lang={lang}
-          setLang={setLang}
-          onOpenReservation={() => setIsReservationOpen(true)}
-          onOpenSearch={() => setIsSearchOpen(true)}
-        />
+        <>
+          <AnnouncementBanner lang={lang} />
+          <Navbar
+            lang={lang}
+            setLang={setLang}
+            onOpenReservation={() => setIsReservationOpen(true)}
+            onOpenSearch={() => setIsSearchOpen(true)}
+          />
+        </>
       )}
 
       <main className="flex-1">
@@ -196,7 +200,15 @@ export const App: React.FC = () => {
             element={<MenuCategoryLanding categoryKey="naan-pockets" lang="de" onOpenReservation={() => setIsReservationOpen(true)} />}
           />
           <Route
+            path="/de/speisekarte/naan-pockets"
+            element={<MenuCategoryLanding categoryKey="naan-pockets" lang="de" onOpenReservation={() => setIsReservationOpen(true)} />}
+          />
+          <Route
             path="/de/menu/bowls"
+            element={<MenuCategoryLanding categoryKey="bowls" lang="de" onOpenReservation={() => setIsReservationOpen(true)} />}
+          />
+          <Route
+            path="/de/speisekarte/bowls"
             element={<MenuCategoryLanding categoryKey="bowls" lang="de" onOpenReservation={() => setIsReservationOpen(true)} />}
           />
           <Route
@@ -204,7 +216,15 @@ export const App: React.FC = () => {
             element={<MenuCategoryLanding categoryKey="breakfast" lang="de" onOpenReservation={() => setIsReservationOpen(true)} />}
           />
           <Route
+            path="/de/speisekarte/breakfast"
+            element={<MenuCategoryLanding categoryKey="breakfast" lang="de" onOpenReservation={() => setIsReservationOpen(true)} />}
+          />
+          <Route
             path="/de/menu/coffee-chai"
+            element={<MenuCategoryLanding categoryKey="coffee-chai" lang="de" onOpenReservation={() => setIsReservationOpen(true)} />}
+          />
+          <Route
+            path="/de/speisekarte/coffee-chai"
             element={<MenuCategoryLanding categoryKey="coffee-chai" lang="de" onOpenReservation={() => setIsReservationOpen(true)} />}
           />
           <Route
@@ -213,6 +233,15 @@ export const App: React.FC = () => {
           />
           <Route
             path="/de/events"
+            element={
+              <EventsSection
+                lang="de"
+                onOpenReservation={() => setIsReservationOpen(true)}
+              />
+            }
+          />
+          <Route
+            path="/de/veranstaltungen"
             element={
               <EventsSection
                 lang="de"
@@ -230,6 +259,14 @@ export const App: React.FC = () => {
           />
           <Route
             path="/de/about"
+            element={
+              <div className="pt-[20px]">
+                <AboutSection lang="de" />
+              </div>
+            }
+          />
+          <Route
+            path="/de/ueber-uns"
             element={
               <div className="pt-[20px]">
                 <AboutSection lang="de" />

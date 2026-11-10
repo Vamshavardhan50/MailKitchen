@@ -689,6 +689,34 @@ const ROUTES = [
     bodyText: `MAATI bedeutet Erde auf Hindi. Wir kochen ehrliche, aromatische Gerichte ohne künstliche Zusätze, frisch serviert in der Zimmerstraße 56.`,
     schema: { '@context': 'https://schema.org', ...RESTAURANT_SCHEMA }
   },
+  {
+    path: '/de/ueber-uns',
+    outputPath: 'de/ueber-uns/index.html',
+    lang: 'de',
+    title: 'Über MAATI Kitchen | Unsere Geschichte & Philosophie Berlin',
+    description: 'Erfahren Sie mehr über MAATI Kitchen in Berlin Mitte: Traditionelle indische Aromen modern und gesund interpretiert.',
+    canonical: 'https://maatikitchen.com/de/about',
+    enUrl: 'https://maatikitchen.com/about',
+    deUrl: 'https://maatikitchen.com/de/about',
+    h1: 'Unsere Geschichte: MAATI Kitchen in Berlin Mitte',
+    subheading: 'Verwurzelt in indischer Tradition, gekocht für Berlin',
+    bodyText: `MAATI bedeutet Erde auf Hindi. Wir kochen ehrliche, aromatische Gerichte ohne künstliche Zusätze, frisch serviert in der Zimmerstraße 56.`,
+    schema: { '@context': 'https://schema.org', ...RESTAURANT_SCHEMA }
+  },
+  {
+    path: '/de/veranstaltungen',
+    outputPath: 'de/veranstaltungen/index.html',
+    lang: 'de',
+    title: 'Events & Feiern in Berlin Mitte | MAATI Kitchen',
+    description: 'Buchen Sie MAATI Kitchen für private Feiern, Firmen-Events und Get-Together in Berlin Mitte nahe Checkpoint Charlie.',
+    canonical: 'https://maatikitchen.com/de/events',
+    enUrl: 'https://maatikitchen.com/events',
+    deUrl: 'https://maatikitchen.com/de/events',
+    h1: 'Private Events & Feiern bei MAATI Kitchen',
+    subheading: 'Die ideale Event-Location in Berlin Mitte für bis zu 80 Gäste',
+    bodyText: `Ob Geburtstagsfeier, Team-Dinner oder Firmenfeier: Wir bieten Ihnen exklusive Räumlichkeiten, maßgeschneiderte Menüs und herzlichen Service.`,
+    schema: { '@context': 'https://schema.org', ...RESTAURANT_SCHEMA }
+  },
 
   // 22. Jobs EN & DE
   {
