@@ -55,7 +55,9 @@ import {
   HelpCircle,
   Eye,
   EyeOff,
-  CheckCircle
+  CheckCircle,
+  Copy,
+  Download,
 } from 'lucide-react';
 import {
   SanityMenuItem,
@@ -331,6 +333,67 @@ export const StudioPage: React.FC = () => {
   const [applicationsFilter, setApplicationsFilter] = useState<'all' | 'new' | 'reviewing' | 'interview' | 'hired' | 'rejected'>('all');
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [noteDraft, setNoteDraft] = useState('');
+  const [inquiriesSearch, setInquiriesSearch] = useState('');
+  const [applicationsSearch, setApplicationsSearch] = useState('');
+
+  const copyToClipboard = (text: string, label: string) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    showToast(`${label} copied to clipboard!`);
+  };
+
+  const exportInquiriesCSV = () => {
+    if (!inquiries.length) { showToast('No inquiries to export.'); return; }
+    const headers = ['Date', 'Type', 'Status', 'Name', 'Email', 'Phone', 'Guests', 'Event Date', 'Company', 'Manager Notes', 'Message'];
+    const rows = inquiries.map(item => [
+      item.receivedAt ? new Date(item.receivedAt).toISOString().split('T')[0] : '',
+      item.enquiryType || 'General',
+      item.status || 'new',
+      `"${(item.name || '').replace(/"/g, '""')}"`,
+      `"${(item.email || '').replace(/"/g, '""')}"`,
+      `"${(item.phone || '').replace(/"/g, '""')}"`,
+      item.guests || '',
+      item.date || '',
+      `"${(item.company || '').replace(/"/g, '""')}"`,
+      `"${(item.managerNotes || '').replace(/"/g, '""')}"`,
+      `"${(item.message || '').replace(/"/g, '""')}"`,
+    ]);
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `maati-inquiries-${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('Exported customer enquiries to CSV!');
+  };
+
+  const exportApplicationsCSV = () => {
+    if (!applications.length) { showToast('No applications to export.'); return; }
+    const headers = ['Date', 'Position', 'Status', 'Full Name', 'Email', 'Phone', 'Availability', 'Experience', 'HR Notes', 'Message'];
+    const rows = applications.map(item => [
+      item.submittedAt ? new Date(item.submittedAt).toISOString().split('T')[0] : '',
+      `"${(item.position || '').replace(/"/g, '""')}"`,
+      item.status || 'new',
+      `"${(item.fullName || '').replace(/"/g, '""')}"`,
+      `"${(item.email || '').replace(/"/g, '""')}"`,
+      `"${(item.phone || '').replace(/"/g, '""')}"`,
+      `"${(item.availability || '').replace(/"/g, '""')}"`,
+      `"${(item.experienceYears || '').replace(/"/g, '""')}"`,
+      `"${(item.hrNotes || '').replace(/"/g, '""')}"`,
+      `"${(item.message || '').replace(/"/g, '""')}"`,
+    ]);
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `maati-job-applications-${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('Exported candidate applications to CSV!');
+  };
 
   const [inboxError, setInboxError] = useState('');
   const fetchInquiries = async () => {
@@ -3551,10 +3614,48 @@ export const StudioPage: React.FC = () => {
               </div>
             </div>
 
+            {/* Search and CSV Export Bar */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-[#faf6f0] p-3 rounded-2xl border border-[#ebdcd0]">
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={inquiriesSearch}
+                  onChange={(e) => setInquiriesSearch(e.target.value)}
+                  placeholder="Search inquiries by customer name, email, phone, company..."
+                  className="w-full pl-9 pr-8 py-2 border border-gray-200 rounded-xl text-[13px] bg-white focus:outline-none focus:border-[#d85c27]"
+                />
+                {inquiriesSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setInquiriesSearch('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 font-bold text-xs"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={exportInquiriesCSV}
+                className="bg-white hover:bg-gray-50 text-[#1e382f] font-extrabold px-4 py-2 rounded-xl text-[12.5px] border border-[#ebdcd0] shadow-xs flex items-center justify-center gap-2 transition-all shrink-0"
+              >
+                <Download className="w-4 h-4 text-[#d85c27]" />
+                <span>Export to CSV ({inquiries.length})</span>
+              </button>
+            </div>
+
             {(() => {
+              const query = inquiriesSearch.trim().toLowerCase();
               const filtered = inquiries.filter((it) => {
-                if (inquiriesFilter === 'all') return true;
-                return it.status === inquiriesFilter;
+                if (inquiriesFilter !== 'all' && it.status !== inquiriesFilter) return false;
+                if (!query) return true;
+                const matchName = (it.name || '').toLowerCase().includes(query);
+                const matchEmail = (it.email || '').toLowerCase().includes(query);
+                const matchPhone = (it.phone || '').toLowerCase().includes(query);
+                const matchCompany = (it.company || '').toLowerCase().includes(query);
+                const matchMessage = (it.message || '').toLowerCase().includes(query);
+                return matchName || matchEmail || matchPhone || matchCompany || matchMessage;
               });
 
               if (filtered.length === 0) {
@@ -3614,7 +3715,7 @@ export const StudioPage: React.FC = () => {
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-2">
                             <a
                               href={`tel:${item.phone}`}
                               className="px-3 py-1.5 rounded-xl border border-gray-200 text-[12px] font-bold text-[#1e382f] hover:bg-gray-50 flex items-center gap-1.5"
@@ -3622,6 +3723,14 @@ export const StudioPage: React.FC = () => {
                               <Phone className="w-3.5 h-3.5 text-[#d85c27]" />
                               <span>{item.phone}</span>
                             </a>
+                            <button
+                              type="button"
+                              onClick={() => copyToClipboard(item.phone, 'Phone number')}
+                              className="p-1.5 rounded-xl border border-gray-200 text-gray-500 hover:text-[#d85c27] hover:bg-gray-50"
+                              title="Copy phone to clipboard"
+                            >
+                              <Copy className="w-3.5 h-3.5" />
+                            </button>
                             <a
                               href={`mailto:${item.email}?subject=Regarding your MAATI Kitchen inquiry (${item.date || ''})`}
                               className="px-3 py-1.5 rounded-xl bg-[#1e382f] text-white text-[12px] font-bold hover:bg-[#142620] flex items-center gap-1.5 shadow-xs"
@@ -3629,6 +3738,14 @@ export const StudioPage: React.FC = () => {
                               <Mail className="w-3.5 h-3.5 text-[#d85c27]" />
                               <span>Email Customer</span>
                             </a>
+                            <button
+                              type="button"
+                              onClick={() => copyToClipboard(item.email, 'Email address')}
+                              className="p-1.5 rounded-xl border border-gray-200 text-gray-500 hover:text-[#d85c27] hover:bg-gray-50"
+                              title="Copy email to clipboard"
+                            >
+                              <Copy className="w-3.5 h-3.5" />
+                            </button>
                             <button
                               type="button"
                               onClick={() => handleDeleteInquiry(item._id || item.id)}
@@ -3749,10 +3866,48 @@ export const StudioPage: React.FC = () => {
               </div>
             </div>
 
+            {/* Search and CSV Export Bar */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-[#faf6f0] p-3 rounded-2xl border border-[#ebdcd0]">
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={applicationsSearch}
+                  onChange={(e) => setApplicationsSearch(e.target.value)}
+                  placeholder="Search applicants by name, role, email, phone, experience..."
+                  className="w-full pl-9 pr-8 py-2 border border-gray-200 rounded-xl text-[13px] bg-white focus:outline-none focus:border-[#d85c27]"
+                />
+                {applicationsSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setApplicationsSearch('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 font-bold text-xs"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={exportApplicationsCSV}
+                className="bg-white hover:bg-gray-50 text-[#1e382f] font-extrabold px-4 py-2 rounded-xl text-[12.5px] border border-[#ebdcd0] shadow-xs flex items-center justify-center gap-2 transition-all shrink-0"
+              >
+                <Download className="w-4 h-4 text-[#d85c27]" />
+                <span>Export Candidates ({applications.length})</span>
+              </button>
+            </div>
+
             {(() => {
+              const query = applicationsSearch.trim().toLowerCase();
               const filtered = applications.filter((it) => {
-                if (applicationsFilter === 'all') return true;
-                return it.status === applicationsFilter;
+                if (applicationsFilter !== 'all' && it.status !== applicationsFilter) return false;
+                if (!query) return true;
+                const matchName = (it.fullName || '').toLowerCase().includes(query);
+                const matchEmail = (it.email || '').toLowerCase().includes(query);
+                const matchPhone = (it.phone || '').toLowerCase().includes(query);
+                const matchPos = (it.position || '').toLowerCase().includes(query);
+                const matchMsg = (it.message || '').toLowerCase().includes(query);
+                return matchName || matchEmail || matchPhone || matchPos || matchMsg;
               });
 
               if (filtered.length === 0) {
@@ -3811,7 +3966,7 @@ export const StudioPage: React.FC = () => {
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-2">
                             <a
                               href={`tel:${item.phone}`}
                               className="px-3 py-1.5 rounded-xl border border-gray-200 text-[12px] font-bold text-[#1e382f] hover:bg-gray-50 flex items-center gap-1.5"
@@ -3819,6 +3974,14 @@ export const StudioPage: React.FC = () => {
                               <Phone className="w-3.5 h-3.5 text-[#d85c27]" />
                               <span>{item.phone}</span>
                             </a>
+                            <button
+                              type="button"
+                              onClick={() => copyToClipboard(item.phone, 'Candidate phone')}
+                              className="p-1.5 rounded-xl border border-gray-200 text-gray-500 hover:text-[#d85c27] hover:bg-gray-50"
+                              title="Copy candidate phone"
+                            >
+                              <Copy className="w-3.5 h-3.5" />
+                            </button>
                             <a
                               href={`mailto:${item.email}?subject=Bewerbung bei MAATI Kitchen: ${item.position}`}
                               className="px-3 py-1.5 rounded-xl bg-[#1e382f] text-white text-[12px] font-bold hover:bg-[#142620] flex items-center gap-1.5 shadow-xs"
@@ -3826,6 +3989,14 @@ export const StudioPage: React.FC = () => {
                               <Mail className="w-3.5 h-3.5 text-[#d85c27]" />
                               <span>Email Candidate</span>
                             </a>
+                            <button
+                              type="button"
+                              onClick={() => copyToClipboard(item.email, 'Candidate email')}
+                              className="p-1.5 rounded-xl border border-gray-200 text-gray-500 hover:text-[#d85c27] hover:bg-gray-50"
+                              title="Copy candidate email"
+                            >
+                              <Copy className="w-3.5 h-3.5" />
+                            </button>
                             {item.resumeLink && (
                               <a
                                 href={item.resumeLink}
